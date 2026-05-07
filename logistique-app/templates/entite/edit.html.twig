@@ -1,0 +1,108 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier une entité{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Modifier l'entité</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_entite_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Retour à la liste
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" class="needs-validation" novalidate>
+                            <input type="hidden" name="_token" value="{{ csrf_token('edit_entite_' ~ entite.id) }}">
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="libelle" class="form-label">Libellé</label>
+                                        <input type="text" id="libelle" name="libelle" value="{{ entite.libelle }}" 
+                                               class="form-control" required>
+                                        <div class="invalid-feedback">
+                                            Veuillez saisir un libellé pour l'entité.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="statut" class="form-label">Statut</label>
+                                        <select id="statut" name="statut" class="form-select" required>
+                                            <option value="1" {{ entite.statut ? 'selected' : '' }}>Actif</option>
+                                            <option value="0" {{ not entite.statut ? 'selected' : '' }}>Inactif</option>
+                                        </select>
+                                        <div class="invalid-feedback">
+                                            Veuillez sélectionner un statut.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="mb-3">
+                                        <label for="description" class="form-label">Description</label>
+                                        <textarea id="description" name="description" rows="4" 
+                                                  class="form-control">{{ entite.description }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="fas fa-save me-2"></i>
+                                    Enregistrer les modifications
+                                </button>
+                                <a href="{{ path('app_entite_show', {'id': entite.id}) }}" class="btn btn-info me-2">
+                                    <i class="fas fa-eye me-2"></i>
+                                    Voir les détails
+                                </a>
+                                <a href="{{ path('app_entite_index') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>
+                                    Annuler
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        // Validation Bootstrap du formulaire
+        (function () {
+            'use strict'
+            
+            // Récupérer tous les formulaires auxquels nous voulons appliquer les styles de validation Bootstrap
+            var forms = document.querySelectorAll('.needs-validation')
+            
+            // Boucler sur eux et empêcher la soumission
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+                        
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
+    </script>
+{% endblock %}

@@ -1,0 +1,710 @@
+{# templates/releve_kilometrage/index.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Relevé de Kilométrage{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <!-- Cartes de statistiques -->
+        <div class="row row-cards mb-3">
+            <div class="col-md-6">
+                <div class="card card-sm">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <span class="bg-danger text-white avatar">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </span>
+                            </div>
+                            <div class="col">
+                                <div class="font-weight-medium">
+                                    {{ totalIncoherences }} incohérence(s)
+                                </div>
+                                <div class="text-muted">
+                                    Total des relevés incohérents
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card card-sm">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <span class="bg-warning text-white avatar">
+                                    <i class="fas fa-car"></i>
+                                </span>
+                            </div>
+                            <div class="col">
+                                <div class="font-weight-medium">
+                                    {{ vehiculesIncoherents }} véhicule(s)
+                                </div>
+                                <div class="text-muted">
+                                    Véhicules avec incohérences
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Relevé de Kilométrage</h3>
+                        <div class="ms-auto">
+                            {% if is_granted('ROLE_SUPER_ADMIN') %}
+                            <button id="fix-incoherences-btn" class="btn btn-danger me-2">
+                                <i class="fas fa-wrench me-2"></i>
+                                Corriger les incohérences
+                            </button>
+                            {% endif %}
+                            <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addReleveModal">
+                                <i class="fas fa-plus me-2"></i>
+                                Nouveau Relevé
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Attention :</strong> Les relevés incohérents (kilométrage inférieur au précédent)
+                            sont surlignés en <span class="text-danger">rouge</span>.
+                            Veuillez vérifier ces entrées.
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="vehicule-select" class="form-label">Sélectionner un véhicule</label>
+                                    <select id="vehicule-select" class="form-select">
+                                        <option value="">Tous les véhicules</option>
+                                        {% for affectation in affectations %}
+                                        {% if not affectation.isFerme %}
+                                        <option value="{{ affectation.id }}">
+                                            {{ affectation.idVehicule.immatriculationVehicule }} -
+                                            {{ affectation.idVehicule.modeleVehicule.nomModele ?? 'N/A' }}
+                                        </option>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="period-select" class="form-label">Période</label>
+                                    <select id="period-select" class="form-select">
+                                        <option value="7">7 derniers jours</option>
+                                        <option value="30" selected>30 derniers jours</option>
+                                        <option value="90">3 derniers mois</option>
+                                        <option value="365">1 an</option>
+                                        <option value="0">Toute la période</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table id="releve-table" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Kilométrage</th>
+                                        <th>Variation</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for releve in releves %}
+                                    {% if not releve.affectation.isFerme %}
+                                    <tr class="{% if releve.incoherent %}table-danger{% endif %}"
+                                        data-vehicule-id="{{ releve.affectation.idVehicule.id }}">
+                                        <td>{{ releve.dateReleve|date('d/m/Y H:i') }}</td>
+                                        <td>{{ releve.kilometrage|number_format(0, ',', ' ') }} km</td>
+                                        <td>
+                                            {% if releve.incoherent %}
+                                            <span class="badge text-bg-danger">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                                {{ releve.variation|number_format(0, ',', ' ') }} km
+                                            </span>
+                                            {% elseif releve.variation > 0 %}
+                                            <span class="badge text-bg-success">+{{ releve.variation|number_format(0,
+                                                ',', ' ') }} km</span>
+                                            {% else %}
+                                            <span class="badge text-bg-secondary">0 km</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="#" class="btn btn-icon btn-sm edit-releve" title="Modifier"
+                                                data-releve-id="{{ releve.id }}"
+                                                data-date-releve="{{ releve.dateReleve|date('Y-m-d\\TH:i') }}"
+                                                data-kilometrage="{{ releve.kilometrage }}"
+                                                data-vehicule-id="{{ releve.affectation.id }}">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_SUPER_ADMIN') %}
+                                            <a href="#" class="btn btn-icon btn-sm text-danger" title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour ajouter un nouveau relevé -->
+<div class="modal fade" id="addReleveModal" tabindex="-1" aria-labelledby="addReleveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addReleveModalLabel">Nouveau relevé de kilométrage</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-releve-form">
+                    <div class="mb-3">
+                        <label for="vehicule" class="form-label">Véhicule</label>
+                        <select class="form-select" id="vehicule" required>
+                            <option value="">Sélectionner un véhicule</option>
+                            {% for affectation in affectations %}
+                            {% if not affectation.isFerme %}
+                            <option value="{{ affectation.id }}">
+                                {{ affectation.idVehicule.immatriculationVehicule }} -
+                                {{ affectation.idVehicule.modeleVehicule.nomModele ?? 'N/A' }}
+                            </option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="date-releve" class="form-label">Date du relevé</label>
+                        <input type="datetime-local" class="form-control" id="date-releve" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="km-releve" class="form-label">Kilométrage</label>
+                        <input type="number" class="form-control" id="km-releve" min="0" required>
+                        <div class="form-text text-danger d-none" id="km-warning">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            Attention : Ce kilométrage est inférieur au précédent relevé.
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="save-releve">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour modifier un relevé existant -->
+<div class="modal fade" id="editReleveModal" tabindex="-1" aria-labelledby="editReleveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editReleveModalLabel">Modifier le relevé de kilométrage</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-releve-form">
+                    <input type="hidden" id="edit-releve-id">
+                    <div class="mb-3">
+                        <label for="edit-vehicule" class="form-label">Véhicule</label>
+                        <select class="form-select" id="edit-vehicule" required disabled>
+                            <option value="">Sélectionner un véhicule</option>
+                            {% for affectation in affectations %}
+                            {% if not affectation.isFerme %}
+                            <option value="{{ affectation.id }}">
+                                {{ affectation.idVehicule.immatriculationVehicule }} -
+                                {{ affectation.idVehicule.modeleVehicule.nomModele ?? 'N/A' }}
+                            </option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-date-releve" class="form-label">Date du relevé</label>
+                        <input type="datetime-local" class="form-control" id="edit-date-releve" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-km-releve" class="form-label">Kilométrage</label>
+                        <input type="number" class="form-control" id="edit-km-releve" min="0" required>
+                        <div class="form-text text-danger d-none" id="edit-km-warning">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            Attention : Ce kilométrage est inférieur au précédent relevé.
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="update-releve">Mettre à jour</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour afficher la courbe d'évolution -->
+<div class="modal fade" id="chartModal" tabindex="-1" aria-labelledby="chartModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="chartModalLabel">Évolution du kilométrage</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <select id="period-select-chart" class="form-select">
+                            <option value="7">7 derniers jours</option>
+                            <option value="30" selected>30 derniers jours</option>
+                            <option value="90">3 derniers mois</option>
+                            <option value="365">1 an</option>
+                            <option value="0">Toute la période</option>
+                        </select>
+                    </div>
+                </div>
+                <canvas id="kmChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function () {
+        // Initialisation de DataTable avec regroupement
+        var table = $('#releve-table').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/2.0.8/i18n/fr-FR.json'
+            },
+            order: [[0, 'desc']], // Tri par date décroissante par défaut
+            responsive: true,
+            columnDefs: [
+                { responsivePriority: 1, targets: 0 }, // Date
+                { responsivePriority: 2, targets: 1 }, // Kilométrage
+                { responsivePriority: 3, targets: -1 } // Actions
+            ],
+            createdRow: function (row, data, dataIndex) {
+                // Ajouter une classe pour les lignes incohérentes
+                if ($(row).hasClass('table-danger')) {
+                    $(row).attr('title', 'Ce relevé est incohérent (kilométrage inférieur au précédent)');
+                    $(row).find('td').eq(2).find('.badge').attr('title', 'Variation négative - vérifiez ce relevé');
+                }
+            },
+            drawCallback: function (settings) {
+                // Regroupement visuel par véhicule
+                var api = this.api();
+                var rows = api.rows({ page: 'current' }).nodes();
+                var last = null;
+
+                // On va regrouper par véhicule ID stocké dans data-vehicule-id
+                $(rows).each(function (i) {
+                    var vehiculeId = $(this).data('vehicule-id');
+                    var vehiculeName = $(this).find('td:eq(0)').text(); // On utilise la date comme nom temporaire
+
+                    if (last !== vehiculeId) {
+                        // Récupérer le nom du véhicule depuis le select
+                        var vehiculeOption = $('#vehicule-select option[value="' + vehiculeId + '"]');
+                        var vehiculeFullName = vehiculeOption.length ? vehiculeOption.text() : 'Véhicule ' + vehiculeId;
+
+                        $(this).before(
+                            '<tr class="group bg-light">' +
+                            '<td colspan="4" class="fw-bold">' +
+                            '<i class="fas fa-car me-2"></i>' +
+                            vehiculeFullName +
+                            '<button class="btn btn-sm btn-outline-primary ms-2 view-chart" data-vehicule="' + vehiculeId + '" data-vehicule-name="' + vehiculeFullName + '">' +
+                            '<i class="fas fa-chart-line me-1"></i>Voir la courbe' +
+                            '</button>' +
+                            '</td>' +
+                            '</tr>'
+                        );
+
+                        last = vehiculeId;
+                    }
+                });
+            }
+        });
+
+        // Filtrage par véhicule
+        $('#vehicule-select').on('change', function () {
+            var searchVal = $(this).val();
+            if (searchVal) {
+                // Filtrer par l'ID du véhicule stocké dans data-vehicule-id
+                $.fn.dataTable.ext.search.push(
+                    function (settings, data, dataIndex) {
+                        var row = table.row(dataIndex).node();
+                        return $(row).data('vehicule-id') == searchVal;
+                    }
+                );
+                table.draw();
+                $.fn.dataTable.ext.search.pop(); // Retirer le filtre après application
+            } else {
+                table.search('').draw();
+            }
+        });
+
+        // Filtrage par période
+        $('#period-select').on('change', function () {
+            var days = $(this).val();
+            var today = new Date();
+            var startDate = new Date();
+
+            if (days > 0) {
+                startDate.setDate(today.getDate() - days);
+            } else {
+                // Si days = 0, on prend toute la période
+                startDate = null;
+            }
+
+            $.fn.dataTable.ext.search.push(
+                function (settings, data, dataIndex) {
+                    if (startDate === null) return true; // Aucun filtre de date
+
+                    var row = table.row(dataIndex).node();
+                    var dateStr = $(row).find('td:eq(0)').text();
+                    var rowDate = parseDate(dateStr);
+
+                    return rowDate >= startDate;
+                }
+            );
+            table.draw();
+            $.fn.dataTable.ext.search.pop(); // Retirer le filtre après application
+        });
+
+        // Fonction pour parser la date au format dd/mm/yyyy HH:MM
+        function parseDate(dateStr) {
+            var parts = dateStr.split(' ');
+            var dateParts = parts[0].split('/');
+            return new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+        }
+
+        $('#save-releve').on('click', function () {
+            var affectationId = $('#vehicule').val();
+            var dateReleve = $('#date-releve').val();
+            var kilometrage = $('#km-releve').val();
+
+            // Validation basique
+            if (!affectationId || !dateReleve || !kilometrage) {
+                toastr.warning('Veuillez remplir tous les champs obligatoires.');
+                return;
+            }
+
+            // Préparer les données pour l'envoi
+            var formData = {
+                affectation: affectationId,
+                dateReleve: dateReleve,
+                kilometrage: kilometrage
+            };
+
+            // Envoyer la requête AJAX
+            $.ajax({
+                url: '/releve/kilometrage/create',
+                method: 'POST',
+                data: formData,
+                success: function (response) {
+                    if (response.success) {
+                        // Recharger la page pour voir le nouveau relevé
+                        location.reload();
+                    } else {
+                        toastr.error('Erreur lors de la création: ' + response.message);
+                    }
+                },
+                error: function (xhr) {
+                    toastr.error('Erreur lors de la création: ' + xhr.responseJSON.message);
+                }
+            });
+        });
+
+        // Validation du kilométrage dans le modal d'ajout
+        $('#km-releve').on('change', function () {
+            var kilometrage = $(this).val();
+            var affectationId = $('#vehicule').val();
+
+            if (!affectationId) {
+                toastr.warning('Veuillez d\'abord sélectionner un véhicule.');
+                return;
+            }
+
+            // Appel AJAX pour vérifier la cohérence
+            $.ajax({
+                url: '/releve/kilometrage/check',
+                method: 'POST',
+                data: {
+                    affectation: affectationId,
+                    kilometrage: kilometrage
+                },
+                success: function (response) {
+                    if (response.valid) {
+                        $('#km-warning').addClass('d-none');
+                    } else {
+                        $('#km-warning').removeClass('d-none');
+                        $('#km-warning').html('<i class="fas fa-exclamation-triangle me-1"></i>' + response.message);
+                    }
+                },
+                error: function (xhr) {
+                    console.error('Erreur lors de la vérification:', xhr.responseJSON);
+                }
+            });
+        });
+
+        $('#addReleveModal').on('hidden.bs.modal', function () {
+            $('#add-releve-form')[0].reset();
+            $('#km-warning').addClass('d-none');
+        });
+
+        // Gestion de l'affichage de la courbe d'évolution
+        var kmChart = null;
+
+        $(document).on('click', '.view-chart', function () {
+            var vehiculeId = $(this).data('vehicule');
+            var vehiculeName = $(this).data('vehicule-name');
+
+            $('#chartModalLabel').text('Évolution du kilométrage - ' + vehiculeName);
+            $('#chartModal').modal('show');
+
+            // Charger les données du véhicule
+            loadChartData(vehiculeId, 30);
+        });
+
+        // Changement de période pour le graphique
+        $('#period-select-chart').on('change', function () {
+            var vehiculeId = $('#chartModal').data('current-vehicule');
+            var days = $(this).val();
+            loadChartData(vehiculeId, days);
+        });
+
+        function loadChartData(vehiculeId, days) {
+            $('#chartModal').data('current-vehicule', vehiculeId);
+
+            // Afficher un indicateur de chargement
+            $('#kmChart').hide();
+            $('#chartModal .modal-body').append('<div id="chart-loading" class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Chargement des données...</p></div>');
+
+            // Appel AJAX pour récupérer les données
+            $.ajax({
+                url: '/releve/kilometrage/vehicule/' + vehiculeId + '/historique',
+                method: 'GET',
+                data: { days: days },
+                success: function (response) {
+                    // Cacher l'indicateur de chargement
+                    $('#chart-loading').remove();
+                    $('#kmChart').show();
+
+                    // Mettre à jour le graphique avec les données réelles
+                    updateChart(response.labels, response.data);
+                },
+                error: function (xhr) {
+                    // Cacher l'indicateur de chargement
+                    $('#chart-loading').remove();
+                    $('#kmChart').show();
+
+                    // Afficher un message d'erreur
+                    toastr.error('Erreur lors du chargement des données: ' + xhr.responseJSON.error);
+                }
+            });
+        }
+
+        function updateChart(labels, data) {
+            var ctx = document.getElementById('kmChart').getContext('2d');
+
+            // Détruire le graphique existant s'il y en a un
+            if (kmChart) {
+                kmChart.destroy();
+            }
+
+            // Créer le nouveau graphique
+            kmChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Kilométrage',
+                        data: data,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Évolution du kilométrage'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' km';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Kilométrage'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Toggle pour afficher/masquer les relevés d'un véhicule
+        $(document).on('click', '.toggle-vehicule', function (e) {
+            e.preventDefault();
+            var vehiculeId = $(this).data('vehicule-id');
+            var rows = table.rows().nodes();
+
+            $(rows).each(function () {
+                if ($(this).data('vehicule-id') === vehiculeId) {
+                    $(this).toggle();
+                }
+            });
+
+            // Changer l'icône
+            var icon = $(this).find('i');
+            if (icon.hasClass('fa-chevron-down')) {
+                icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+            } else {
+                icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+            }
+        });
+
+        // Gestion de la modification d'un relevé
+        $(document).on('click', '.edit-releve', function () {
+            var releveId = $(this).data('releve-id');
+            var dateReleve = $(this).data('date-releve');
+            var kilometrage = $(this).data('kilometrage');
+            var vehiculeId = $(this).data('vehicule-id');
+
+            // Remplir le formulaire de modification
+            $('#edit-releve-id').val(releveId);
+            $('#edit-vehicule').val(vehiculeId);
+            $('#edit-date-releve').val(dateReleve);
+            $('#edit-km-releve').val(kilometrage);
+
+            // Cacher l'avertissement kilométrique
+            $('#edit-km-warning').addClass('d-none');
+
+            // Ouvrir le modal de modification
+            $('#editReleveModal').modal('show');
+        });
+
+        // Validation du kilométrage dans le modal de modification
+        $('#edit-km-releve').on('change', function () {
+            // Ici, vous devriez vérifier par rapport au dernier relevé du véhicule sélectionné
+            // Pour l'instant, on montre juste un exemple
+            if ($(this).val() < 1000) { // Exemple de validation
+                $('#edit-km-warning').removeClass('d-none');
+            } else {
+                $('#edit-km-warning').addClass('d-none');
+            }
+        });
+
+        // Gestion de la mise à jour du relevé
+        $('#update-releve').on('click', function () {
+            var releveId = $('#edit-releve-id').val();
+            var dateReleve = $('#edit-date-releve').val();
+            var kilometrage = $('#edit-km-releve').val();
+
+            // Validation basique
+            if (!dateReleve || !kilometrage) {
+                toastr.warning('Veuillez remplir tous les champs obligatoires.');
+                return;
+            }
+
+            // Préparer les données pour l'envoi
+            var formData = {
+                id: releveId,
+                dateReleve: dateReleve,
+                kilometrage: kilometrage
+            };
+
+            // Envoyer la requête AJAX
+            $.ajax({
+                url: '/releve/kilometrage/update/' + releveId,
+                method: 'POST',
+                data: formData,
+                success: function (response) {
+                    if (response.success) {
+                        // Recharger la page pour voir les modifications
+                        location.reload();
+                    } else {
+                        toastr.error('Erreur lors de la mise à jour: ' + response.message);
+                    }
+                },
+                error: function (xhr) {
+                    toastr.error('Erreur lors de la mise à jour: ' + xhr.responseJSON.message);
+                }
+            });
+        });
+
+        // Gestion de la correction des incohérences
+        $('#fix-incoherences-btn').on('click', function () {
+            if (!confirm('Êtes-vous sûr de vouloir corriger toutes les incohérences ? Cette action remplacera les kilométrages incohérents par la valeur du relevé précédent.')) {
+                return;
+            }
+
+            // Afficher un indicateur de chargement
+            var originalText = $(this).html();
+            $(this).html('<i class="fas fa-spinner fa-spin me-2"></i>Correction en cours...');
+            $(this).prop('disabled', true);
+
+            // Envoyer la requête AJAX
+            $.ajax({
+                url: '/releve/kilometrage/fix-incoherences',
+                method: 'POST',
+                success: function (response) {
+                    // Restaurer le bouton
+                    $('#fix-incoherences-btn').html(originalText);
+                    $('#fix-incoherences-btn').prop('disabled', false);
+
+                    if (response.success) {
+                        toastr.success(response.message);
+                        // Recharger la page pour voir les corrections
+                        location.reload();
+                    } else {
+                        toastr.error('Erreur: ' + response.message);
+                    }
+                },
+                error: function (xhr) {
+                    // Restaurer le bouton
+                    $('#fix-incoherences-btn').html(originalText);
+                    $('#fix-incoherences-btn').prop('disabled', false);
+
+                    toastr.error('Erreur lors de la correction: ' + xhr.responseJSON.message);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

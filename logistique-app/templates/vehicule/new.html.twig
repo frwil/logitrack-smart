@@ -1,0 +1,363 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau Véhicule{% endblock %}
+
+{% block stylesheets %}
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Ajouter un nouveau véhicule</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" id="vehiculeForm">
+                            <!-- Première ligne : Type de plaque et Immatriculation -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="type_immatriculation" class="form-label">Type de véhicule</label>
+                                        <select id="type_immatriculation" name="type_immatriculation" class="form-select" required>
+                                            {% for type in immatriculation_types %}
+                                            <option value="{{ type.value }}">{{ type.value }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="immatriculation_vehicule" class="form-label">Numéro d'immatriculation</label>
+                                        <input type="text" id="immatriculation_vehicule" name="immatriculation_vehicule" class="form-control" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Deuxième ligne : Date première utilisation et Expiration carte grise -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="premiere_utilisation">Date première utilisation</label>
+                                        <input type="date" class="form-control" id="premiere_utilisation" name="premiere_utilisation">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="expiration_carte_grise">Expiration carte grise</label>
+                                        <input type="date" class="form-control" id="expiration_carte_grise" name="expiration_carte_grise">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Troisième ligne : Chassis et Puissance -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="chassis_vehicule">Numéro de chassis</label>
+                                        <input type="text" class="form-control" id="chassis_vehicule" name="chassis_vehicule">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="puissance_vehicule">Puissance (CV)</label>
+                                        <input type="number" class="form-control" id="puissance_vehicule" name="puissance_vehicule" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quatrième ligne : Nombre de places et Capacité consommation -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="nb_place">Nombre de places</label>
+                                        <input type="number" class="form-control" id="nb_place" name="nb_place" min="2" value="2" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="capacite_consommation_vehicule">Consommation (L/100km)</label>
+                                        <input type="number" step="0.01" class="form-control" id="capacite_consommation_vehicule" name="capacite_consommation_vehicule" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cinquième ligne : Type carburant et Statut -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="type_carburant">Type de carburant</label>
+                                        <select class="form-select" id="type_carburant" name="type_carburant" required>
+                                            {% for carburant in carburant_types %}
+                                            <option value="{{ carburant.value }}">{{ carburant.value }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="statut">Statut</label>
+                                        <select class="form-select" id="statut" name="statut" required>
+                                            <option value="1">Actif</option>
+                                            <option value="0">Inactif</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sixième ligne : Marque et Modèle -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="id_marque">Marque</label>
+                                        <div class="input-group">
+                                            <select class="form-select" id="id_marque" name="id_marque" required>
+                                                <option value="">Chargement des marques...</option>
+                                            </select>
+                                            <a href="{{ path('app_marque_vehicule_new') }}" class="btn btn-outline-secondary" title="Ajouter une nouvelle marque">
+                                                <i class="fas fa-plus"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="id_modele_vehicule">Modèle</label>
+                                        <div class="input-group">
+                                            <select class="form-select" id="id_modele_vehicule" name="id_modele_vehicule" required>
+                                                <option value="">Sélectionnez une marque d'abord</option>
+                                            </select>
+                                            <a href="{{ path('app_modele_vehicule_new') }}" class="btn btn-outline-secondary" title="Ajouter un nouveau modèle">
+                                                <i class="fas fa-plus"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Septième ligne : Entité -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="id_entite">Entité</label>
+                                        <div class="input-group">
+                                            <select class="form-select" id="id_entite" name="id_entite" required>
+                                                <option value="">Chargement des entités...</option>
+                                            </select>
+                                            <a href="{{ path('app_entite_new') }}" class="btn btn-outline-secondary" title="Ajouter une nouvelle entité">
+                                                <i class="fas fa-plus"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <!-- Colonne vide pour l'alignement -->
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="fas fa-save me-2"></i> Enregistrer
+                                </button>
+                                <a href="{{ path('app_vehicule_index') }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i> Retour à la liste
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Sélection des éléments DOM une seule fois pour une meilleure performance
+        const $plaqueInput = $('#immatriculation_vehicule');
+        const $typePlaqueSelect = $('#type_immatriculation');
+        const $messageFeedback = $('<p class="mt-2 text-sm font-semibold"></p>').insertAfter($plaqueInput);
+        const $submitButton = $('button[type="submit"]');
+        const $form = $('#vehiculeForm');
+        const $marqueSelect = $('#id_marque');
+        const $modeleSelect = $('#id_modele_vehicule');
+        const $entiteSelect = $('#id_entite');
+
+        // Initialisation de Select2 pour tous les éléments avec la classe 'select2'
+        $('.select2').select2({
+            placeholder: 'Sélectionnez une option',
+            allowClear: true
+        });
+
+        // Définition des règles de validation
+        const CODES_PROVINCE = ['EN', 'NO', 'AD', 'ES', 'OU', 'SU', 'SO', 'LT', 'CE'];
+        const CODES_MATERIEL = ['RE', 'SR', 'SE', 'TR'];
+        const CODES_ETAT = ['CA', 'AN'];
+        const CODES_DIPLOMATIQUE = ['CMD', 'CPC', 'CD', 'CC', 'PA'];
+
+        const FORMATS_PLAQUES = {
+            'CIVILE': { regex: new RegExp(`^(${CODES_PROVINCE.join('|')}) \\d{3} [A-Z]{2}$`), exemple: 'LT 456 AA' },
+            'ATTELÉ': { regex: new RegExp(`^(${CODES_PROVINCE.join('|')}) (${CODES_MATERIEL.join('|')}) \\d{4} [A-Z]$`), exemple: 'LT SR 9652 A' },
+            'ETAT': { regex: new RegExp(`^(${CODES_ETAT.join('|')}) \\d{4} [A-Z]$`), exemple: 'AN 9652 E ou CA 1234 A' },
+            'DIPLOMATIQUE': { regex: new RegExp(`^(${CODES_DIPLOMATIQUE.join('|')}) (\\d{2,3}) RC \\d{1,4}$`), exemple: 'PA 02 RC 521' },
+            'ASSISTANCE_TECHNIQUE': { regex: /^IT \d{5} RC$/, exemple: 'IT 21052 RC' },
+            'A_L_ESSAI': { regex: new RegExp(`^(${CODES_PROVINCE.join('|')}) \\d{4} WG$`), exemple: 'CE 2456 WG' },
+            'TRANSIT': { regex: new RegExp(`^WT \\d{6} (${CODES_PROVINCE.join('|')}) \\d$`), exemple: 'WT 120208 LT 2' },
+            'POSTES_TELECOM': { regex: /^PT \d{3} \d{2}$/, exemple: 'PT 012 00' },
+            'INVESTISSEMENTS_SPECIAUX': { regex: /^IS \d{5} RC$/, exemple: 'IS 24564 RC' }
+        };
+
+        // Map backend values to FORMATS_PLAQUES keys if needed
+        const normalizeType = (type) => {
+            // Convert to uppercase and replace spaces with underscores to match FORMATS_PLAQUES keys
+            return type.toUpperCase().replace(/\s+/g, '_').replace(/É/g, 'E');
+        };
+
+        function validerPlaque(plaque, type) {
+            if (!plaque || !type) {
+                return false;
+            }
+            
+            const normalizedType = normalizeType(type);
+            const format = FORMATS_PLAQUES[normalizedType];
+            
+            if (!format) {
+                console.error(`Type de plaque non reconnu: ${type} (normalisé: ${normalizedType})`);
+                return false;
+            }
+            
+            return format.regex.test(plaque.toUpperCase());
+        }
+
+        function updateValidationStatus() {
+            const typeSelectionne = $typePlaqueSelect.val();
+            const plaqueSaisie = $plaqueInput.val().trim();
+            
+            const normalizedType = normalizeType(typeSelectionne);
+            const format = FORMATS_PLAQUES[normalizedType];
+            
+            if (!format) {
+                $plaqueInput.attr('placeholder', 'Type de plaque non reconnu');
+                $messageFeedback.text(`Type de plaque "${typeSelectionne}" non supporté.`).css('color', 'red');
+                $submitButton.prop('disabled', true).removeClass('btn-primary').addClass('btn-secondary');
+                return;
+            }
+            
+            $plaqueInput.attr('placeholder', format.exemple);
+
+            if (plaqueSaisie === '') {
+                $messageFeedback.text(`Veuillez saisir un numéro de plaque. (Exemple: ${format.exemple})`).css('color', 'gray');
+                $submitButton.prop('disabled', true).removeClass('btn-primary').addClass('btn-secondary');
+                return;
+            }
+
+            const estValide = validerPlaque(plaqueSaisie, typeSelectionne);
+            if (estValide) {
+                $messageFeedback.text('Format de plaque valide.').css('color', 'green');
+                $submitButton.prop('disabled', false).removeClass('btn-secondary').addClass('btn-primary');
+            } else {
+                $messageFeedback.text(`Format invalide. Exemple attendu : ${format.exemple}`).css('color', 'red');
+                $submitButton.prop('disabled', true).removeClass('btn-primary').addClass('btn-secondary');
+            }
+        }
+
+        // Écouteurs pour la validation
+        $plaqueInput.on('input', updateValidationStatus);
+        $typePlaqueSelect.on('change', updateValidationStatus);
+
+        $form.on('submit', (e) => {
+            if ($submitButton.prop('disabled')) {
+                e.preventDefault();
+                return;
+            }
+            // Removed reference to undefined $successMessage
+        });
+
+        // Fonction pour peupler les dropdowns
+        const populateDropdown = (selectElement, data, placeholder) => {
+            const $select = $(selectElement);
+            $select.empty().append(`<option value="">${placeholder}</option>`);
+            data.forEach(item => {
+                $select.append(`<option value="${item.id}">${item.textContent}</option>`);
+            });
+        };
+
+        // Chargement des marques
+        const loadMarques = () => {
+            const marquesApiUrl = "{{ path('app_get_all_marques_vehicules') }}";
+            fetch(marquesApiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    populateDropdown($marqueSelect, data, 'Sélectionnez une marque');
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des marques :', error);
+                    $marqueSelect.empty().append('<option value="">Erreur de chargement</option>');
+                });
+        };
+
+        // Chargement des entités
+        const loadEntites = () => {
+            const entitesApiUrl = "{{ path('app_get_all_entites') }}";
+            fetch(entitesApiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    populateDropdown($entiteSelect, data, 'Sélectionnez une entité');
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des entités :', error);
+                    $entiteSelect.empty().append('<option value="">Erreur de chargement</option>');
+                });
+        };
+
+        // Chargement de tous les modèles
+        let allModeles = [];
+        const loadAllModeles = () => {
+            const modelesApiUrl = "{{ path('app_get_all_modeles_vehicules') }}";
+            return fetch(modelesApiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    allModeles = data;
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement de tous les modèles :', error);
+                });
+        };
+
+        // Chargement des modèles par marque (filtrage côté client)
+        const loadModeles = (marqueId) => {
+            if (!marqueId) {
+                $modeleSelect.empty().append('<option value="">Sélectionnez une marque d\'abord</option>');
+                return;
+            }
+            const modelesFiltres = allModeles.filter(modele => modele.id == marqueId);
+            populateDropdown($modeleSelect, modelesFiltres, 'Sélectionnez un modèle');
+        };
+
+        // Événement pour le changement de la marque
+        $marqueSelect.on('change', () => {
+            const selectedMarqueId = $marqueSelect.val();
+            loadModeles(selectedMarqueId);
+        });
+
+        // Lancement du chargement initial
+        loadAllModeles().then(() => {
+            loadMarques();
+            loadEntites();
+
+            // Si une marque est déjà sélectionnée (en cas d'édition), charger ses modèles
+            const selectedMarqueId = $marqueSelect.val();
+            if (selectedMarqueId) {
+                loadModeles(selectedMarqueId);
+            }
+        });
+
+        // Initialize validation on page load
+        updateValidationStatus();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle vidange{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Nouvelle vidange</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_vidange_vehicule_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2 d-none d-sm-inline-block"></i>
+                                <span class="d-none d-sm-inline-block">Retour</span>
+                                <i class="fas fa-arrow-left d-sm-none"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="affectation" class="form-label">Affectation *</label>
+                                        <select class="form-select" id="affectation" name="affectation" required>
+                                            <option value="">Sélectionnez une affectation</option>
+                                            {% for affectation in affectations %}
+                                                <option value="{{ affectation.id }}">
+                                                    {{ affectation.idVehicule.idMarque.nomMarque }} {{ affectation.idVehicule.modeleVehicule.nomModele }} 
+                                                    ({{ affectation.idVehicule.immatriculationVehicule }}) - 
+                                                    {{ affectation.idChauffeur.nom }} {{ affectation.idChauffeur.prenom }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="dateVidange" class="form-label">Date de vidange *</label>
+                                        <input type="date" class="form-control" id="dateVidange" name="dateVidange" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="kilometrageVidange" class="form-label">Kilométrage *</label>
+                                        <input type="number" class="form-control" id="kilometrageVidange" name="kilometrageVidange" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="typeHuile" class="form-label">Type d'huile</label>
+                                        <input type="text" class="form-control" id="typeHuile" name="typeHuile">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="referenceFiltre" class="form-label">Référence filtre</label>
+                                        <input type="text" class="form-control" id="referenceFiltre" name="referenceFiltre">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="quantiteHuile" class="form-label">Quantité d'huile (L)</label>
+                                        <input type="number" step="0.1" class="form-control" id="quantiteHuile" name="quantiteHuile">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="cout" class="form-label">Coût (FCFA)</label>
+                                        <input type="number" step="0.01" class="form-control" id="cout" name="cout">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="prestataire" class="form-label">Prestataire</label>
+                                        <select class="form-select" id="prestataire" name="prestataire">
+                                            <option value="">Sélectionnez un prestataire</option>
+                                            {% for prestataire in prestataires %}
+                                                <option value="{{ prestataire.id }}">{{ prestataire.nom }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="prochaineVidangePrevue" class="form-label">Prochaine vidange prévue</label>
+                                        <input type="date" class="form-control" id="prochaineVidangePrevue" name="prochaineVidangePrevue">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="kilometrageProchaineVidange" class="form-label">Kilométrage prochaine vidange</label>
+                                        <input type="number" class="form-control" id="kilometrageProchaineVidange" name="kilometrageProchaineVidange">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="observations" class="form-label">Observations</label>
+                                <textarea class="form-control" id="observations" name="observations" rows="3"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="effectuee" name="effectuee" value="1" checked>
+                                    <span class="form-check-label">Vidange effectuée</span>
+                                </label>
+                            </div>
+
+                            <div class="form-footer">
+                                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                                <a href="{{ path('app_vidange_vehicule_index') }}" class="btn btn-secondary">Annuler</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialiser Tom Select pour le champ affectation
+        new TomSelect('#affectation', {
+            create: false,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            },
+            searchField: 'text',
+            render: {
+                option: function(data, escape) {
+                    return '<div class="d-flex justify-content-between align-items-center">' +
+                           '<span>' + escape(data.text) + '</span>' +
+                           '<span class="text-muted small">#' + escape(data.value) + '</span>' +
+                           '</div>';
+                },
+                item: function(data, escape) {
+                    return '<div>' + escape(data.text) + '</div>';
+                }
+            }
+        });
+
+        // Optionnel: Initialiser aussi pour le champ prestataire si désiré
+        new TomSelect('#prestataire', {
+            create: false,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            }
+        });
+    });
+</script>
+{% endblock %}

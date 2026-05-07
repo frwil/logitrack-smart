@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier la Destination - {{ destination_voyage.libelle }}{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Modifier la destination: {{ destination_voyage.libelle }}</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{{ path('app_destination_voyage_edit', {'id': destination_voyage.id}) }}">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="lieuDepart">Lieu de départ</label>
+                                        <input type="text" class="form-control" id="lieuDepart" name="lieu_depart" value="{{ destination_voyage.lieuDepart }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="lieuArrivee">Lieu d'arrivée</label>
+                                        <input type="text" class="form-control" id="lieuArrivee" name="lieu_arrivee" value="{{ destination_voyage.lieuArrivee }}" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="distance">Distance (km)</label>
+                                        <input type="number" class="form-control" id="distance" name="distance" min="0" value="{{ destination_voyage.distance }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="region">Région</label>
+                                        <select class="form-select" id="region" name="region" required>
+                                            <option value="">Sélectionner une région</option>
+                                            {% for region in regions %}
+                                                <option value="{{ region.id }}" {{ destination_voyage.region.id == region.id ? 'selected' : '' }}>
+                                                    {{ region.nom }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="fas fa-save me-2"></i> Enregistrer
+                                </button>
+                                <a href="{{ path('app_destination_voyage_show', {'id': destination_voyage.id}) }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i> Retour aux détails
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,688 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Coûts de maintenance - Logistique App{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    @media print {
+        aside{
+            visibility: hidden !important;
+        }
+    }
+    /* Correction pour l'affichage du calendrier Flatpickr */
+    .flatpickr-calendar {
+        z-index: 1050 !important; /* S'assurer qu'il est au-dessus des autres éléments */
+    }
+    
+    /* Ajustement pour l'affichage des filtres */
+    .chart-filter-value {
+        transition: opacity 0.3s ease;
+    }
+    
+    /* Amélioration de l'affichage sur mobile */
+    @media (max-width: 768px) {
+        .custom-period, .chart-filter-value {
+            margin-top: 15px;
+        }
+    }
+    
+    /* Style pour le lien des réparations en cours */
+    .card-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+    
+    .card-link:hover .card-sm {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+        transition: all 0.2s ease;
+    }
+
+    /* Styles pour l'impression */
+@media print {
+    /* Masquer la sidebar */
+    .navbar-vertical {
+        display: none !important;
+    }
+    
+    /* Masquer le header */
+    header.navbar {
+        display: none !important;
+    }
+    
+    /* Masquer les boutons d'action */
+    .card-actions, .btn {
+        display: none !important;
+    }
+    
+    /* Ajuster la largeur du contenu */
+    .page-wrapper {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+    
+    .container-xl {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+    
+    /* Ajuster les marges et padding */
+    .page-body {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Assurer que le contenu prend toute la largeur */
+    .row-cards > .col-12 {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+    
+    /* Améliorer la lisibilité du texte imprimé */
+    body {
+        font-size: 12pt !important;
+        line-height: 1.5 !important;
+        color: #000 !important;
+        background: #fff !important;
+    }
+    
+    /* Cacher les éléments inutiles à l'impression */
+    .sidebar-toggle, .overlay, .dropdown-overlay {
+        display: none !important;
+    }
+    
+    /* Ajuster l'affichage des tableaux pour l'impression */
+    table {
+        page-break-inside: auto !important;
+        width: 100% !important;
+    }
+    
+    tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+    }
+    
+    /* Ajuster les cartes pour l'impression */
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        page-break-inside: avoid !important;
+    }
+    
+    .card-header {
+        background: #f8f9fa !important;
+        color: #000 !important;
+        border-bottom: 1px solid #ddd !important;
+    }
+    
+    /* Masquer les éléments interactifs */
+    .nav-link, .dropdown-menu, .search-form, .user-menu {
+        display: none !important;
+    }
+    
+    /* Ajuster l'espacement */
+    .mt-4, .mb-4 {
+        margin-top: 1rem !important;
+        margin-bottom: 1rem !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Coûts de maintenance</h3>
+                        <div class="card-actions">
+                            
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {# Filtres par période #}
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label for="periodSelect" class="form-label">Période d'analyse</label>
+                                <select class="form-select" id="periodSelect">
+                                    <option value="all" selected>Toutes périodes</option>
+                                    <option value="month">Ce mois</option>
+                                    <option value="quarter">Ce trimestre</option>
+                                    <option value="year">Cette année</option>
+                                    <option value="custom">Période personnalisée</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 custom-period d-none">
+                                <label for="startDate" class="form-label">Date de début</label>
+                                <input type="text" class="form-control datepicker" id="startDate" placeholder="Sélectionner une date">
+                            </div>
+                            <div class="col-md-4 custom-period d-none">
+                                <label for="endDate" class="form-label">Date de fin</label>
+                                <input type="text" class="form-control datepicker" id="endDate" placeholder="Sélectionner une date">
+                            </div>
+                        </div>
+
+                        {# Filtres pour l'histogramme #}
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label for="chartGroupBy" class="form-label">Grouper par</label>
+                                <select class="form-select" id="chartGroupBy">
+                                    <option value="month">Mois</option>
+                                    <option value="quarter">Trimestre</option>
+                                    <option value="year">Année</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="chartFilterType" class="form-label">Filtrer par</label>
+                                <select class="form-select" id="chartFilterType">
+                                    <option value="all">Tous</option>
+                                    <option value="vehicle">Véhicule</option>
+                                    <option value="brand">Marque</option>
+                                    <option value="model">Modèle</option>
+                                    <option value="provider">Prestataire</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 chart-filter-value d-none">
+                                <label for="chartFilterValue" class="form-label">Valeur</label>
+                                <select class="form-select" id="chartFilterValue"></select>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-vcenter table-mobile-md card-table" id="maintenanceTable">
+                                <thead>
+                                    <tr>
+                                        <th>Véhicule</th>
+                                        <th>Marque/Modèle</th>
+                                        <th>Type d'intervention</th>
+                                        <th>Date d'entrée</th>
+                                        <th>Coût total</th>
+                                        <th>Prestataire</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cost in maintenanceCosts %}
+                                    <tr>
+                                        <td>{{ cost.affectation.idVehicule.immatriculationVehicule }}</td>
+                                        <td>{{ cost.affectation.idVehicule.idMarque.nomMarque }} {{ cost.affectation.idVehicule.modeleVehicule.nomModele }}</td>
+                                        <td>{{ cost.typeExecution ? 'Interne' : 'Externe' }}</td>
+                                        <td>{{ cost.dateEntree|date('d/m/Y') }}</td>
+                                        <td>{{ (cost.montantReparation + cost.plusOuMoinsValueValeur)|number_format(2, ',', ' ') }} FCFA</td>
+                                        <td>{{ cost.prestataire.nom }}</td>
+                                        <td>
+                                            <span class="badge {% if cost.cloture %}text-bg-success{% else %}text-bg-warning{% endif %}">
+                                                {{ cost.cloture ? 'Clôturé' : 'En cours' }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center">Aucune donnée de maintenance trouvée</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        {% if maintenanceCosts|length > 0 %}
+                        {# Histogramme d'évolution des coûts #}
+                        <div class="mt-4">
+                            <h4>Évolution des coûts de maintenance</h4>
+                            <div class="card">
+                                <div class="card-body">
+                                    <canvas id="costEvolutionChart" height="300"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h4>Récapitulatif des coûts</h4>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card card-sm">
+                                        <div class="card-body">
+                                            <div class="row align-items-center">
+                                                <div class="col-auto">
+                                                    <span class="bg-primary text-white avatar">
+                                                        <i class="fas fa-euro-sign"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="col">
+                                                    <div class="font-weight-medium">
+                                                        Total: {{ maintenanceCosts|reduce((total, cost) => total + cost.montantReparation + cost.plusOuMoinsValueValeur)|number_format(2, ',', ' ') }} FCFA
+                                                    </div>
+                                                    <div class="text-muted">
+                                                        Coût total de maintenance
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card card-sm">
+                                        <div class="card-body">
+                                            <div class="row align-items-center">
+                                                <div class="col-auto">
+                                                    <span class="bg-success text-white avatar">
+                                                        <i class="fas fa-check"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="col">
+                                                    <div class="font-weight-medium">
+                                                        {{ maintenanceCosts|filter(cost => cost.cloture)|length }}
+                                                    </div>
+                                                    <div class="text-muted">
+                                                        Réparations clôturées
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    {% set ongoingRepairs = maintenanceCosts|filter(cost => not cost.cloture)|length %}
+                                    {% if ongoingRepairs > 0 %}
+                                        <a href="{{ path('app_maintenance_ongoing') }}" class="card-link">
+                                    {% endif %}
+                                    <div class="card card-sm {% if ongoingRepairs > 0 %}cursor-pointer{% endif %}">
+                                        <div class="card-body">
+                                            <div class="row align-items-center">
+                                                <div class="col-auto">
+                                                    <span class="bg-warning text-white avatar">
+                                                        <i class="fas fa-clock"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="col">
+                                                    <div class="font-weight-medium">
+                                                        {{ ongoingRepairs }}
+                                                    </div>
+                                                    <div class="text-muted">
+                                                        Réparations en cours
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% if ongoingRepairs > 0 %}
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {# Nouvelle section: Statistiques par marque/modèle #}
+                        <div class="mt-4">
+                            <h4>Coûts par marque/modèle de véhicule</h4>
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="statsByBrand">
+                                    <thead>
+                                        <tr>
+                                            <th>Marque/Modèle</th>
+                                            <th>Nombre d'interventions</th>
+                                            <th>Coût total</th>
+                                            <th>Coût moyen</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% set costsByBrand = {} %}
+                                        {% for cost in maintenanceCosts %}
+                                            {% set brandModel = cost.affectation.idVehicule.idMarque.nomMarque ~ ' ' ~ cost.affectation.idVehicule.modeleVehicule.nomModele %}
+                                            {% set totalCost = cost.montantReparation + cost.plusOuMoinsValueValeur %}
+                                            
+                                            {% if costsByBrand[brandModel] is not defined %}
+                                                {% set costsByBrand = costsByBrand|merge({(brandModel): {count: 1, total: totalCost}}) %}
+                                            {% else %}
+                                                {% set current = costsByBrand[brandModel] %}
+                                                {% set costsByBrand = costsByBrand|merge({(brandModel): {count: current.count + 1, total: current.total + totalCost}}) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% for brandModel, data in costsByBrand %}
+                                        <tr>
+                                            <td>{{ brandModel }}</td>
+                                            <td>{{ data.count }}</td>
+                                            <td>{{ data.total|number_format(2, ',', ' ') }} FCFA</td>
+                                            <td>{{ (data.total / data.count)|number_format(2, ',', ' ') }} FCFA</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        {# Nouvelle section: Statistiques par prestataire #}
+                        <div class="mt-4">
+                            <h4>Coûts par prestataire</h4>
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="statsByProvider">
+                                    <thead>
+                                        <tr>
+                                            <th>Prestataire</th>
+                                            <th>Nombre d'interventions</th>
+                                            <th>Coût total</th>
+                                            <th>Coût moyen</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% set costsByProvider = {} %}
+                                        {% for cost in maintenanceCosts %}
+                                            {% set provider = cost.prestataire.nom %}
+                                            {% set totalCost = cost.montantReparation + cost.plusOuMoinsValueValeur %}
+                                            
+                                            {% if costsByProvider[provider] is not defined %}
+                                                {% set costsByProvider = costsByProvider|merge({(provider): {count: 1, total: totalCost}}) %}
+                                            {% else %}
+                                                {% set current = costsByProvider[provider] %}
+                                                {% set costsByProvider = costsByProvider|merge({(provider): {count: current.count + 1, total: current.total + totalCost}}) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% for provider, data in costsByProvider %}
+                                        <tr>
+                                            <td>{{ provider }}</td>
+                                            <td>{{ data.count }}</td>
+                                            <td>{{ data.total|number_format(2, ',', ' ') }} FCFA</td>
+                                            <td>{{ (data.total / data.count)|number_format(2, ',', ' ') }} FCFA</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+
+<script>
+    // Initialiser les datepickers
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialiser les datepickers
+        flatpickr('.datepicker', {
+            locale: 'fr',
+            dateFormat: 'd/m/Y',
+            // S'assurer que le calendrier est au-dessus des autres éléments
+            appendTo: document.body,
+            // Positionner le calendrier correctement
+            position: 'auto',
+            // Fermer le calendrier lorsqu'on clique ailleurs
+            clickOpens: true,
+            // Éviter les problèmes de positionnement
+            static: false
+        });
+
+        // Initialiser DataTable
+        $('#maintenanceTable').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json'
+            },
+            pageLength: 25,
+            order: [[3, 'desc']],
+            // Empêcher DataTables d'interférer avec les calendriers
+            drawCallback: function() {
+                $('.datepicker').each(function() {
+                    if (!$(this).hasClass('flatpickr-input')) {
+                        flatpickr(this, {
+                            locale: 'fr',
+                            dateFormat: 'd/m/Y',
+                            appendTo: document.body
+                        });
+                    }
+                });
+            }
+        });
+        
+        // Initialiser les tableaux de statistiques
+        $('#statsByBrand, #statsByProvider').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json'
+            },
+            searching: true,
+            paging: true,
+            info: true,
+            order: [[2, 'desc']]
+        });
+
+        // Gestion de l'affichage des champs de période personnalisée
+        $('#periodSelect').on('change', function() {
+            if ($(this).val() === 'custom') {
+                $('.custom-period').removeClass('d-none');
+                // Réinitialiser les datepickers après l'affichage
+                setTimeout(function() {
+                    $('.datepicker').each(function() {
+                        if (!$(this).hasClass('flatpickr-input')) {
+                            flatpickr(this, {
+                                locale: 'fr',
+                                dateFormat: 'd/m/Y',
+                                appendTo: document.body
+                            });
+                        }
+                    });
+                }, 100);
+            } else {
+                $('.custom-period').addClass('d-none');
+            }
+        });
+
+        // Gestion de l'affichage des champs de filtre pour l'histogramme
+        $('#chartFilterType').on('change', function() {
+            if ($(this).val() === 'all') {
+                $('.chart-filter-value').addClass('d-none');
+            } else {
+                $('.chart-filter-value').removeClass('d-none');
+                updateFilterValues($(this).val());
+            }
+        });
+
+        // Initialiser l'histogramme
+        initCostEvolutionChart();
+    });
+
+    // Mettre à jour les valeurs de filtre en fonction du type sélectionné
+    function updateFilterValues(filterType) {
+        let values = [];
+        
+        // Récupérer les valeurs uniques en fonction du type de filtre
+        $('#maintenanceTable tbody tr').each(function() {
+            let value = '';
+            switch(filterType) {
+                case 'vehicle':
+                    value = $(this).find('td:eq(0)').text();
+                    break;
+                case 'brand':
+                    value = $(this).find('td:eq(1)').text().split(' ')[0]; // Prendre juste la marque
+                    break;
+                case 'model':
+                    value = $(this).find('td:eq(1)').text();
+                    break;
+                case 'provider':
+                    value = $(this).find('td:eq(5)').text();
+                    break;
+            }
+            
+            if (value && !values.includes(value)) {
+                values.push(value);
+            }
+        });
+        
+        // Mettre à jour la liste déroulante
+        const $select = $('#chartFilterValue');
+        $select.empty();
+        
+        values.forEach(value => {
+            $select.append($('<option>', {
+                value: value,
+                text: value
+            }));
+        });
+    }
+
+    // Initialiser l'histogramme d'évolution des coûts
+    function initCostEvolutionChart() {
+        const ctx = document.getElementById('costEvolutionChart').getContext('2d');
+        
+        // Préparer les données pour le graphique (groupées par mois)
+        const dataByMonth = {};
+        
+        $('#maintenanceTable tbody tr').each(function() {
+            const dateText = $(this).find('td:eq(3)').text(); // Date au format dd/mm/yyyy
+            const costText = $(this).find('td:eq(4)').text(); // Coût au format X XXX,XX FCFA
+            const cost = parseFloat(costText.replace(' ', '').replace(',', '.').replace('FCFA', ''));
+            
+            // Extraire l'année et le mois
+            const [day, month, year] = dateText.split('/');
+            const periodKey = `${year}-${month}`;
+            const periodLabel = `${month}/${year}`;
+            
+            if (!dataByMonth[periodKey]) {
+                dataByMonth[periodKey] = {
+                    label: periodLabel,
+                    total: 0
+                };
+            }
+            
+            dataByMonth[periodKey].total += cost;
+        });
+        
+        // Trier les périodes par ordre chronologique
+        const sortedPeriods = Object.keys(dataByMonth).sort();
+        
+        // Préparer les données pour Chart.js
+        const labels = sortedPeriods.map(key => dataByMonth[key].label);
+        const data = sortedPeriods.map(key => dataByMonth[key].total);
+        
+        // Créer le graphique
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Coût total (FCFA)',
+                    data: data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Évolution des coûts de maintenance par période'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Coût: ${context.raw.toFixed(2).replace('.', ',')} FCFA`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Coût (FCFA)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + ' FCFA';
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Période'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Fonction pour filtrer les données en fonction de la période sélectionnée
+    function filterByPeriod() {
+        const period = $('#periodSelect').val();
+        let startDate, endDate;
+        
+        const today = new Date();
+        
+        switch(period) {
+            case 'month':
+                startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                break;
+            case 'quarter':
+                const quarter = Math.floor(today.getMonth() / 3);
+                startDate = new Date(today.getFullYear(), quarter * 3, 1);
+                endDate = new Date(today.getFullYear(), (quarter + 1) * 3, 0);
+                break;
+            case 'year':
+                startDate = new Date(today.getFullYear(), 0, 1);
+                endDate = new Date(today.getFullYear(), 11, 31);
+                break;
+            case 'custom':
+                const startText = $('#startDate').val();
+                const endText = $('#endDate').val();
+                
+                if (!startText || !endText) {
+                    toastr.warning('Veuillez sélectionner une période personnalisée complète');
+                    return;
+                }
+                
+                const [startDay, startMonth, startYear] = startText.split('/');
+                const [endDay, endMonth, endYear] = endText.split('/');
+                
+                startDate = new Date(startYear, startMonth - 1, startDay);
+                endDate = new Date(endYear, endMonth - 1, endDay);
+                break;
+            default: // 'all'
+                // Pas de filtre
+                $('#maintenanceTable tbody tr').show();
+                return;
+        }
+        
+        // Filtrer les lignes du tableau
+        $('#maintenanceTable tbody tr').each(function() {
+            const dateText = $(this).find('td:eq(3)').text();
+            const [day, month, year] = dateText.split('/');
+            const rowDate = new Date(year, month - 1, day);
+            
+            if (rowDate >= startDate && rowDate <= endDate) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+        
+        // Mettre à jour les statistiques et le graphique
+        updateStatistics();
+        initCostEvolutionChart();
+    }
+
+    // Mettre à jour les statistiques après filtrage
+    function updateStatistics() {
+        // Cette fonction mettrait à jour les statistiques affichées
+        // Implémentation complexe nécessitant un recalcul complet
+        // Pour l'instant, nous allons simplement recharger la page avec les paramètres de filtre
+        // Une implémentation plus avancée utiliserait AJAX pour rafraîchir les données
+        toastr.info('Le filtrage par période nécessite un rechargement de la page. Cette fonctionnalité sera implémentée dans une version future.');
+    }
+</script>
+{% endblock %}

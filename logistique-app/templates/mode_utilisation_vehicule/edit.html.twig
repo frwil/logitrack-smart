@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier un Mode d'Utilisation de Véhicule{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Modifier le Mode d'Utilisation de Véhicule</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{{ path('app_mode_utilisation_vehicule_edit', {'id': mode_utilisation_vehicule.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('edit_' ~ mode_utilisation_vehicule.id) }}">
+                            <div class="mb-3">
+                                <label class="form-label" for="nom">Nom du Mode</label>
+                                <input type="text" class="form-control" name="nom" id="nom" value="{{ mode_utilisation_vehicule.nom }}" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                            <a href="{{ path('app_mode_utilisation_vehicule_index') }}" class="btn btn-secondary">Annuler</a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

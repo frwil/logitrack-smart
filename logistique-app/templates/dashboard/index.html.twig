@@ -1,0 +1,232 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tableau de Bord{% endblock %}
+
+{% block body %}
+<div class="page-wrapper">
+    <!-- Page header -->
+    <div class="page-header d-print-none">
+        <div class="container-xl">
+            <div class="row g-2 align-items-center">
+                <div class="col">
+                    <h2 class="page-title">
+                        Tableau de Bord
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Page body -->
+    <div class="page-body">
+        <div class="container-xl">
+            <!-- Messages flash améliorés -->
+            <div class="row">
+                <div class="col-12">
+                    {% for type, messages in app.flashes %}
+                        {% for message in messages %}
+                            {% set alert_icon = 'info' %}
+                            {% set alert_class = 'primary' %}
+                            
+                            {% if type == 'success' %}
+                                {% set alert_icon = 'check' %}
+                                {% set alert_class = 'success' %}
+                            {% elseif type == 'error' or type == 'danger' %}
+                                {% set alert_icon = 'alert-circle' %}
+                                {% set alert_class = 'danger' %}
+                            {% elseif type == 'warning' %}
+                                {% set alert_icon = 'alert-triangle' %}
+                                {% set alert_class = 'warning' %}
+                            {% endif %}
+                            
+                            <div class="alert alert-{{ alert_class }} alert-dismissible fade show" role="alert">
+                                <div class="d-flex">
+                                    <div>
+                                        <span class="ti ti-{{ alert_icon }} me-2"></span>
+                                    </div>
+                                    <div>
+                                        {{ message|raw }}
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Cartes de statistiques -->
+            <div class="row row-deck row-cards mb-3">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="subheader">Véhicules actifs</div>
+                            </div>
+                            <div class="h1 mb-3">{{ stats.vehicules }}</div>
+                            <div class="d-flex mb-2">
+                                <a href="{{ path('app_vehicule_index') }}" class="btn btn-sm btn-primary">Voir les véhicules</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="subheader">Chauffeurs actifs</div>
+                            </div>
+                            <div class="h1 mb-3">{{ stats.chauffeurs }}</div>
+                            <div class="d-flex mb-2">
+                                <a href="{{ path('app_chauffeurs_index') }}" class="btn btn-sm btn-primary">Voir les chauffeurs</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="subheader">Voyages ce mois</div>
+                            </div>
+                            <div class="h1 mb-3">{{ stats.voyages }}</div>
+                            <div class="d-flex mb-2">
+                                <a href="{{ path('app_voyage_index') }}" class="btn btn-sm btn-primary">Voir les voyages</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="subheader">Affectations actives</div>
+                            </div>
+                            <div class="h1 mb-3">{{ stats.affectations_actives }}</div>
+                            <div class="d-flex mb-2">
+                                <a href="{{ path('app_affectation_vehicule_index') }}" class="btn btn-sm btn-primary">Voir les affectations</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cartes de modules -->
+            <div class="row row-deck row-cards">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Accès rapide aux modules</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="card card-sm">
+                                        <div class="card-body">
+                                            <div class="row align-items-center">
+                                                <div class="col-auto">
+                                                    <span class="bg-primary text-white avatar">
+                                                        <i class="ti ti-truck"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="col">
+                                                    <a href="{{ path('app_vehicule_index') }}" class="text-reset d-block h4 mb-0">Véhicules</a>
+                                                    <div class="text-muted">Gestion du parc automobile</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card card-sm">
+                                        <div class="card-body">
+                                            <div class="row align-items-center">
+                                                <div class="col-auto">
+                                                    <span class="bg-green text-white avatar">
+                                                        <i class="ti ti-user"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="col">
+                                                    <a href="{{ path('app_chauffeurs_index') }}" class="text-reset d-block h4 mb-0">Chauffeurs</a>
+                                                    <div class="text-muted">Gestion des conducteurs</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card card-sm">
+                                        <div class="card-body">
+                                            <div class="row align-items-center">
+                                                <div class="col-auto">
+                                                    <span class="bg-blue text-white avatar">
+                                                        <i class="ti ti-road"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="col">
+                                                    <a href="{{ path('app_voyage_index') }}" class="text-reset d-block h4 mb-0">Voyages</a>
+                                                    <div class="text-muted">Gestion des trajets</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card card-sm">
+                                        <div class="card-body">
+                                            <div class="row align-items-center">
+                                                <div class="col-auto">
+                                                    <span class="bg-orange text-white avatar">
+                                                        <i class="ti ti-checklist"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="col">
+                                                    <a href="{{ path('app_affectation_vehicule_index') }}" class="text-reset d-block h4 mb-0">Affectations</a>
+                                                    <div class="text-muted">Attribution véhicules/chauffeurs</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card card-sm">
+                                        <div class="card-body">
+                                            <div class="row align-items-center">
+                                                <div class="col-auto">
+                                                    <span class="bg-red text-white avatar">
+                                                        <i class="ti ti-tool"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="col">
+                                                    <a href="{{ path('app_vidange_vehicule_index') }}" class="text-reset d-block h4 mb-0">Maintenances</a>
+                                                    <div class="text-muted">Entretien des véhicules</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card card-sm">
+                                        <div class="card-body">
+                                            <div class="row align-items-center">
+                                                <div class="col-auto">
+                                                    <span class="bg-purple text-white avatar">
+                                                        <i class="ti ti-file-text"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="col">
+                                                    <a href="{{ path('app_vehicule_index') }}" class="text-reset d-block h4 mb-0">Documents</a>
+                                                    <div class="text-muted">Gestion des papiers</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

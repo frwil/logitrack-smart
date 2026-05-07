@@ -1,0 +1,68 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Documents expirés/expirant - Logistique App{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Documents expirés/expirant</h3>
+                        <div class="card-actions">
+                            <button class="btn btn-primary" onclick="window.print()">
+                                <i class="fas fa-print"></i> Imprimer
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-vcenter table-mobile-md card-table">
+                                <thead>
+                                    <tr>
+                                        <th>Véhicule</th>
+                                        <th>Type de document</th>
+                                        <th>Date d'expiration</th>
+                                        <th>Jours restants</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for document in documents %}
+                                    {% set today = "now"|date('Y-m-d') %}
+                                    {% set expiration = document.dateExpiration|date('Y-m-d') %}
+                                    {% set difference = date(expiration).diff(date(today)) %}
+                                    {% set days = difference.days %}
+                                    {% set isExpired = expiration < today %}
+                                    
+                                    <tr>
+                                        <td>{{ document.vehicule.immatriculation }}</td>
+                                        <td>{{ document.typeDocument }}</td>
+                                        <td>{{ document.dateExpiration|date('d/m/Y') }}</td>
+                                        <td>{{ isExpired ? days * -1 : days }} jours</td>
+                                        <td>
+                                            {% if isExpired %}
+                                                <span class="badge bg-danger">Expiré</span>
+                                            {% elseif days <= 30 %}
+                                                <span class="badge bg-warning">Expire bientôt</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Valide</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">Aucun document expirant trouvé</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

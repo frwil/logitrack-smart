@@ -1,0 +1,212 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier le Chauffeur - {{ chauffeur.nom }}{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+{{ encore_entry_link_tags('app') }}
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Modifier le chauffeur</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_chauffeurs_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Retour à la liste
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" class="needs-validation" novalidate id="chauffeurForm">
+                            <input type="hidden" name="_token"
+                                value="{{ csrf_token('chauffeur_edit' ~ chauffeur.id) }}">
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="nom">Nom du chauffeur</label>
+                                        <input type="text" class="form-control" id="nom" name="nom"
+                                            value="{{ chauffeur.nom }}" required>
+                                        <div class="invalid-feedback">
+                                            Veuillez saisir le nom du chauffeur.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="prenom">Prénom du chauffeur</label>
+                                        <input type="text" class="form-control" id="prenom" name="prenom"
+                                            value="{{ chauffeur.prenom }}" required>
+                                        <div class="invalid-feedback">
+                                            Veuillez saisir le prénom du chauffeur.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="telephone">Téléphone</label>
+                                        <input type="text" class="form-control" id="telephone" name="telephone"
+                                            value="{{ chauffeur.telephone }}" required>
+                                        <div class="invalid-feedback">
+                                            Veuillez saisir le numéro de téléphone.
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-check form-switch">
+                                            <input type="checkbox" class="form-check-input" name="estActif" value="1" {{
+                                                chauffeur.estActif ? 'checked' : '' }}>
+                                            <span class="form-check-label">Chauffeur actif</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Types de permis</label>
+                                        <div id="permis-container">
+                                            {% for type_permis in types_permis %}
+                                            {% set permis_existant = null %}
+                                            {% for permis in chauffeur.permis %}
+                                            {% if permis.typePermisVehicule.id == type_permis.id %}
+                                            {% set permis_existant = permis %}
+                                            {% endif %}
+                                            {% endfor %}
+
+                                            <div class="permis-group mb-3 p-3 border rounded">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input permis-checkbox" type="checkbox"
+                                                        name="permis[]" value="{{ type_permis.id }}"
+                                                        id="permis_{{ type_permis.id }}" {{ permis_existant ? 'checked'
+                                                        : '' }} data-type-id="{{ type_permis.id }}">
+                                                    <label class="form-check-label fw-bold"
+                                                        for="permis_{{ type_permis.id }}">
+                                                        {{ type_permis.libellePermis }}
+                                                    </label>
+                                                </div>
+
+                                                <div class="permis-fields"
+                                                    style="{{ permis_existant ? '' : 'display: none;' }}">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Numéro de permis</label>
+                                                            <input type="text" name="permis_numeros[]"
+                                                                class="form-control permis-numero"
+                                                                placeholder="Numéro de permis"
+                                                                value="{{ permis_existant ? permis_existant.numero : '' }}"
+                                                                {{ permis_existant ? 'required' : '' }}>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Date de validité</label>
+                                                            <input type="date" name="permis_dates[]"
+                                                                class="form-control permis-date"
+                                                                placeholder="Date de validité"
+                                                                value="{{ permis_existant ? permis_existant.dateValidite|date('Y-m-d') : '' }}"
+                                                                {{ permis_existant ? 'required' : '' }}>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="fas fa-save me-2"></i>
+                                    Enregistrer les modifications
+                                </button>
+                                <a href="{{ path('app_chauffeurs_show', {'id': chauffeur.id}) }}"
+                                    class="btn btn-info me-2">
+                                    <i class="fas fa-eye me-2"></i>
+                                    Voir les détails
+                                </a>
+                                <a href="{{ path('app_chauffeurs_index') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>
+                                    Annuler
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    // Validation Bootstrap du formulaire
+    (function () {
+        'use strict'
+
+        var forms = document.querySelectorAll('.needs-validation')
+
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
+
+    // Gestion des champs de permis conditionnels
+    document.addEventListener('DOMContentLoaded', function () {
+        const permisCheckboxes = document.querySelectorAll('.permis-checkbox');
+
+        permisCheckboxes.forEach(checkbox => {
+            // Initialisation de l'état
+            togglePermisFields(checkbox);
+
+            // Écouteur d'événement pour les changements
+            checkbox.addEventListener('change', function () {
+                togglePermisFields(this);
+            });
+        });
+
+        function togglePermisFields(checkbox) {
+            const typeId = checkbox.getAttribute('data-type-id');
+            const fieldsContainer = checkbox.closest('.permis-group').querySelector('.permis-fields');
+            const numeroInput = fieldsContainer.querySelector('.permis-numero');
+            const dateInput = fieldsContainer.querySelector('.permis-date');
+
+            if (checkbox.checked) {
+                fieldsContainer.style.display = 'block';
+                numeroInput.setAttribute('required', 'required');
+                dateInput.setAttribute('required', 'required');
+            } else {
+                fieldsContainer.style.display = 'none';
+                numeroInput.removeAttribute('required');
+                dateInput.removeAttribute('required');
+                numeroInput.value = '';
+                dateInput.value = '';
+            }
+        }
+
+        // Validation personnalisée pour s'assurer qu'au moins un permis est sélectionné
+        document.getElementById('chauffeurForm').addEventListener('submit', function (e) {
+            const checkedPermis = document.querySelectorAll('.permis-checkbox:checked');
+            if (checkedPermis.length === 0) {
+                e.preventDefault();
+                toastr.warning('Veuillez sélectionner au moins un type de permis.');
+            }
+        });
+    });
+</script>
+{% endblock %}

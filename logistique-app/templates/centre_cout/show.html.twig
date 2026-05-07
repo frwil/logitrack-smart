@@ -1,0 +1,104 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détails du Centre de Coût - {{ centre_cout.libelle }}{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Détails du Centre de Coût</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_centre_cout_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2 d-none d-sm-inline-block"></i>
+                                <span class="d-none d-sm-inline-block">Retour à la liste</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Libellé</label>
+                                    <div class="form-control-plaintext">{{ centre_cout.libelle }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Statut</label>
+                                    <div class="form-control-plaintext">
+                                        {% if centre_cout.estActif %}
+                                        <span class="badge text-bg-success">Actif</span>
+                                        {% else %}
+                                        <span class="badge text-bg-danger">Inactif</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <div class="form-control-plaintext">{{ centre_cout.description|default('Aucune description') }}</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Nombre de bons de réparation</label>
+                                    <div class="form-control-plaintext">{{ centre_cout.nombreBonsReparation }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Coût total des réparations</label>
+                                    <div class="form-control-plaintext">{{ centre_cout.coutTotalReparations|format_currency('EUR') }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Date de création</label>
+                                    <div class="form-control-plaintext">{{ centre_cout.dateCreation|date('d/m/Y H:i') }}</div>
+                                </div>
+                            </div>
+                            {% if centre_cout.dateModification %}
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Date de modification</label>
+                                    <div class="form-control-plaintext">{{ centre_cout.dateModification|date('d/m/Y H:i') }}</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mt-3">
+                            <a href="{{ path('app_centre_cout_edit', {'id': centre_cout.id}) }}" class="btn btn-warning">
+                                <i class="fas fa-edit me-2"></i>Modifier
+                            </a>
+                            {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_SUPER_ADMIN') %}
+                                {% if centre_cout.peutEtreSupprime %}
+                                <form method="post" action="{{ path('app_centre_cout_delete', {'id': centre_cout.id}) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce centre de coût ?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ centre_cout.id) }}">
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-trash me-2"></i>Supprimer
+                                    </button>
+                                </form>
+                                {% else %}
+                                <button class="btn btn-danger" disabled title="Impossible de supprimer - des bons de réparation sont associés">
+                                    <i class="fas fa-trash me-2"></i>Supprimer
+                                </button>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

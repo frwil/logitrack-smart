@@ -1,0 +1,126 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+{% if modele_vehicule is defined and modele_vehicule %}
+Détails du Modèle de Véhicule - {{ modele_vehicule.nomModele }}
+{% else %}
+Détails du Modèle de Véhicule
+{% endif %}
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Détails du modèle de véhicule</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_modele_vehicule_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Retour à la liste
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if modele_vehicule is defined and modele_vehicule %}
+                        <div class="datagrid">
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">ID</div>
+                                <div class="datagrid-content">{{ modele_vehicule.id }}</div>
+                            </div>
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">Nom du modèle</div>
+                                <div class="datagrid-content">{{ modele_vehicule.nomModele }}</div>
+                            </div>
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">Marque</div>
+                                <div class="datagrid-content">
+                                    {% if modele_vehicule.idMarque and modele_vehicule.idMarque.nomMarque is defined %}
+                                    <a
+                                        href="{{ path('app_marque_vehicule_show', {'id': modele_vehicule.idMarque.id}) }}">
+                                        {{ modele_vehicule.idMarque.nomMarque }}
+                                    </a>
+                                    {% else %}
+                                    Aucune marque associée
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">Nombre de véhicules</div>
+                                <div class="datagrid-content">{{ modele_vehicule.vehicules is defined ?
+                                    modele_vehicule.vehicules|length : 0 }}</div>
+                            </div>
+                        </div>
+
+                        {% if modele_vehicule.vehicules is defined and modele_vehicule.vehicules|length > 0 %}
+                        <div class="mt-4">
+                            <h4 class="card-subtitle mb-3">Véhicules associés</h4>
+                            <div class="table-responsive">
+                                <table class="table table-vcenter table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Immatriculation</th>
+                                            <th>Statut</th>
+                                            <th>Date de mise en service (carte grise)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for vehicule in modele_vehicule.vehicules %}
+                                        <tr>
+                                            <td><a href="{{ path('app_vehicule_show', {'id': vehicule.id}) }}">
+                                                    {{ vehicule.immatriculationVehicule }}
+                                                </a></td>
+                                            <td>
+                                                {% if vehicule.statut is defined and vehicule.statut %}
+                                                <span class="badge text-bg-success">Actif</span>
+                                                {% else %}
+                                                <span class="badge text-bg-secondary">Inactif</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ vehicule.premiereUtilisation is defined and
+                                                vehicule.premiereUtilisation ?
+                                                vehicule.premiereUtilisation|date('d/m/Y') : 'Non renseignée' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Le modèle de véhicule demandé n'a pas été trouvé.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if modele_vehicule is defined and modele_vehicule %}
+                    <div class="card-footer text-end">
+                        <a href="{{ path('app_modele_vehicule_edit', {'id': modele_vehicule.id}) }}"
+                            class="btn btn-primary me-2">
+                            <i class="fas fa-edit me-2"></i>
+                            Modifier
+                        </a>
+                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_SUPER_ADMIN') %}
+                        <form method="post"
+                            action="{{ path('app_modele_vehicule_delete', {'id': modele_vehicule.id}) }}"
+                            onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce modèle ?');"
+                            class="d-inline">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ modele_vehicule.id) }}">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>
+                                Supprimer
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

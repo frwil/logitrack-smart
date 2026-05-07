@@ -1,0 +1,107 @@
+{# templates/search/results.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Recherche - {{ query }}{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Résultats de recherche pour "{{ query }}"</h3>
+                        <div class="card-options">
+                            <span class="badge text-bg-primary">{{ total }} résultat(s) trouvé(s)</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {# Debug info #}
+                        <div class="alert alert-info d-none">
+                            Debug: total={{ total }}, results count={{ results|length }}
+                            {% for result in results %}
+                                Result: {{ result|json_encode }}
+                            {% endfor %}
+                        </div>
+
+                        {% if results is empty %}
+                            <p class="text-center text-muted">Aucun résultat trouvé.</p>
+                        {% else %}
+                            {# Changement de classe pour éviter le conflit CSS #}
+                            <div class="search-results-page">
+                                {% for result in results %}
+                                    <div class="search-result-item mb-3 p-3 border rounded">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h5 class="mb-1">
+                                                    <a href="{{ result.url|default('#') }}" class="text-decoration-none">
+                                                        {{ result.title|default('Sans titre') }}
+                                                    </a>
+                                                </h5>
+                                                <p class="mb-1 text-muted">{{ result.description|default('Aucune description') }}</p>
+                                                <span class="badge text-bg-secondary">{{ result.category|default('Non catégorisé') }}</span>
+                                            </div>
+                                            <div class="text-end">
+                                                <small class="text-muted">Pertinence: {{ result.score|default(0)|number_format(2) }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            {# Pagination #}
+                            {% if totalPages > 1 %}
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination justify-content-center">
+                                        {% if currentPage > 1 %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ path('app_search', {q: query, page: currentPage - 1}) }}" aria-label="Previous">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+
+                                        {% for i in 1..totalPages %}
+                                            <li class="page-item {% if i == currentPage %}active{% endif %}">
+                                                <a class="page-link" href="{{ path('app_search', {q: query, page: i}) }}">{{ i }}</a>
+                                            </li>
+                                        {% endfor %}
+
+                                        {% if currentPage < totalPages %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ path('app_search', {q: query, page: currentPage + 1}) }}" aria-label="Next">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.search-result-item {
+    transition: all 0.2s ease;
+}
+.search-result-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+/* Nouveau style pour la page de résultats */
+.search-results-page {
+    display: block !important;
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Véhicules avec documents expirés/expirants{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Véhicules nécessitant une attention</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_vehicule_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2 d-none d-sm-inline-block"></i>
+                                <span class="d-none d-sm-inline-block">Retour à la liste</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if vehiculesAvecAlertes is empty %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Aucun véhicule ne nécessite d'attention pour le moment.
+                        </div>
+                        {% else %}
+                        <div class="table-responsive">
+                            <table class="table table-vcenter text-nowrap">
+                                <thead>
+                                    <tr>
+                                        <th>Immatriculation</th>
+                                        <th>Marque/Modèle</th>
+                                        <th>Statut</th>
+                                        <th>Documents concernés</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for vehiculeAlerte in vehiculesAvecAlertes %}
+                                    <tr>
+                                        <td>{{ vehiculeAlerte.vehicule.immatriculationVehicule }}</td>
+                                        <td>
+                                            {{ vehiculeAlerte.vehicule.idMarque.nomMarque }} / 
+                                            {{ vehiculeAlerte.vehicule.modeleVehicule.nomModele }}
+                                        </td>
+                                        <td>
+                                            {% if vehiculeAlerte.vehicule.statut %}
+                                            <span class="badge text-bg-success">Actif</span>
+                                            {% else %}
+                                            <span class="badge text-bg-danger">Inactif</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="list-group list-group-flush">
+                                                {% for docAlerte in vehiculeAlerte.documents %}
+                                                <div class="list-group-item px-0">
+                                                    <div class="row align-items-center">
+                                                        <div class="col">
+                                                            <strong>{{ docAlerte.document.typeDocument.nom }}</strong>
+                                                            <div class="text-muted">
+                                                                Réf: {{ docAlerte.document.reference }} - 
+                                                                Expire: {{ docAlerte.document.dateExpiration|date('d/m/Y') }}
+                                                                {% if docAlerte.joursRestants < 0 %}
+                                                                <span class="text-danger">(Expiré il y a {{ -docAlerte.joursRestants }} jours)</span>
+                                                                {% else %}
+                                                                <span class="text-warning">(Expire dans {{ docAlerte.joursRestants }} jours)</span>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            {% if docAlerte.joursRestants < 0 %}
+                                                            <span class="badge bg-danger">Expiré</span>
+                                                            {% else %}
+                                                            <span class="badge bg-warning">Expire bientôt</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <a href="{{ path('app_document_vehicule_index', {'id': vehiculeAlerte.vehicule.id}) }}" 
+                                               class="btn btn-primary btn-sm">
+                                                <i class="fas fa-folder me-1"></i>
+                                                Documents
+                                            </a>
+                                            <a href="{{ path('app_vehicule_show', {'id': vehiculeAlerte.vehicule.id}) }}" 
+                                               class="btn btn-secondary btn-sm">
+                                                <i class="fas fa-eye me-1"></i>
+                                                Détails
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

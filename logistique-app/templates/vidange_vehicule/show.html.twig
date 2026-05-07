@@ -1,0 +1,186 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détails de la vidange{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Détails de la vidange</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_vidange_vehicule_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2 d-none d-sm-inline-block"></i>
+                                <span class="d-none d-sm-inline-block">Retour</span>
+                                <i class="fas fa-arrow-left d-sm-none"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4 class="card-title">Informations générales</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="datagrid">
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Date de vidange</div>
+                                                <div class="datagrid-content">{{ vidange.dateVidange|date('d/m/Y') }}</div>
+                                            </div>
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Véhicule</div>
+                                                <div class="datagrid-content">
+                                                    {% if vidange.affectation and vidange.affectation.idVehicule %}
+                                                        {{ vidange.affectation.idVehicule.idMarque.nomMarque }} {{ vidange.affectation.idVehicule.modeleVehicule.nomModele }} 
+                                                        ({{ vidange.affectation.idVehicule.immatriculationVehicule }})
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Conducteur</div>
+                                                <div class="datagrid-content">
+                                                    {% if vidange.affectation and vidange.affectation.idChauffeur %}
+                                                        {{ vidange.affectation.idChauffeur.nom }} {{ vidange.affectation.idChauffeur.prenom }}
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Kilométrage</div>
+                                                <div class="datagrid-content">{{ vidange.kilometrageVidange }} km</div>
+                                            </div>
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Statut</div>
+                                                <div class="datagrid-content">
+                                                    {% if vidange.effectuee %}
+                                                        <span class="badge text-bg-success">Effectuée</span>
+                                                    {% else %}
+                                                        <span class="badge text-bg-warning">Planifiée</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4 class="card-title">Détails techniques</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="datagrid">
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Type d'huile</div>
+                                                <div class="datagrid-content">{{ vidange.typeHuile ?? 'N/A' }}</div>
+                                            </div>
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Référence filtre</div>
+                                                <div class="datagrid-content">{{ vidange.referenceFiltre ?? 'N/A' }}</div>
+                                            </div>
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Quantité d'huile</div>
+                                                <div class="datagrid-content">{{ vidange.quantiteHuile ?? 'N/A' }} L</div>
+                                            </div>
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Coût</div>
+                                                <div class="datagrid-content">{{ vidange.cout ?? 'N/A' }} €</div>
+                                            </div>
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Prestataire</div>
+                                                <div class="datagrid-content">{{ vidange.prestataire.nom ?? 'N/A' }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4 class="card-title">Planification</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="datagrid">
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Prochaine vidange prévue</div>
+                                                <div class="datagrid-content">
+                                                    {{ vidange.prochaineVidangePrevue ? vidange.prochaineVidangePrevue|date('d/m/Y') : 'N/A' }}
+                                                </div>
+                                            </div>
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Kilométrage prochaine vidange</div>
+                                                <div class="datagrid-content">
+                                                    {{ vidange.kilometrageProchaineVidange ?? 'N/A' }} km
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4 class="card-title">Validation</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="datagrid">
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Date de validation</div>
+                                                <div class="datagrid-content">
+                                                    {{ vidange.dateValidation ? vidange.dateValidation|date('d/m/Y H:i') : 'N/A' }}
+                                                </div>
+                                            </div>
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Validé par</div>
+                                                <div class="datagrid-content">
+                                                    {{ vidange.validePar ? vidange.validePar.nom ~ ' ' ~ vidange.validePar.prenom : 'N/A' }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if vidange.observations %}
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h4 class="card-title">Observations</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="markdown">
+                                    {{ vidange.observations }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="btn-list">
+                            <a href="{{ path('app_vidange_vehicule_edit', {'id': vidange.id}) }}" class="btn btn-warning">
+                                <i class="fas fa-edit me-2"></i>Modifier
+                            </a>
+                            <form method="post" action="{{ path('app_vidange_vehicule_delete', {'id': vidange.id}) }}" 
+                                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette vidange ?');" class="d-inline">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ vidange.id) }}">
+                                <button class="btn btn-danger">
+                                    <i class="fas fa-trash me-2"></i>Supprimer
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

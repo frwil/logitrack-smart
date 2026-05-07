@@ -1,0 +1,141 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier un document - {{ vehicule.immatriculationVehicule }}{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Modifier un document pour {{ vehicule.immatriculationVehicule }}</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_document_vehicule_index', {'id': vehicule.id}) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2 d-none d-sm-inline-block"></i>
+                                <span class="d-none d-sm-inline-block">Retour aux documents</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            <div class="mb-3">
+                                <label for="typeDocument" class="form-label">Type de document</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="typeDocument" name="typeDocument" required>
+                                        <option value="">Sélectionner un type de document</option>
+                                        {% for type in typesDocument %}
+                                            <option value="{{ type.id }}" {% if type.id == document.typeDocument.id %}selected{% endif %}>{{ type.nom }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNewTypeDocument">
+                                        <i class="fas fa-plus"></i>
+                                        Nouveau type
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="reference" class="form-label">Référence</label>
+                                <input type="text" class="form-control" id="reference" name="reference" value="{{ document.reference }}" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="dateExpiration" class="form-label">Date d'expiration</label>
+                                <input type="date" class="form-control" id="dateExpiration" name="dateExpiration" value="{{ document.dateExpiration|date('Y-m-d') }}" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="isActive" name="isActive" value="1" {% if document.isActive %}checked{% endif %}>
+                                    <label class="form-check-label" for="isActive">Document actif</label>
+                                </div>
+                                <div class="form-text">Si activé, ce document deviendra le document actif pour ce type et désactivera les autres.</div>
+                            </div>
+
+                            <div class="form-footer">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    Modifier
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour créer un nouveau type de document -->
+<div class="modal fade" id="modalNewTypeDocument" tabindex="-1" aria-labelledby="modalNewTypeDocumentLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalNewTypeDocumentLabel">Nouveau type de document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newTypeDocumentForm">
+                    <div class="mb-3">
+                        <label for="newTypeDocumentName" class="form-label">Nom du type de document</label>
+                        <input type="text" class="form-control" id="newTypeDocumentName" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="submitNewTypeDocument">Créer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestion de la création d'un nouveau type de document
+        document.getElementById('submitNewTypeDocument').addEventListener('click', function() {
+            const typeName = document.getElementById('newTypeDocumentName').value;
+            
+            if (!typeName) {
+                toastr.warning('Veuillez saisir un nom pour le type de document');
+                return;
+            }
+            
+            // Envoyer une requête AJAX pour créer le nouveau type
+            fetch('{{ path("app_type_document_ajax_create") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ name: typeName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Ajouter la nouvelle option au select
+                    const select = document.getElementById('typeDocument');
+                    const newOption = new Option(data.typeName, data.typeId);
+                    select.add(newOption);
+                    select.value = data.typeId;
+                    
+                    // Fermer la modal et réinitialiser le formulaire
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalNewTypeDocument'));
+                    modal.hide();
+                    document.getElementById('newTypeDocumentName').value = '';
+                } else {
+                    toastr.error('Erreur: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                toastr.error('Une erreur s\'est produite lors de la création du type de document');
+            });
+        });
+    });
+</script>
+{% endblock %}

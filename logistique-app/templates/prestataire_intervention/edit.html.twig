@@ -1,0 +1,85 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier le Prestataire - {{ prestataire_intervention.nom }}{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Modifier le Prestataire d'Intervention</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_prestataire_intervention_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2 d-none d-sm-inline-block"></i>
+                                <span class="d-none d-sm-inline-block">Retour à la liste</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="nom" class="form-label required">Nom</label>
+                                        <input type="text" class="form-control" id="nom" name="nom" value="{{ nom }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="contact" class="form-label">Contact</label>
+                                        <input type="text" class="form-control" id="contact" name="contact" value="{{ contact }}">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="telephone" class="form-label">Téléphone</label>
+                                        <input type="tel" class="form-control" id="telephone" name="telephone" value="{{ telephone }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="email" name="email" value="{{ email }}">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="adresse" class="form-label">Adresse</label>
+                                <textarea class="form-control" id="adresse" name="adresse" rows="3">{{ adresse }}</textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="specialites" class="form-label">Spécialités</label>
+                                <textarea class="form-control" id="specialites" name="specialites" rows="3">{{ specialites }}</textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Statut</label>
+                                <div>
+                                    <label class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="actif" name="actif" value="1" {{ actif ? 'checked' : '' }}>
+                                        <span class="form-check-label">Actif</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-footer">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Enregistrer
+                                </button>
+                                <a href="{{ path('app_prestataire_intervention_index') }}" class="btn btn-secondary">Annuler</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

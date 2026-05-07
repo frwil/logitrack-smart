@@ -1,0 +1,190 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Affectations des véhicules - Logistique App{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Affectations des véhicules</h3>
+                        <div class="card-actions">
+                            <button class="btn btn-success" onclick="exportToExcel()">
+                                <i class="fas fa-file-excel"></i> Excel
+                            </button>
+                            <button class="btn btn-danger" onclick="exportToPDF()">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {# Formulaire de filtrage #}
+                        <form method="get" class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <label for="entity" class="form-label">Entité</label>
+                                <select class="form-select" id="entity" name="entity">
+                                    <option value="">Toutes les entités</option>
+                                    {% for entite in entites %}
+                                        <option value="{{ entite.id }}" {{ selectedEntity == entite.id ? 'selected' : '' }}>{{ entite.libelle }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="region" class="form-label">Région</label>
+                                <select class="form-select" id="region" name="region">
+                                    <option value="">Toutes les régions</option>
+                                    {% for region in regions %}
+                                        <option value="{{ region.id }}" {{ selectedRegion == region.id ? 'selected' : '' }}>{{ region.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="status" class="form-label">Statut</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="">Tous les statuts</option>
+                                    <option value="active" {{ selectedStatus == 'active' ? 'selected' : '' }}>Actives</option>
+                                    <option value="closed" {{ selectedStatus == 'closed' ? 'selected' : '' }}>Clôturées</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary me-2">Filtrer</button>
+                                <a href="{{ path('app_report_vehicle_assignments') }}" class="btn btn-secondary">Réinitialiser</a>
+                            </div>
+                        </form>
+
+                        <div class="table-responsive">
+                            <table class="table table-vcenter table-mobile-md card-table" id="assignments-table">
+                                <thead>
+                                    <tr>
+                                        <th>Véhicule</th>
+                                        <th>Chauffeur</th>
+                                        <th>Date début</th>
+                                        <th>Date fin</th>
+                                        <th>Type d'utilisation</th>
+                                        <th>Entité</th>
+                                        <th>Région</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for assignment in assignments %}
+                                    {% set isActive = assignment.dateFinAffectation is null or assignment.dateFinAffectation > date() %}
+                                    
+                                    <tr>
+                                        <td>{{ assignment.idVehicule.immatriculationVehicule }}</td>
+                                        <td>{{ assignment.idChauffeur.prenom }} {{ assignment.idChauffeur.nom }}</td>
+                                        <td>{{ assignment.dateDebutAffectation|date('d/m/Y') }}</td>
+                                        <td>
+                                            {% if assignment.dateFinAffectation %}
+                                                {{ assignment.dateFinAffectation|date('d/m/Y') }}
+                                            {% else %}
+                                                <span class="text-muted">Indéterminée</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ assignment.idTypeUtilisation.nom }}</td>
+                                        <td>{{ assignment.idEntite.libelle }}</td>
+                                        <td>{{ assignment.idRegion.nom }}</td>
+                                        <td>
+                                            {% if isActive and not assignment.isFerme %}
+                                                <span class="badge text-bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge text-bg-secondary">Terminée</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="8" class="text-center">Aucune affectation trouvée</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Fonction pour exporter en Excel
+function exportToExcel() {
+    // Sélectionner le tableau
+    const table = document.getElementById('assignments-table');
+    
+    // Cloner le tableau pour ne pas affecter l'affichage original
+    const clonedTable = table.cloneNode(true);
+    
+    // Remplacer les badges par du texte simple pour Excel
+    const statusCells = clonedTable.querySelectorAll('td:last-child');
+    statusCells.forEach(cell => {
+        if (cell.querySelector('.badge')) {
+            cell.textContent = cell.querySelector('.badge').textContent;
+        }
+    });
+    
+    // Convertir le tableau en feuille de calcul
+    const wb = XLSX.utils.table_to_book(clonedTable, {sheet: "Affectations Véhicules"});
+    
+    // Exporter le fichier Excel
+    XLSX.writeFile(wb, 'affectations_vehicules_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+}
+
+// Fonction pour exporter en PDF
+function exportToPDF() {
+    // Sélectionner le tableau
+    const table = document.getElementById('assignments-table');
+    
+    // Cloner le tableau pour ne pas affecter l'affichage original
+    const clonedTable = table.cloneNode(true);
+    
+    // Appliquer des styles spécifiques pour l'impression PDF
+    clonedTable.style.width = '100%';
+    clonedTable.style.fontSize = '10px';
+    
+    // Créer un conteneur temporaire pour le tableau
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.left = '-9999px';
+    tempContainer.appendChild(clonedTable);
+    document.body.appendChild(tempContainer);
+    
+    // Utiliser html2canvas pour capturer le tableau
+    html2canvas(clonedTable,{
+scale: 2 // Scales the canvas to 200% of its original size
+}).then(canvas => {
+        // Créer un nouveau document PDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape', 'pt', 'a4');
+        
+        // Ajouter le titre
+        doc.setFontSize(16);
+        doc.text('Affectations des véhicules', 40, 40);
+        
+        // Ajouter la date d'export
+        doc.setFontSize(10);
+        doc.text('Exporté le: ' + new Date().toLocaleDateString(), 40, 60);
+        
+        // Ajouter l'image du tableau
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = doc.internal.pageSize.getWidth() - 80;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        doc.addImage(imgData, 'PNG', 40, 70, imgWidth, imgHeight);
+        
+        // Sauvegarder le PDF
+        doc.save('affectations_vehicules_' + new Date().toISOString().slice(0, 10) + '.pdf');
+        
+        // Nettoyer le conteneur temporaire
+        document.body.removeChild(tempContainer);
+    });
+}
+</script>
+{% endblock %}

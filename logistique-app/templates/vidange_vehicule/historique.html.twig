@@ -1,0 +1,225 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Historique des vidanges - {{ vehicule.idMarque.nomMarque }} {{ vehicule.modeleVehicule.nomModele }}{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            Historique des vidanges - 
+                            {{ vehicule.idMarque.nomMarque }} {{ vehicule.modeleVehicule.nomModele }} 
+                            ({{ vehicule.immatriculationVehicule }})
+                        </h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_vidange_vehicule_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2 d-none d-sm-inline-block"></i>
+                                <span class="d-none d-sm-inline-block">Retour</span>
+                                <i class="fas fa-arrow-left d-sm-none"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <div class="chart-container" style="position: relative; height:400px; width:100%">
+                                    <canvas id="vidangeChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4 class="card-title">Statistiques</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="datagrid">
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Nombre de vidanges</div>
+                                                <div class="datagrid-content">{{ dates|length }}</div>
+                                            </div>
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Dernière vidange</div>
+                                                <div class="datagrid-content">
+                                                    {% if dates|length > 0 %}
+                                                        {{ dates|last }}
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Kilométrage max</div>
+                                                <div class="datagrid-content">
+                                                    {% if kilometrages|length > 0 %}
+                                                        {{ max(kilometrages) }} km
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Kilométrage min</div>
+                                                <div class="datagrid-content">
+                                                    {% if kilometrages|length > 0 %}
+                                                        {{ min(kilometrages) }} km
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">Détails des vidanges</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Kilométrage</th>
+                                                <th>Type d'huile</th>
+                                                <th>Coût</th>
+                                                <th>Prestataire</th>
+                                                <th>Statut</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for vidange in vidanges|sort((a, b) => b.dateVidange <=> a.dateVidange) %}
+                                                <tr>
+                                                    <td>{{ vidange.dateVidange|date('d/m/Y') }}</td>
+                                                    <td>{{ vidange.kilometrageVidange }} km</td>
+                                                    <td>{{ vidange.typeHuile ?? 'N/A' }}</td>
+                                                    <td>{{ vidange.cout ?? 'N/A' }} FCFA</td>
+                                                    <td>{{ vidange.prestataire.nom ?? 'N/A' }}</td>
+                                                    <td>
+                                                        {% if vidange.effectuee %}
+                                                            <span class="badge text-bg-success">Effectuée</span>
+                                                        {% else %}
+                                                            <span class="badge text-bg-warning">Planifiée</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% else %}
+                                                <tr>
+                                                    <td colspan="6" class="text-center">Aucune vidange enregistrée</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('vidangeChart').getContext('2d');
+        
+        // Préparer les données pour le graphique
+        const dates = {{ dates|json_encode|raw }};
+        const kilometrages = {{ kilometrages|json_encode|raw }};
+        
+        // Créer le graphique
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Kilométrage des vidanges',
+                    data: kilometrages,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    pointBorderColor: '#fff',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Évolution du kilométrage des vidanges',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Kilométrage: ${context.raw} km`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Kilométrage (km)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date de vidange'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Ajouter des animations pour améliorer l'expérience utilisateur
+        setTimeout(() => {
+            document.querySelectorAll('.datagrid-item').forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        }, 500);
+    });
+</script>
+
+<style>
+    .datagrid-item {
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    
+    .chart-container {
+        border: 1px solid #e5e7eb;
+        border-radius: 5px;
+        padding: 15px;
+        background-color: #fff;
+    }
+</style>
+{% endblock %}

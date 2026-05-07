@@ -1,0 +1,102 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des Affectations de Véhicules{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {{ encore_entry_link_tags('app') }}
+{% endblock %}
+
+{% block body %}
+<div class="page-wrapper">
+    <div class="page-body">
+        <div class="container-xl">
+            <div class="row row-cards">
+                <div class="col-12">
+                    <div class="card card-table">
+                        <div class="card-header">
+                            <h3 class="card-title">Affectations de Véhicules</h3>
+                            <div class="ms-auto">
+                                <a href="{{ path('app_affectation_vehicule_new') }}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2 d-none d-sm-inline-block"></i>
+                                    <span class="d-none d-sm-inline-block">Nouvelle Affectation</span>
+                                    <i class="fas fa-plus d-sm-none"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="affectation-table" class="table card-table table-vcenter text-nowrap datatable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Véhicule</th>
+                                        <th>Chauffeur</th>
+                                        <th>Date de Début</th>
+                                        <th>Date de Fin</th>
+                                        <th>Statut</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% for affectation in affectations %}
+                                    <tr>
+                                        <td>{{ affectation.id }}</td>
+                                        <td>{{ affectation.idVehicule.immatriculationVehicule }}</td>
+                                        <td>{{ affectation.idChauffeur.nom }}</td>
+                                        <td>{{ affectation.dateDebutAffectation|date('d/m/Y H:i') }}</td>
+                                        <td>{{ affectation.dateFinAffectation ? affectation.dateFinAffectation|date('d/m/Y H:i') : 'En cours' }}</td>
+                                        <td>
+                                            {% if affectation.dateFinAffectation and affectation.dateFinAffectation < date() %}
+                                                <span class="badge text-bg-success">Terminée</span>
+                                            {% else %}
+                                                <span class="badge text-bg-primary">Active</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ path('app_affectation_vehicule_show', {'id': affectation.id}) }}" class="btn btn-icon btn-sm" title="Détails" aria-label="Voir détails de l'affectation">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ path('app_affectation_vehicule_edit', {'id': affectation.id}) }}" class="btn btn-icon btn-sm" title="Modifier" aria-label="Modifier l'affectation">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_SUPER_ADMIN') %}
+                                                <form method="post" action="{{ path('app_affectation_vehicule_delete', {'id': affectation.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette affectation ?');" class="d-inline">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ affectation.id) }}">
+                                                    <button type="submit" class="btn btn-icon btn-sm text-danger" title="Supprimer" aria-label="Supprimer l'affectation">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        $(document).ready(function() {
+            $('#affectation-table').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/2.0.8/i18n/fr-FR.json'
+                },
+                order: [[3, 'desc']], // Tri par date de début décroissante
+                responsive: true,
+                columnDefs: [
+                    { responsivePriority: 1, targets: 1 }, // Priorité responsive pour le véhicule
+                    { responsivePriority: 2, targets: 2 }, // Priorité responsive pour le chauffeur
+                    { responsivePriority: 3, targets: -1 } // Priorité responsive pour les actions
+                ]
+            });
+        });
+    </script>
+{% endblock %}

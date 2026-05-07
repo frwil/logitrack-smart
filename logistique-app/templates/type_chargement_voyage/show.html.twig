@@ -1,0 +1,71 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détails du Type de Chargement - {{ type_chargement_voyage.libelle }}{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Détails du type de chargement: {{ type_chargement_voyage.libelle }}</h3>
+                        <div class="card-actions">
+                            <a href="{{ path('app_type_chargement_voyage_edit', {'id': type_chargement_voyage.id}) }}" class="btn btn-warning">
+                                <i class="fas fa-edit me-2"></i> Modifier
+                            </a>
+                            <a href="{{ path('app_type_chargement_voyage_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i> Retour à la liste
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-bordered">
+                                    <tr>
+                                        <th>Libellé</th>
+                                        <td>{{ type_chargement_voyage.libelle }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        {% if type_chargement_voyage.voyages|length > 0 %}
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h4>Voyages associés</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Date du voyage</th>
+                                                <th>Titre du voyage</th>
+                                                <th>Convoyeur</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for voyage in type_chargement_voyage.voyages %}
+                                                <tr>
+                                                    <td>{{ voyage.dateVoyage|date('d/m/Y') }}</td>
+                                                    <td>
+                                                        <a href="{{ path('app_voyage_show', {'id': voyage.id}) }}">
+                                                            {{ voyage.titre }}
+                                                        </a>
+                                                    </td>
+                                                    <td>{{ voyage.convoyeur }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,515 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle Affectation{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+{{ encore_entry_link_tags('app') }}
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Créer une nouvelle affectation de véhicule</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_affectation_vehicule_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Retour à la liste
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" class="needs-validation" novalidate>
+                            <input type="hidden" name="_token" value="{{ csrf_token('affectation_new') }}">
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="id_vehicule">Véhicule</label>
+                                        <div class="input-group">
+                                            <select class="form-select" id="id_vehicule" name="id_vehicule" required>
+                                                <option value="">Sélectionner un véhicule</option>
+                                                {% for vehicule in vehicules %}
+                                                <option value="{{ vehicule.id }}">{{ vehicule.immatriculationVehicule }}
+                                                    - {{ vehicule.idMarque.nomMarque }} {{
+                                                    vehicule.modeleVehicule.nomModele }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <a type="button" class="btn btn-primary"
+                                                href="{{path('app_vehicule_new')}}">
+                                                <i class="fas fa-plus"></i>
+                                            </a>
+                                        </div>
+                                        <div class="invalid-feedback">
+                                            Veuillez sélectionner un véhicule.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="id_chauffeur">Chauffeur</label>
+                                        <div class="input-group">
+                                            <select class="form-select" id="id_chauffeur" name="id_chauffeur" required>
+                                                <option value="">Sélectionner un chauffeur</option>
+                                                {% for chauffeur in chauffeurs %}
+                                                <option value="{{ chauffeur.id }}">{{ chauffeur.nom }} {{
+                                                    chauffeur.prenom }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <a type="button" class="btn btn-primary"
+                                                href="{{path('app_chauffeurs_new')}}">
+                                                <i class="fas fa-plus"></i>
+                                            </a>
+                                        </div>
+                                        <div class="invalid-feedback">
+                                            Veuillez sélectionner un chauffeur.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="date_debut_affectation">Date de début</label>
+                                        <input type="datetime-local" class="form-control" id="date_debut_affectation"
+                                            name="date_debut_affectation" required>
+                                        <div class="invalid-feedback">
+                                            Veuillez saisir une date de début.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="date_fin_affectation">Date de fin
+                                            (optionnelle)</label>
+                                        <input type="datetime-local" class="form-control" id="date_fin_affectation"
+                                            name="date_fin_affectation">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="id_type_utilisation">Type d'utilisation</label>
+                                        <div class="input-group">
+                                            <select class="form-select" id="id_type_utilisation"
+                                                name="id_type_utilisation" required>
+                                                <option value="">Sélectionner un type</option>
+                                                {% for type in typesUtilisation %}
+                                                <option value="{{ type.id }}">{{ type.nom }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                                data-bs-target="#modalTypeUtilisation">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="invalid-feedback">
+                                            Veuillez sélectionner un type d'utilisation.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="id_mode_utilisation">Mode d'utilisation</label>
+                                        <div class="input-group">
+                                            <select class="form-select" id="id_mode_utilisation"
+                                                name="id_mode_utilisation" required>
+                                                <option value="">Sélectionner un mode</option>
+                                                {% for mode in modesUtilisation %}
+                                                <option value="{{ mode.id }}">{{ mode.nom }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                                data-bs-target="#modalModeUtilisation">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="invalid-feedback">
+                                            Veuillez sélectionner un mode d'utilisation.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="id_entite">Entité</label>
+                                        <div class="input-group">
+                                            <select class="form-select" id="id_entite" name="id_entite" required>
+                                                <option value="">Sélectionner une entité</option>
+                                                {% for entite in entites %}
+                                                <option value="{{ entite.id }}">{{ entite.libelle }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                                data-bs-target="#modalEntite">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="invalid-feedback">
+                                            Veuillez sélectionner une entité.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="id_region">Région (optionnelle)</label>
+                                        <div class="input-group">
+                                            <select class="form-select" id="id_region" name="id_region">
+                                                <option value="">Sélectionner une région</option>
+                                                {% for region in regions %}
+                                                <option value="{{ region.id }}">{{ region.nom }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                                data-bs-target="#modalRegion">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="objet_affectation">Objet de l'affectation</label>
+                                        <textarea class="form-control" id="objet_affectation" name="objet_affectation"
+                                            rows="3"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Suppression de la section is_ferme pour le formulaire de création -->
+                            
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="fas fa-save me-2"></i>
+                                    Enregistrer
+                                </button>
+                                <a href="{{ path('app_affectation_vehicule_index') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>
+                                    Annuler
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals restants inchangés -->
+<div class="modal fade" id="modalTypeUtilisation" tabindex="-1" aria-labelledby="modalTypeUtilisationLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTypeUtilisationLabel">Nouveau Type d'Utilisation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formTypeUtilisation" action="{{ path('app_type_utilisation_vehicule_new') }}" method="post">
+                    <input type="hidden" name="ajax" value="true">
+                    <div class="mb-3">
+                        <label for="libelle" class="form-label">Libellé</label>
+                        <input type="text" class="form-control" id="libelle" name="libelle" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                    id="btn-type-utilisation-close">Fermer</button>
+                <button type="button" id="submitTypeUtilisation" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalModeUtilisation" tabindex="-1" aria-labelledby="modalModeUtilisationLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalModeUtilisationLabel">Nouveau Mode d'Utilisation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formModeUtilisation" action="{{ path('app_mode_utilisation_vehicule_new') }}" method="post">
+                    <input type="hidden" name="ajax" value="true">
+                    <div class="mb-3">
+                        <label for="libelle" class="form-label">Libellé</label>
+                        <input type="text" class="form-control" id="libelle" name="libelle" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                    id="btn-mode-utilisation-close">Fermer</button>
+                <button type="button" id="submitModeUtilisation" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEntite" tabindex="-1" aria-labelledby="modalEntiteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEntiteLabel">Nouvelle Entité</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEntite" action="{{ path('app_entite_new') }}" method="post">
+                    <input type="hidden" name="ajax" value="true">
+                    <div class="mb-3">
+                        <label for="libelle" class="form-label">Libellé</label>
+                        <input type="text" class="form-control" id="libelle" name="libelle" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                    id="btn-entite-close">Fermer</button>
+                <button type="button" id="submitEntite" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalRegion" tabindex="-1" aria-labelledby="modalRegionLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalRegionLabel">Nouvelle Région</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formRegion" action="{{ path('app_region_new') }}" method="post">
+                    <input type="hidden" name="ajax" value="true">
+                    <div class="mb-3">
+                        <label for="nom" class="form-label">Nom</label>
+                        <input type="text" class="form-control" id="nom" name="nom" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                    id="btn-region-close">Fermer</button>
+                <button type="button" id="submitRegion" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    // Validation Bootstrap du formulaire
+    (function () {
+        'use strict'
+
+        var forms = document.querySelectorAll('.needs-validation')
+
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
+
+    // Gestion de la soumission des modals
+    document.addEventListener('DOMContentLoaded', function () {
+        // Réinitialiser les modals après fermeture
+        var modals = document.querySelectorAll('.modal');
+        modals.forEach(function (modal) {
+            modal.addEventListener('hidden.bs.modal', function () {
+                var form = modal.querySelector('form');
+                if (form) {
+                    form.reset();
+                }
+            });
+        });
+
+        // Gestion de la soumission du formulaire TypeUtilisation
+        document.getElementById('submitTypeUtilisation').addEventListener('click', function () {
+            var form = document.getElementById('formTypeUtilisation');
+            var formData = new FormData(form);
+
+            // Première requête: enregistrement normal (non-AJAX)
+            fetch(form.action, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    // Après l'enregistrement, faire une seconde requête pour récupérer tous les types
+                    return fetch("{{ path('app_type_utilisation_vehicule_list') }}?ajax=1");
+                })
+                .then(response => response.json())
+                .then(types => {
+                    // Mettre à jour le select avec tous les types
+                    var select = document.getElementById('id_type_utilisation');
+                    select.innerHTML = '<option value="">Sélectionner un type</option>';
+
+                    types.forEach(function (type) {
+                        var option = new Option(type.nom, type.id);
+                        select.add(option);
+                    });
+
+                    $('btn-type-utilisation-close').click();
+                    // Réinitialiser le formulaire
+                    form.reset();
+
+                    // Afficher un message de succès
+                    toastr.success('Type d\'utilisation créé avec succès');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    toastr.error('Une erreur est survenue lors de la communication avec le serveur');
+                });
+        });
+
+        // Gestion de la soumission du formulaire ModeUtilisation
+        document.getElementById('submitModeUtilisation').addEventListener('click', function () {
+            var form = document.getElementById('formModeUtilisation');
+            var formData = new FormData(form);
+
+            // Première requête: enregistrement normal (non-AJAX)
+            fetch(form.action, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    // Après l'enregistrement, faire une seconde requête pour récupérer tous les modes
+                    return fetch("{{ path('app_mode_utilisation_vehicule_list_json') }}");
+                })
+                .then(response => response.json())
+                .then(modes => {
+                    // Mettre à jour le select avec tous les modes
+                    var select = document.getElementById('id_mode_utilisation');
+                    select.innerHTML = '<option value="">Sélectionner un mode</option>';
+
+                    modes.forEach(function (mode) {
+                        var option = new Option(mode.nom, mode.id);
+                        select.add(option);
+                    });
+
+                    // Fermer le modal
+                    document.getElementById('btn-mode-utilisation-close').click();
+
+                    // Réinitialiser le formulaire
+                    form.reset();
+
+                    // Afficher un message de succès
+                    toastr.success('Mode d\'utilisation créé avec succès');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    toastr.error('Une erreur est survenue lors de la communication avec le serveur');
+                });
+        });
+
+        // Gestion de la soumission du formulaire Entite
+        document.getElementById('submitEntite').addEventListener('click', function () {
+            var form = document.getElementById('formEntite');
+            var formData = new FormData(form);
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Mettre à jour le select des entités
+                        var select = document.getElementById('id_entite');
+                        var option = new Option(data.libelle, data.id);
+                        select.add(option);
+                        select.value = data.id;
+
+                        // Fermer le modal
+                        document.getElementById('btn-entite-close').click();
+
+                        // Réinitialiser le formulaire
+                        form.reset();
+
+                        // Afficher un message de succès
+                        toastr.success('Entité créée avec succès');
+                    } else {
+                        // Afficher les erreurs
+                        if (data.errors) {
+                            for (let error of data.errors) {
+                                toastr.error(error);
+                            }
+                        } else {
+                            toastr.error('Une erreur est survenue lors de la création');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    toastr.error('Une erreur est survenue lors de la communication avec le serveur');
+                });
+        });
+
+        // Gestion de la soumission du formulaire Region
+        document.getElementById('submitRegion').addEventListener('click', function () {
+            var form = document.getElementById('formRegion');
+            var formData = new FormData(form);
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Mettre à jour le select des régions
+                        var select = document.getElementById('id_region');
+                        var option = new Option(data.nom, data.id);
+                        select.add(option);
+                        select.value = data.id;
+
+                        // Fermer le modal
+                        document.getElementById('btn-region-close').click();
+
+                        // Réinitialiser le formulaire
+                        form.reset();
+
+                        // Afficher un message de succès
+                        toastr.success('Région créée avec succès');
+                    } else {
+                        // Afficher les erreurs
+                        if (data.errors) {
+                            for (let error of data.errors) {
+                                toastr.error(error);
+                            }
+                        } else {
+                            toastr.error('Une erreur est survenue lors de la création');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    toastr.error('Une erreur est survenue lors de la communication avec le serveur');
+                });
+        });
+    });
+</script>
+{% endblock %}

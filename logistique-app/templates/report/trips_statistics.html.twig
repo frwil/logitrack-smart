@@ -1,0 +1,618 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Statistiques des voyages - Logistique App{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<!-- Chart.js pour les graphiques -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- SheetJS pour l'export Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- jsPDF et jsPDF-autoTable pour l'export PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Statistiques mensuelles des voyages</h3>
+                        <div class="card-actions">
+                            <button class="btn btn-success" onclick="exportToExcel()">
+                                <i class="fas fa-file-excel"></i> Excel
+                            </button>
+                            <button class="btn btn-danger" onclick="exportToPDF()">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {# Formulaire de filtrage #}
+                        <form method="get" class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <label for="year" class="form-label">Année</label>
+                                <select class="form-select" id="year" name="year">
+                                    {% for y in years %}
+                                    <option value="{{ y }}" {{ selectedYear==y ? 'selected' : '' }}>{{ y }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="vehicule" class="form-label">Véhicule (optionnel)</label>
+                                <select class="form-select" id="vehicule" name="vehicule">
+                                    <option value="">Tous les véhicules</option>
+                                    {% for vehicule in vehicules %}
+                                    <option value="{{ vehicule.id }}" {{ selectedVehicule==vehicule.id ? 'selected' : ''
+                                        }}>
+                                        {{ vehicule.immatriculationVehicule }} - {{ vehicule.idMarque.nomMarque }} {{
+                                        vehicule.modeleVehicule.nomModele }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary me-2">Filtrer</button>
+                                <a href="{{ path('app_report_trips_statistics') }}"
+                                    class="btn btn-secondary">Réinitialiser</a>
+                            </div>
+                        </form>
+
+                        {# Tableau des statistiques #}
+                        <div class="table-responsive mb-4">
+                            <table class="table table-vcenter table-mobile-md card-table" id="statsTable">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2">Mois</th>
+                                        <th colspan="3" class="text-center">Voyages</th>
+                                        <th colspan="4" class="text-center">Chargement (tonnes)</th>
+                                    </tr>
+                                    <tr>
+                                        <th>Prévus</th>
+                                        <th>Réalisés</th>
+                                        <th>Taux de respect</th>
+                                        <th>Total</th>
+                                        <th>Dans les délais</th>
+                                        <th>En avance</th>
+                                        <th>En retard</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for month, stats in monthlyStats %}
+                                    {% set tauxRespect = stats.prevus > 0 ? (stats.respecte_delai / stats.prevus *
+                                    100)|round(1) : 0 %}
+                                    {% set tauxChargementDelai = stats.total_chargement > 0 ?
+                                    (stats.chargement_dans_delai / stats.total_chargement * 100)|round(1) : 0 %}
+                                    <tr>
+                                        <td>{{ ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août',
+                                            'Septembre', 'Octobre', 'Novembre', 'Décembre'][month - 1] }}</td>
+                                        <td>{{ stats.prevus }}</td>
+                                        <td>{{ stats.realises }}</td>
+                                        <td>
+                                            <span
+                                                class="badge {% if tauxRespect >= 90 %}text-bg-success{% elseif tauxRespect >= 70 %}text-bg-warning{% else %}text-bg-danger{% endif %}">
+                                                {{ tauxRespect }}%
+                                            </span>
+                                        </td>
+                                        <td>{{ stats.total_chargement|number_format(0, ',', ' ') }}</td>
+                                        <td>
+                                            {{ stats.chargement_dans_delai|number_format(0, ',', ' ') }}
+                                            <small class="text-muted">({{ tauxChargementDelai }}%)</small>
+                                        </td>
+                                        <td>{{ stats.chargement_avance|number_format(0, ',', ' ') }}</td>
+                                        <td>{{ stats.chargement_retard|number_format(0, ',', ' ') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    <tr class="fw-bold">
+                                        <td>Total</td>
+                                        <td>{{ totals.prevus }}</td>
+                                        <td>{{ totals.realises }}</td>
+                                        <td>
+                                            {% set totalTauxRespect = totals.prevus > 0 ? (totals.respecte_delai /
+                                            totals.prevus * 100)|round(1) : 0 %}
+                                            <span
+                                                class="badge {% if totalTauxRespect >= 90 %}text-bg-success{% elseif totalTauxRespect >= 70 %}text-bg-warning{% else %}text-bg-danger{% endif %}">
+                                                {{ totalTauxRespect }}%
+                                            </span>
+                                        </td>
+                                        <td>{{ totals.total_chargement|number_format(0, ',', ' ') }}</td>
+                                        <td>
+                                            {{ totals.chargement_dans_delai|number_format(0, ',', ' ') }}
+                                            {% set totalTauxChargementDelai = totals.total_chargement > 0 ?
+                                            (totals.chargement_dans_delai / totals.total_chargement * 100)|round(1) : 0
+                                            %}
+                                            <small class="text-muted">({{ totalTauxChargementDelai }}%)</small>
+                                        </td>
+                                        <td>{{ totals.chargement_avance|number_format(0, ',', ' ') }}</td>
+                                        <td>{{ totals.chargement_retard|number_format(0, ',', ' ') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {# Nouveau tableau pour les statistiques par type de chargement #}
+                        <div class="table-responsive mb-4">
+                            <h4 class="mb-3">Chargement par type de chargement</h4>
+                            <table class="table table-vcenter table-mobile-md card-table" id="loadingTypeTable">
+                                <thead>
+                                    <tr>
+                                        <th>Type de chargement</th>
+                                        <th>Total (tonnes)</th>
+                                        <th>Dans les délais</th>
+                                        <th>En avance</th>
+                                        <th>En retard</th>
+                                        <th>Pourcentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for type, stats in loadingTypeStats %}
+                                    {% if stats.total > 0 %}
+                                    {% set percentage = totals.total_chargement > 0 ? (stats.total /
+                                    totals.total_chargement * 100)|round(1) : 0 %}
+                                    <tr>
+                                        <td>{{ type }}</td>
+                                        <td>{{ stats.total|number_format(0, ',', ' ') }}</td>
+                                        <td>{{ stats.dans_delai|number_format(0, ',', ' ') }}</td>
+                                        <td>{{ stats.en_avance|number_format(0, ',', ' ') }}</td>
+                                        <td>{{ stats.en_retard|number_format(0, ',', ' ') }}</td>
+                                        <td>{{ percentage }}%</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center">Aucune donnée de chargement par type
+                                            disponible</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {# Graphiques #}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Évolution des voyages par mois</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="voyagesChart" height="100"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Répartition par type de chargement</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="loadingTypeChart" height="100"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Données pour l'export
+    const exportData = {
+        title: "Statistiques mensuelles des voyages - {{ selectedYear }}",
+        months: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+        stats: {
+        {% for month, stats in monthlyStats %}
+            {{ month }}: {
+                prevus: {{ stats.prevus }},
+                realises: {{ stats.realises }},
+                respecte_delai: {{ stats.respecte_delai }},
+                en_retard: {{ stats.en_retard }},
+                en_avance: {{ stats.en_avance }},
+                total_chargement: {{ stats.total_chargement }},
+                chargement_dans_delai: {{ stats.chargement_dans_delai }},
+                chargement_retard: {{ stats.chargement_retard }},
+                chargement_avance: {{ stats.chargement_avance }}
+            },
+        {% endfor %}
+        },
+        totals: {
+            prevus: {{ totals.prevus }},
+            realises: {{ totals.realises }},
+            respecte_delai: {{ totals.respecte_delai }},
+            en_retard: {{ totals.en_retard }},
+            en_avance: {{ totals.en_avance }},
+            total_chargement: {{ totals.total_chargement }},
+            chargement_dans_delai: {{ totals.chargement_dans_delai }},
+            chargement_retard: {{ totals.chargement_retard }},
+            chargement_avance: {{ totals.chargement_avance }}
+        },
+        loadingTypes: {
+            {% for type, stats in loadingTypeStats %}
+            "{{ type }}": {
+                total: {{ stats.total }},
+                dans_delai: {{ stats.dans_delai }},
+                en_avance: {{ stats.en_avance }},
+                en_retard: {{ stats.en_retard }}
+            },
+            {% endfor %}
+        }
+    };
+
+    // Fonction pour exporter en Excel
+    function exportToExcel() {
+        // Créer un nouveau classeur
+        const wb = XLSX.utils.book_new();
+
+        // Feuille 1: Statistiques mensuelles
+        const excelData = [
+            ['Statistiques mensuelles des voyages - {{ selectedYear }}'],
+            [''],
+            ['Mois', 'Voyages Prévus', 'Voyages Réalisés', 'Taux de respect', 'Chargement Total (tonnes)', 'Chargement Dans les délais', 'Chargement En avance', 'Chargement En retard']
+        ];
+
+        // Ajouter les données mensuelles
+        for (let month = 1; month <= 12; month++) {
+            const stats = exportData.stats[month];
+            const tauxRespect = stats.prevus > 0 ? (stats.respecte_delai / stats.prevus * 100).toFixed(1) : 0;
+
+            excelData.push([
+                exportData.months[month - 1],
+                stats.prevus,
+                stats.realises,
+                `${tauxRespect}%`,
+                stats.total_chargement,
+                stats.chargement_dans_delai,
+                stats.chargement_avance,
+                stats.chargement_retard
+            ]);
+        }
+
+        // Ajouter la ligne de totaux
+        const totals = exportData.totals;
+        const totalTauxRespect = totals.prevus > 0 ? (totals.respecte_delai / totals.prevus * 100).toFixed(1) : 0;
+
+        excelData.push([
+            'Total',
+            totals.prevus,
+            totals.realises,
+            `${totalTauxRespect}%`,
+            totals.total_chargement,
+            totals.chargement_dans_delai,
+            totals.chargement_avance,
+            totals.chargement_retard
+        ]);
+
+        // Créer une feuille de calcul
+        const ws1 = XLSX.utils.aoa_to_sheet(excelData);
+        XLSX.utils.book_append_sheet(wb, ws1, "Statistiques Mensuelles");
+
+        // Feuille 2: Par type de chargement
+        const excelData2 = [
+            ['Répartition par type de chargement - {{ selectedYear }}'],
+            [''],
+            ['Type de chargement', 'Total (tonnes)', 'Dans les délais', 'En avance', 'En retard', 'Pourcentage']
+        ];
+
+        // Ajouter les données par type de chargement
+        for (const [type, stats] of Object.entries(exportData.loadingTypes)) {
+            const percentage = exportData.totals.total_chargement > 0 ? (stats.total / exportData.totals.total_chargement * 100).toFixed(1) : 0;
+
+            excelData2.push([
+                type,
+                stats.total,
+                stats.dans_delai,
+                stats.en_avance,
+                stats.en_retard,
+                `${percentage}%`
+            ]);
+        }
+
+        const ws2 = XLSX.utils.aoa_to_sheet(excelData2);
+        XLSX.utils.book_append_sheet(wb, ws2, "Par Type Chargement");
+
+        // Générer le fichier Excel et le télécharger
+        XLSX.writeFile(wb, `statistiques_voyages_{{ selectedYear }}.xlsx`);
+    }
+
+    // Fonction pour exporter en PDF
+    function exportToPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Titre du document
+        doc.setFontSize(16);
+        doc.text(exportData.title, 14, 15);
+        doc.setFontSize(10);
+        doc.text(`Généré le: ${new Date().toLocaleDateString()}`, 14, 22);
+
+        // Section 1: Statistiques mensuelles
+        doc.setFontSize(12);
+        doc.text("Statistiques mensuelles", 14, 35);
+
+        // Préparer les données du tableau mensuel
+        const tableData = [];
+        const tableHeaders = [
+            "Mois",
+            "Voyages\nPrévus",
+            "Voyages\nRéalisés",
+            "Taux de\nrespect",
+            "Chargement\nTotal",
+            "Dans les\ndélais",
+            "En\navance",
+            "En\nretard"
+        ];
+
+        // Ajouter les données mensuelles
+        for (let month = 1; month <= 12; month++) {
+            const stats = exportData.stats[month];
+            const tauxRespect = stats.prevus > 0 ? (stats.respecte_delai / stats.prevus * 100).toFixed(1) : 0;
+
+            tableData.push([
+                exportData.months[month - 1],
+                stats.prevus.toString(),
+                stats.realises.toString(),
+                `${tauxRespect}%`,
+                stats.total_chargement.toLocaleString(),
+                stats.chargement_dans_delai.toLocaleString(),
+                stats.chargement_avance.toLocaleString(),
+                stats.chargement_retard.toLocaleString()
+            ]);
+        }
+
+        // Ajouter la ligne de totaux
+        const totals = exportData.totals;
+        const totalTauxRespect = totals.prevus > 0 ? (totals.respecte_delai / totals.prevus * 100).toFixed(1) : 0;
+
+        tableData.push([
+            'TOTAL',
+            totals.prevus.toString(),
+            totals.realises.toString(),
+            `${totalTauxRespect}%`,
+            totals.total_chargement.toLocaleString(),
+            totals.chargement_dans_delai.toLocaleString(),
+            totals.chargement_avance.toLocaleString(),
+            totals.chargement_retard.toLocaleString()
+        ]);
+
+        // Générer le tableau mensuel
+        doc.autoTable({
+            head: [tableHeaders],
+            body: tableData,
+            startY: 40,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [41, 128, 185],
+                textColor: 255,
+                fontStyle: 'bold',
+                fontSize: 9
+            },
+            bodyStyles: {
+                fontSize: 9
+            },
+            alternateRowStyles: {
+                fillColor: [240, 240, 240]
+            },
+            margin: { top: 40 },
+            styles: {
+                cellPadding: 2,
+                overflow: 'linebreak',
+                valign: 'middle'
+            },
+            columnStyles: {
+                0: { cellWidth: 25 },
+                1: { cellWidth: 15 },
+                2: { cellWidth: 15 },
+                3: { cellWidth: 15 },
+                4: { cellWidth: 20 },
+                5: { cellWidth: 15 },
+                6: { cellWidth: 15 },
+                7: { cellWidth: 15 }
+            }
+        });
+
+        // Section 2: Par type de chargement
+        const lastTableEnd = doc.lastAutoTable.finalY;
+        doc.setFontSize(12);
+        doc.text("Répartition par type de chargement", 14, lastTableEnd + 15);
+
+        // Préparer les données du tableau par type de chargement
+        const tableData2 = [];
+        const tableHeaders2 = [
+            "Type de chargement",
+            "Total",
+            "Dans les délais",
+            "En avance",
+            "En retard",
+            "Pourcentage"
+        ];
+
+        // Ajouter les données par type de chargement
+        for (const [type, stats] of Object.entries(exportData.loadingTypes)) {
+            const percentage = exportData.totals.total_chargement > 0 ? (stats.total / exportData.totals.total_chargement * 100).toFixed(1) : 0;
+
+            tableData2.push([
+                type,
+                stats.total.toLocaleString(),
+                stats.dans_delai.toLocaleString(),
+                stats.en_avance.toLocaleString(),
+                stats.en_retard.toLocaleString(),
+                `${percentage}%`
+            ]);
+        }
+
+        // Générer le tableau par type de chargement
+        doc.autoTable({
+            head: [tableHeaders2],
+            body: tableData2,
+            startY: lastTableEnd + 20,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [41, 128, 185],
+                textColor: 255,
+                fontStyle: 'bold',
+                fontSize: 9
+            },
+            bodyStyles: {
+                fontSize: 9
+            },
+            alternateRowStyles: {
+                fillColor: [240, 240, 240]
+            },
+            styles: {
+                cellPadding: 2,
+                overflow: 'linebreak',
+                valign: 'middle'
+            },
+            columnStyles: {
+                0: { cellWidth: 40 },
+                1: { cellWidth: 15 },
+                2: { cellWidth: 15 },
+                3: { cellWidth: 15 },
+                4: { cellWidth: 15 },
+                5: { cellWidth: 15 }
+            }
+        });
+
+        // Sauvegarder le PDF
+        doc.save(`statistiques_voyages_{{ selectedYear }}.pdf`);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Graphique des voyages
+        const voyagesCtx = document.getElementById('voyagesChart').getContext('2d');
+        const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+        const voyagesData = {
+            labels: months,
+            datasets: [
+                {
+                    label: 'Voyages prévus',
+                    data: [{{ monthlyStats[1].prevus }}, {{ monthlyStats[2].prevus }}, {{ monthlyStats[3].prevus }}, {{ monthlyStats[4].prevus }}, {{ monthlyStats[5].prevus }}, {{ monthlyStats[6].prevus }}, {{ monthlyStats[7].prevus }}, {{ monthlyStats[8].prevus }}, {{ monthlyStats[9].prevus }}, {{ monthlyStats[10].prevus }}, {{ monthlyStats[11].prevus }}, {{ monthlyStats[12].prevus }}],
+        borderColor: 'rgb(54, 162, 235)',
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        fill: true
+            },
+        {
+            label: 'Voyages réalisés',
+            data: [{{ monthlyStats[1].realises }}, {{ monthlyStats[2].realises }}, {{ monthlyStats[3].realises }}, {{ monthlyStats[4].realises }}, {{ monthlyStats[5].realises }}, {{ monthlyStats[6].realises }}, {{ monthlyStats[7].realises }}, {{ monthlyStats[8].realises }}, {{ monthlyStats[9].realises }}, {{ monthlyStats[10].realises }}, {{ monthlyStats[11].realises }}, {{ monthlyStats[12].realises }}],
+        borderColor: 'rgb(75, 192, 192)',
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        fill: true
+            },
+        {
+            label: 'Dans les délais',
+            data: [{{ monthlyStats[1].respecte_delai }}, {{ monthlyStats[2].respecte_delai }}, {{ monthlyStats[3].respecte_delai }}, {{ monthlyStats[4].respecte_delai }}, {{ monthlyStats[5].respecte_delai }}, {{ monthlyStats[6].respecte_delai }}, {{ monthlyStats[7].respecte_delai }}, {{ monthlyStats[8].respecte_delai }}, {{ monthlyStats[9].respecte_delai }}, {{ monthlyStats[10].respecte_delai }}, {{ monthlyStats[11].respecte_delai }}, {{ monthlyStats[12].respecte_delai }}],
+        borderColor: 'rgb(100, 200, 100)',
+        backgroundColor: 'rgba(100, 200, 100, 0.2)',
+        fill: true
+            }
+        ]
+    };
+
+    const voyagesConfig = {
+        type: 'line',
+        data: voyagesData,
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Statistiques des voyages par mois'
+                },
+            },
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Mois'
+                    }
+                },
+                y: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Nombre de voyages'
+                    },
+                    suggestedMin: 0
+                }
+            }
+        },
+    };
+
+    new Chart(voyagesCtx, voyagesConfig);
+
+    // Graphique des types de chargement
+    const loadingTypeCtx = document.getElementById('loadingTypeChart').getContext('2d');
+
+    // Préparer les données pour le graphique circulaire
+    const loadingTypeLabels = [];
+    const loadingTypeData = [];
+    const loadingTypeColors = [];
+
+    {% for type, stats in loadingTypeStats %}
+    {% if stats.total > 0 %}
+    loadingTypeLabels.push("{{ type }}");
+    loadingTypeData.push({{ stats.total }});
+    loadingTypeColors.push(getRandomColor());
+    {% endif %}
+    {% endfor %}
+
+    // Vérifier s'il y a des données à afficher
+    if (loadingTypeData.length > 0) {
+        const loadingTypeChartData = {
+            labels: loadingTypeLabels,
+            datasets: [{
+                data: loadingTypeData,
+                backgroundColor: loadingTypeColors,
+                hoverOffset: 4
+            }]
+        };
+
+        const loadingTypeConfig = {
+            type: 'doughnut',
+            data: loadingTypeChartData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Répartition par type de chargement'
+                    }
+                }
+            },
+        };
+
+        new Chart(loadingTypeCtx, loadingTypeConfig);
+    } else {
+        // Afficher un message si aucune donnée
+        loadingTypeCtx.font = '16px Arial';
+        loadingTypeCtx.fillStyle = '#999';
+        loadingTypeCtx.textAlign = 'center';
+        loadingTypeCtx.fillText('Aucune donnée disponible', loadingTypeCtx.canvas.width / 2, loadingTypeCtx.canvas.height / 2);
+    }
+
+    // Fonction pour générer des couleurs aléatoires
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+</script>
+{% endblock %}

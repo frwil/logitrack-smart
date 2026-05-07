@@ -1,0 +1,94 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des Entités{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card card-table">
+                    <div class="card-header">
+                        <h3 class="card-title">Entités</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_entite_new') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2 d-none d-sm-inline-block"></i>
+                                <span class="d-none d-sm-inline-block">Nouvelle Entité</span>
+                                <i class="fas fa-plus d-sm-none"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="entite-table" class="table card-table table-vcenter text-nowrap datatable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Libellé</th>
+                                    <th>Description</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for entite in entites %}
+                                <tr>
+                                    <td>{{ entite.id }}</td>
+                                    <td>{{ entite.libelle }}</td>
+                                    <td>{{ entite.description ?? 'Aucune description' }}</td>
+                                    <td>
+                                        {% if entite.statut %}
+                                            <span class="badge text-bg-success">Actif</span>
+                                        {% else %}
+                                            <span class="badge text-bg-secondary">Inactif</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ path('app_entite_show', {'id': entite.id}) }}" class="btn btn-icon btn-sm" title="Détails" aria-label="Voir détails de l'entité">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ path('app_entite_edit', {'id': entite.id}) }}" class="btn btn-icon btn-sm" title="Modifier" aria-label="Modifier l'entité">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_SUPER_ADMIN') %}
+                                            <form method="post" action="{{ path('app_entite_delete', {'id': entite.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette entité ?');" class="d-inline">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ entite.id) }}">
+                                                <button type="submit" class="btn btn-icon btn-sm text-danger" title="Supprimer" aria-label="Supprimer l'entité">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                                </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        $(document).ready(function() {
+            $('#entite-table').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/2.0.8/i18n/fr-FR.json'
+                },
+                order: [[1, 'asc']], // Tri par libellé par défaut
+                responsive: true,
+                columnDefs: [
+                    { responsivePriority: 1, targets: 1 }, // Priorité responsive pour le libellé
+                    { responsivePriority: 2, targets: -1 } // Priorité responsive pour les actions
+                ]
+            });
+        });
+    </script>
+{% endblock %}

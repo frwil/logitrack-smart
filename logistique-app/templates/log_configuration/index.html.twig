@@ -1,0 +1,44 @@
+{# templates/log_configuration/index.html.twig #}
+
+{% extends 'base.html.twig' %}
+
+{% block title %}Configuration des logs{% endblock %}
+
+{% block body %}
+<div class="container-xl">
+    <h1 class="my-4">Configuration des logs</h1>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Paramètres de nettoyage des logs</h3>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="cleaningFrequency" class="form-label">Fréquence de nettoyage (en jours)</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="cleaningFrequency" 
+                                   name="cleaningFrequency" 
+                                   value="{{ configuration.cleaningFrequency }}"
+                                   min="1"
+                                   required>
+                            <div class="form-text">Définissez la fréquence à laquelle le système vérifie et supprime les logs de plus de 7 jours</div>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </form>
+        </div>
+        <div class="card-footer">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                Le système supprimera automatiquement les logs de plus de 7 jours selon la fréquence configurée.
+                Une fréquence de 1 jour signifie que le nettoyage s'effectuera quotidiennement.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

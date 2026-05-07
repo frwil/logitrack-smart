@@ -1,0 +1,263 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau Chauffeur{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Ajouter un nouveau Chauffeur</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{{ path('app_chauffeurs_new') }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('chauffeur_form_new') }}">
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label required">Nom</label>
+                                        <input type="text" id="nom" name="nom" class="form-control" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label required">Prénom</label>
+                                        <input type="text" id="prenom" name="prenom" class="form-control" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label required">Téléphone</label>
+                                <input type="text" id="telephone" name="telephone" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-check form-switch">
+                                    <input type="checkbox" class="form-check-input" name="estActif" value="1" checked>
+                                    <span class="form-check-label">Chauffeur actif</span>
+                                </label>
+                            </div>
+
+                            <div class="hr-text" data-content="Permis de conduire"></div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <button type="button" id="add-permis-btn" class="btn btn-success">
+                                    <i class="fas fa-plus me-2"></i>Ajouter un permis
+                                </button>
+                                <button type="button" class="btn btn-info" data-bs-toggle="modal"
+                                    data-bs-target="#addPermisTypeModal">
+                                    <i class="fas fa-plus-circle me-2"></i>Ajouter un type de permis
+                                </button>
+                            </div>
+
+                            <div id="permis-container" class="space-y-3 mb-4">
+                                <!-- Les permis dynamiques seront ajoutés ici -->
+                            </div>
+
+                            <div class="form-footer">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Enregistrer
+                                </button>
+                                <a href="{{ path('app_chauffeurs_index') }}" class="btn btn-secondary ms-3">
+                                    <i class="fas fa-times me-2"></i>Annuler
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modèle pour les champs de permis (initialement masqué) -->
+<template id="permis-template">
+    <div class="permis-group card card-sm mb-3">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label required">Catégorie</label>
+                        <select name="permis_categories[]" class="form-select">
+                            {% for type in types_permis %}
+                            <option value="{{ type.id }}">{{ type.libellePermis }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label required">Numéro</label>
+                        <input type="text" name="permis_numeros[]" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label required">Date de validité</label>
+                        <input type="date" name="permis_dates[]" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-md-1 d-flex align-items-end mb-3">
+                    <button type="button" class="btn btn-danger remove-permis-btn">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Modal pour ajouter un nouveau type de permis -->
+<div class="modal fade" id="addPermisTypeModal" tabindex="-1" aria-labelledby="addPermisTypeModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addPermisTypeModalLabel">Ajouter un nouveau type de permis</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="new-permis-type-form">
+                    <div class="mb-3">
+                        <label class="form-label required">Catégorie de permis</label>
+                        <input type="text" id="new_permis_type" class="form-control" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                    id="btn-permis-close">Annuler</button>
+                <button type="button" class="btn btn-primary" id="save-permis-type">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('DOM loaded - JavaScript fonctionne correctement');
+
+        const addPermisBtn = document.getElementById('add-permis-btn');
+        const permisContainer = document.getElementById('permis-container');
+        const permisTemplate = document.getElementById('permis-template');
+        const savePermisTypeBtn = document.getElementById('save-permis-type');
+        const newPermisTypeInput = document.getElementById('new_permis_type');
+
+        // Vérification que tous les éléments nécessaires sont présents
+        if (!addPermisBtn || !permisContainer || !permisTemplate) {
+            console.error('Un ou plusieurs éléments requis sont manquants dans le DOM');
+            return;
+        }
+
+        // Fonction pour ajouter un champ de permis
+        function addPermisField() {
+            console.log('Ajout d\'un champ permis');
+
+            const clone = permisTemplate.content.cloneNode(true);
+            const removeBtn = clone.querySelector('.remove-permis-btn');
+
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function () {
+                    console.log('Suppression d\'un champ permis');
+                    this.closest('.permis-group').remove();
+                });
+            }
+
+            permisContainer.appendChild(clone);
+        }
+
+        // Ajouter un écouteur d'événement au bouton "Ajouter un permis"
+        addPermisBtn.addEventListener('click', addPermisField);
+
+        // Gestion de l'ajout d'un nouveau type de permis (si le bouton existe)
+        if (savePermisTypeBtn && newPermisTypeInput) {
+            savePermisTypeBtn.addEventListener('click', function () {
+                console.log('Enregistrement d\'un nouveau type de permis');
+
+                const newType = newPermisTypeInput.value.trim();
+
+                if (newType) {
+                    // Envoyer les données au serveur via AJAX
+                    fetch('{{ path("app_permis_type_new") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            categorie: newType,
+                        })
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Erreur lors de l\'enregistrement');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                // Ajouter la nouvelle option à tous les selects
+                                const selects = document.querySelectorAll('select[name="permis_categories[]"]');
+
+                                selects.forEach(select => {
+                                    const option = document.createElement('option');
+                                    option.value = newType;
+                                    option.textContent = newType;
+                                    option.selected = true;
+                                    select.appendChild(option);
+                                });
+
+
+                                // Réinitialiser le formulaire
+                                if (document.getElementById('new-permis-type-form')) {
+                                    document.getElementById('new-permis-type-form').reset();
+                                }
+
+                                // Afficher un message de succès
+                                toastr.success('Type de permis "' + newType + '" ajouté avec succès!');
+                                // Fermer le modal
+                                $('#btn-permis-close').click()
+                            } else {
+                                toastr.error('Erreur: ' + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erreur:', error);
+                            toastr.error('Une erreur s\'est produite lors de l\'enregistrement du type de permis.');
+                        });
+                } else {
+                    toastr.warning('Veuillez saisir une catégorie de permis.');
+                }
+            });
+        }
+
+        // Gestion de la fermeture du modal pour s'assurer qu'aucun élément ne conserve le focus
+        const modalElement = document.getElementById('addPermisTypeModal');
+        if (modalElement) {
+            modalElement.addEventListener('hidden.bs.modal', function () {
+                // S'assurer qu'aucun élément dans le modal n'a le focus après la fermeture
+                const focusedElement = document.activeElement;
+                if (modalElement.contains(focusedElement)) {
+                    // Si un élément dans le modal a encore le focus, le déplacer
+                    document.body.focus();
+                }
+            });
+        }
+
+        // Ajouter un premier champ de permis par défaut
+        addPermisField();
+
+        console.log('Initialisation JavaScript terminée avec succès');
+    });
+</script>
+{% endblock %}

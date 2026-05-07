@@ -1,0 +1,592 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier le Voyage{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    /* Styles pour Tom Select */
+    .ts-control {
+        border: 1px solid #ced4da !important;
+        border-radius: 0.375rem !important;
+        padding: 0.375rem 0.75rem !important;
+        min-height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+    
+    .ts-wrapper.single .ts-control {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 0.75rem center !important;
+        background-size: 16px 12px !important;
+    }
+    
+    .ts-dropdown {
+        border: 1px solid #ced4da !important;
+        border-radius: 0.375rem !important;
+        margin-top: 0.125rem !important;
+    }
+    
+    .ts-dropdown .option {
+        padding: 0.5rem 1rem !important;
+    }
+    
+    .ts-dropdown .create {
+        padding: 0.5rem 1rem !important;
+        color: #0d6efd !important;
+    }
+    
+    /* Conteneur pour select + bouton - CORRECTIONS */
+    .select-with-button {
+        display: flex;
+        gap: 0.5rem;
+        align-items: stretch;
+    }
+    
+    .select-with-button .ts-wrapper {
+        flex: 1;
+        display: flex !important;
+    }
+    
+    .select-with-button .ts-control {
+        height: 100% !important;
+        flex-grow: 1;
+    }
+    
+    .select-with-button .btn {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 38px;
+        width: 38px;
+        padding: 0;
+    }
+    
+    /* Ajustement pour l'alignement vertical */
+    .select-with-button .form-select {
+        height: 38px;
+    }
+    
+    /* Ajustement pour les champs de formulaire */
+    .ts-control input {
+        height: auto !important;
+        min-height: 0 !important;
+    }
+
+    /* Styles pour indiquer les champs obligatoires */
+    .form-label.required:after {
+        content: " *";
+        color: #dc3545;
+    }
+
+    .form-label.required {
+        font-weight: 600;
+    }
+
+    /* Style pour les bordures des champs obligatoires */
+    .form-control:required, 
+    .tom-select.required .ts-control {
+        border-left: 3px solid #dc3545 !important;
+    }
+
+    /* Correction de l'espacement des cartes de trajet */
+    .trajet-card {
+        border: 1px solid rgba(0, 0, 0, 0.125);
+        border-radius: 0.5rem;
+    }
+
+    .trajet-card .card-header {
+        background-color: rgba(0, 0, 0, 0.03);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+        padding: 0.75rem 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Modifier le voyage: {{ voyage.titre }}</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-4">
+                            <i class="fas fa-info-circle me-2"></i> Les champs marqués d'un astérisque (<span class="text-danger">*</span>) sont obligatoires.
+                        </div>
+                        
+                        <form method="post" action="{{ path('app_voyage_edit', {'id': voyage.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('edit_' ~ voyage.id) }}">
+                            
+                            <!-- Section Informations générales -->
+                            <div class="mb-4">
+                                <h4 class="mb-3">Informations générales</h4>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label required" for="date_voyage">Date du voyage</label>
+                                            <input type="date" class="form-control" id="date_voyage" name="date_voyage" required value="{{ voyage.dateVoyage|date('Y-m-d') }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label required" for="titre_voyage">Titre du voyage</label>
+                                            <input type="text" class="form-control" id="titre_voyage" name="titre_voyage" required value="{{ voyage.titre }}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label required" for="affectation">Affectation</label>
+                                            <select class="form-select tom-select required" id="affectation" name="affectation" required>
+                                                <option value="">Sélectionner une affectation</option>
+                                                {% for affectation in affectations %}
+                                                    <option value="{{ affectation.id }}" {{ voyage.affectation and voyage.affectation.id == affectation.id ? 'selected' : '' }}>
+                                                        {{ affectation }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label required" for="type_chargement">Type de chargement</label>
+                                            <select class="form-select tom-select required" id="type_chargement" name="type_chargement" required>
+                                                <option value="">Sélectionner un type de chargement</option>
+                                                {% for type in types_chargement %}
+                                                    <option value="{{ type.id }}" {{ voyage.typeChargement and voyage.typeChargement.id == type.id ? 'selected' : '' }}>
+                                                        {{ type.libelle }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label required" for="qte_carburant">Quantité de carburant (L)</label>
+                                            <input type="number" class="form-control" id="qte_carburant" name="qte_carburant" min="0" value="{{ voyage.quantiteCarburant }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label required" for="qte_chargement">Quantité de chargement (kg)</label>
+                                            <input type="number" class="form-control" id="qte_chargement" name="qte_chargement" min="0" value="{{ voyage.quantiteChargement }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="convoyeur">Convoyeur</label>
+                                            <input type="text" class="form-control" id="convoyeur" name="convoyeur" value="{{ voyage.convoyeur }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Section Kilométrage et Dates -->
+                            <div class="mb-4">
+                                <h4 class="mb-3">Kilométrage et Dates</h4>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="km_depart">Km Départ</label>
+                                            <input type="number" class="form-control" id="km_depart" name="km_depart" min="0" value="{{ voyage.kmDepart }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="km_arrivee">Km Arrivée</label>
+                                            <input type="number" class="form-control" id="km_arrivee" name="km_arrivee" min="0" value="{{ voyage.kmArrivee }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label required" for="date_prevue_voyage">Date Prévue</label>
+                                            <input type="date" class="form-control" id="date_prevue_voyage" name="date_prevue_voyage" value="{{ voyage.datePrevueVoyage ? voyage.datePrevueVoyage|date('Y-m-d') : '' }}" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="heure_depart">Heure Départ</label>
+                                            <input type="time" class="form-control" id="heure_depart" name="heure_depart" value="{{ voyage.heureDepart ? voyage.heureDepart|date('H:i') : '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="heure_arrivee">Heure Arrivée</label>
+                                            <input type="time" class="form-control" id="heure_arrivee" name="heure_arrivee" value="{{ voyage.heureArrivee ? voyage.heureArrivee|date('H:i') : '' }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Section Commentaire -->
+                            <div class="mb-4">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="commentaire_voyage">Commentaire</label>
+                                            <textarea class="form-control" id="commentaire_voyage" name="commentaire_voyage" rows="3">{{ voyage.commentaire }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section Trajets -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h4 class="mb-0">Trajets</h4>
+                                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#destinationModal">
+                                        <i class="fas fa-plus me-2"></i> Nouvelle destination
+                                    </button>
+                                </div>
+                                <div id="trajets-container">
+                                    {% for trajet in voyage.trajets %}
+                                    <div class="trajet-card card mb-3">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <span>Trajet #{{ loop.index }}</span>
+                                            <button type="button" class="btn btn-sm btn-danger remove-trajet" {{ voyage.trajets|length == 1 ? 'disabled' : '' }}>
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-8">
+                                                    <div class="mb-3">
+                                                        <label class="form-label required">Destination</label>
+                                                        <select class="form-select tom-select required trajet-destination" name="trajets[{{ loop.index0 }}][destination]" required>
+                                                            <option value="">Sélectionner une destination</option>
+                                                            {% for destination in destinations %}
+                                                                <option value="{{ destination.id }}" {{ trajet.destination.id == destination.id ? 'selected' : '' }}>{{ destination.libelle }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Commentaire</label>
+                                                        <input type="text" class="form-control" name="trajets[{{ loop.index0 }}][commentaire]" value="{{ trajet.commentaire }}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                <button type="button" class="btn btn-success mt-3" id="add-trajet">
+                                    <i class="fas fa-plus me-2"></i> Ajouter un trajet
+                                </button>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="fas fa-save me-2"></i> Enregistrer
+                                </button>
+                                <a href="{{ path('app_voyage_show', {'id': voyage.id}) }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i> Retour aux détails
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour la destination -->
+<div class="modal fade" id="destinationModal" tabindex="-1" aria-labelledby="destinationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="destinationModalLabel">Nouvelle destination</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="destinationForm">
+                    <div class="mb-3">
+                        <label for="destination_lieu_depart" class="form-label required">Lieu de départ</label>
+                        <input type="text" class="form-control" id="destination_lieu_depart" name="lieu_depart" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="destination_lieu_arrivee" class="form-label required">Lieu d'arrivée</label>
+                        <input type="text" class="form-control" id="destination_lieu_arrivee" name="lieu_arrivee" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="destination_distance" class="form-label required">Distance (km)</label>
+                        <input type="number" class="form-control" id="destination_distance" name="distance" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="destination_region" class="form-label required">Région</label>
+                        <select class="form-select" id="destination_region" name="region" required>
+                            <option value="">Sélectionner une région</option>
+                            {% for region in regions %}
+                            <option value="{{ region.id }}">{{ region.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="saveDestination">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialisation de Tom Select
+        const initTomSelect = () => {
+            document.querySelectorAll('.tom-select').forEach(select => {
+                // Détruire l'instance existante si elle existe
+                if (select.tomselect) {
+                    select.tomselect.destroy();
+                }
+                
+                new TomSelect(select, {
+                    create: false,
+                    searchField: 'text',
+                    placeholder: select.querySelector('option[value=""]').textContent,
+                    render: {
+                        option: function(data, escape) {
+                            return '<div>' + escape(data.text) + '</div>';
+                        }
+                    }
+                });
+            });
+        };
+
+        // Fonction pour mettre à jour les options disponibles dans les selects de destination
+        const updateDestinationOptions = () => {
+            const allSelectedValues = [];
+            
+            // Collecter toutes les valeurs déjà sélectionnées
+            document.querySelectorAll('.trajet-destination').forEach(select => {
+                const value = select.value;
+                if (value) {
+                    allSelectedValues.push(value);
+                }
+            });
+
+            // Mettre à jour chaque select pour désactiver les options déjà sélectionnées
+            document.querySelectorAll('.trajet-destination').forEach(select => {
+                const currentValue = select.value;
+                const tomSelect = select.tomselect;
+                
+                if (tomSelect) {
+                    // Réactiver toutes les options d'abord
+                    tomSelect.options.forEach(option => {
+                        tomSelect.updateOption(option.value, { disabled: false });
+                    });
+                    
+                    // Désactiver les options déjà sélectionnées ailleurs
+                    allSelectedValues.forEach(selectedValue => {
+                        if (selectedValue !== currentValue) {
+                            tomSelect.updateOption(selectedValue, { disabled: true });
+                        }
+                    });
+                    
+                    // Rafraîchir l'affichage
+                    tomSelect.refreshOptions();
+                }
+            });
+        };
+        
+        // Initialiser Tom Select
+        initTomSelect();
+        updateDestinationOptions();
+
+        // Gestion de l'ajout/suppression de trajets
+        let trajetCount = {{ voyage.trajets|length }};
+        const trajetsContainer = document.getElementById('trajets-container');
+        const addTrajetBtn = document.getElementById('add-trajet');
+
+        addTrajetBtn.addEventListener('click', function () {
+            trajetCount++;
+            const newTrajet = document.createElement('div');
+            newTrajet.className = 'trajet-card card mb-3';
+            newTrajet.innerHTML = `
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Trajet #${trajetCount}</span>
+                <button type="button" class="btn btn-sm btn-danger remove-trajet">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label class="form-label required">Destination</label>
+                            <select class="form-select tom-select required trajet-destination" name="trajets[${trajetCount - 1}][destination]" required>
+                                <option value="">Sélectionner une destination</option>
+                                {% for destination in destinations %}
+                                    <option value="{{ destination.id }}">{{ destination.libelle }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">Commentaire</label>
+                            <input type="text" class="form-control" name="trajets[${trajetCount - 1}][commentaire]">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+            trajetsContainer.appendChild(newTrajet);
+
+            // Réinitialiser Tom Select pour inclure le nouveau select
+            setTimeout(() => {
+                initTomSelect();
+                updateDestinationOptions();
+                
+                // Ajouter un écouteur d'événement pour le changement de destination
+                const newSelect = newTrajet.querySelector('.trajet-destination');
+                if (newSelect && newSelect.tomselect) {
+                    newSelect.tomselect.on('change', function() {
+                        updateDestinationOptions();
+                    });
+                }
+            }, 10);
+
+            // Activer le bouton de suppression pour tous les trajets sauf le premier
+            document.querySelectorAll('.remove-trajet').forEach(btn => {
+                btn.disabled = false;
+            });
+        });
+
+        // Gestion de la suppression de trajets
+        trajetsContainer.addEventListener('click', function (e) {
+            if (e.target.closest('.remove-trajet')) {
+                const trajetCard = e.target.closest('.trajet-card');
+                if (document.querySelectorAll('.trajet-card').length > 1) {
+                    // Détruire l'instance Tom Select avant de supprimer l'élément
+                    const select = trajetCard.querySelector('.tom-select');
+                    if (select && select.tomselect) {
+                        select.tomselect.destroy();
+                    }
+
+                    trajetCard.remove();
+
+                    // Mettre à jour les numéros de trajet
+                    document.querySelectorAll('.trajet-card').forEach((card, index) => {
+                        card.querySelector('.card-header span').textContent = `Trajet #${index + 1}`;
+                    });
+
+                    // Désactiver le bouton de suppression s'il ne reste qu'un trajet
+                    if (document.querySelectorAll('.trajet-card').length === 1) {
+                        document.querySelector('.remove-trajet').disabled = true;
+                    }
+                    
+                    // Mettre à jour les options disponibles
+                    updateDestinationOptions();
+                }
+            }
+        });
+
+        // Ajouter des écouteurs d'événements pour les changements de destination
+        document.querySelectorAll('.trajet-destination').forEach(select => {
+            if (select.tomselect) {
+                select.tomselect.on('change', function() {
+                    updateDestinationOptions();
+                });
+            }
+        });
+
+        // Gestion de la création de destination
+        const saveDestinationBtn = document.getElementById('saveDestination');
+        if (saveDestinationBtn) {
+            saveDestinationBtn.addEventListener('click', function () {
+                const lieuDepart = document.getElementById('destination_lieu_depart').value;
+                const lieuArrivee = document.getElementById('destination_lieu_arrivee').value;
+                const distance = document.getElementById('destination_distance').value;
+                const regionId = document.getElementById('destination_region').value;
+
+                if (!lieuDepart || !lieuArrivee || !distance || !regionId) {
+                    toastr.warning('Veuillez remplir tous les champs obligatoires');
+                    return;
+                }
+
+                fetch("{{ path('app_destination_voyage_new') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: new URLSearchParams({
+                        'lieu_depart': lieuDepart,
+                        'lieu_arrivee': lieuArrivee,
+                        'distance': distance,
+                        'region': regionId
+                    })
+                })
+                .then(response => {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json();
+                    } else {
+                        throw new TypeError("La réponse n'est pas au format JSON");
+                    }
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Ajouter la nouvelle destination à tous les selects de destination
+                        document.querySelectorAll('.trajet-destination').forEach(select => {
+                            // Ajouter l'option au DOM
+                            const option = document.createElement('option');
+                            option.value = data.id;
+                            option.textContent = data.libelle;
+                            select.appendChild(option);
+
+                            // Mettre à jour Tom Select
+                            const tomSelect = select.tomselect;
+                            if (tomSelect) {
+                                // Ajouter l'option à Tom Select
+                                tomSelect.addOption({
+                                    value: data.id,
+                                    text: data.libelle
+                                });
+                                
+                                // Rafraîchir les options
+                                tomSelect.refreshOptions();
+                            }
+                        });
+
+                        // Fermer le modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('destinationModal'));
+                        modal.hide();
+
+                        // Réinitialiser le formulaire
+                        document.getElementById('destination_lieu_depart').value = '';
+                        document.getElementById('destination_lieu_arrivee').value = '';
+                        document.getElementById('destination_distance').value = '';
+                        document.getElementById('destination_region').value = '';
+                    } else {
+                        toastr.error(data.message || 'Une erreur est survenue lors de la création de la destination');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    toastr.error('Une erreur est survenue lors de la création de la destination: ' + error.message);
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

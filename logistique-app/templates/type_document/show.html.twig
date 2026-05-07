@@ -1,0 +1,54 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détails du type de document - {{ type_document.nom }}{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Détails du type de document</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_type_document_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Retour à la liste
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Nom</label>
+                                    <div class="form-control-plaintext">{{ type_document.nom }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Validité (mois)</label>
+                                    <div class="form-control-plaintext">{{ type_document.validite }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{{ path('app_type_document_edit', {'id': type_document.id}) }}" class="btn btn-warning">
+                            <i class="fas fa-edit me-2"></i>
+                            Modifier
+                        </a>
+                        <form method="post" action="{{ path('app_type_document_delete', {'id': type_document.id}) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce type de document ?');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ type_document.id) }}">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>
+                                Supprimer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

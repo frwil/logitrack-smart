@@ -1,0 +1,207 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    {% if chauffeur is defined and chauffeur is not null %}
+        Détails du Chauffeur - {{ chauffeur.nom }}
+    {% else %}
+        Détails du Chauffeur - Inconnu
+    {% endif %}
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .page-body {
+            padding: 20px 0;
+        }
+        .permis-card {
+            border-left: 4px solid #4b6cb7;
+            transition: all 0.3s ease;
+        }
+        .permis-card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        .badge-expired {
+            background-color: #dc3545;
+        }
+        .badge-valid {
+            background-color: #198754;
+        }
+        .hr-text {
+            line-height: 1em;
+            position: relative;
+            border: 0;
+            color: #4b6cb7;
+            text-align: center;
+            height: 1.5em;
+            margin: 2rem 0;
+        }
+        .hr-text:before {
+            content: '';
+            background: linear-gradient(to right, transparent, #818078, transparent);
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: 1px;
+        }
+        .hr-text:after {
+            content: attr(data-content);
+            position: relative;
+            display: inline-block;
+            color: #4b6cb7;
+            padding: 0 0.5em;
+            line-height: 1.5em;
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Détails du chauffeur</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_chauffeurs_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Retour à la liste
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if chauffeur is defined and chauffeur is not null %}
+                            <div class="row mb-4">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Nom</label>
+                                        <div class="form-control-plaintext">{{ chauffeur.nom }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Prénom</label>
+                                        <div class="form-control-plaintext">{{ chauffeur.prenom }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Téléphone</label>
+                                        <div class="form-control-plaintext">{{ chauffeur.telephone }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="hr-text" data-content="Permis de conduire"></div>
+
+                            <div class="space-y-3 mb-4">
+                                {% if chauffeur.permis|length > 0 %}
+                                    {% for permis in chauffeur.permis %}
+                                        <div class="permis-card card card-sm mb-3">
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Catégorie</label>
+                                                            <div class="form-control-plaintext">{{ permis.typePermisVehicule.libellePermis }}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Numéro</label>
+                                                            <div class="form-control-plaintext">{{ permis.numero }}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Date de validité</label>
+                                                            <div class="form-control-plaintext">
+                                                                {{ permis.dateValidite|date('d/m/Y') }}
+                                                                {% set isExpired = permis.dateValidite < date() %}
+                                                                <span class="badge ms-2 {% if isExpired %}badge-expired{% else %}badge-valid{% endif %}">
+                                                                    {% if isExpired %}Expiré{% else %}Valide{% endif %}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Ce chauffeur n'a aucun permis enregistré.
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            {% if chauffeur.affectationVehicules|length > 0 %}
+                                <div class="hr-text" data-content="Affectations en cours"></div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Véhicule</th>
+                                                <th>Date de début</th>
+                                                <th>Date de fin</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for affectation in chauffeur.affectationVehicules %}
+                                                {% if affectation.dateFin is null or affectation.dateFin > date() %}
+                                                <tr>
+                                                    <td>{{ affectation.vehicule.immatriculation }}</td>
+                                                    <td>{{ affectation.dateDebut|date('d/m/Y H:i') }}</td>
+                                                    <td>{{ affectation.dateFin ? affectation.dateFin|date('d/m/Y H:i') : 'Non définie' }}</td>
+                                                </tr>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Chauffeur non trouvé ou inaccessible.
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer d-flex">
+                        {% if chauffeur is defined and chauffeur is not null %}
+                            <a href="{{ path('app_chauffeurs_edit', {'id': chauffeur.id}) }}" class="btn btn-primary me-2">
+                                <i class="fas fa-edit me-2"></i>
+                                Modifier
+                            </a>
+                            {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_SUPER_ADMIN') %}
+                                <form method="post" action="{{ path('app_chauffeurs_delete', {'id': chauffeur.id}) }}" 
+                                      onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce chauffeur ?');" 
+                                      class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ chauffeur.id) }}">
+                                    <button type="submit" class="btn btn-danger me-2">
+                                        <i class="fas fa-trash me-2"></i>
+                                        Supprimer
+                                    </button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                        <a href="{{ path('app_chauffeurs_index') }}" class="btn btn-secondary">
+                            <i class="fas fa-list me-2"></i>
+                            Retour à la liste
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détails du Prestataire - {{ prestataire_intervention.nom }}{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Détails du Prestataire</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_prestataire_intervention_index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2 d-none d-sm-inline-block"></i>
+                                <span class="d-none d-sm-inline-block">Retour à la liste</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Nom</label>
+                                    <div class="form-control-plaintext">{{ prestataire_intervention.nom }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Statut</label>
+                                    <div class="form-control-plaintext">
+                                        {% if prestataire_intervention.actif %}
+                                        <span class="badge text-bg-success">Actif</span>
+                                        {% else %}
+                                        <span class="badge text-bg-danger">Inactif</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Contact</label>
+                                    <div class="form-control-plaintext">{{ prestataire_intervention.contact|default('N/A') }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Téléphone</label>
+                                    <div class="form-control-plaintext">{{ prestataire_intervention.telephone|default('N/A') }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <div class="form-control-plaintext">{{ prestataire_intervention.email|default('N/A') }}</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Adresse</label>
+                            <div class="form-control-plaintext">{{ prestataire_intervention.adresse|default('N/A')|nl2br }}</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Spécialités</label>
+                            <div class="form-control-plaintext">{{ prestataire_intervention.specialites|default('N/A')|nl2br }}</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Nombre d'interventions</label>
+                                    <div class="form-control-plaintext">{{ prestataire_intervention.nombreInterventions }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Coût moyen d'intervention</label>
+                                    <div class="form-control-plaintext">{{ prestataire_intervention.coutMoyenIntervention|number_format(2, ',', ' ') }} €</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Date de création</label>
+                                    <div class="form-control-plaintext">{{ prestataire_intervention.dateCreation|date('d/m/Y H:i') }}</div>
+                                </div>
+                            </div>
+                            {% if prestataire_intervention.dateModification %}
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Date de modification</label>
+                                    <div class="form-control-plaintext">{{ prestataire_intervention.dateModification|date('d/m/Y H:i') }}</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mt-3">
+                            <a href="{{ path('app_prestataire_intervention_edit', {'id': prestataire_intervention.id}) }}" class="btn btn-warning">
+                                <i class="fas fa-edit me-2"></i>Modifier
+                            </a>
+                            {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_SUPER_ADMIN') %}
+                                {% if prestataire_intervention.bonReparations.count == 0 and prestataire_intervention.vidanges.count == 0 %}
+                                <form method="post" action="{{ path('app_prestataire_intervention_delete', {'id': prestataire_intervention.id}) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce prestataire ?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ prestataire_intervention.id) }}">
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-trash me-2"></i>Supprimer
+                                    </button>
+                                </form>
+                                {% else %}
+                                <button class="btn btn-danger" disabled title="Impossible de supprimer - des interventions sont associées">
+                                    <i class="fas fa-trash me-2"></i>Supprimer
+                                </button>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

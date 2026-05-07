@@ -1,0 +1,451 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}État des véhicules - Logistique App{% endblock %}
+
+{% block stylesheets %}
+<style>
+    @media print {
+        /* Masquer tous les éléments de navigation et d'interface */
+        .navbar-vertical, 
+        .navbar-horizontal, 
+        .sidebar-toggle, 
+        .card-actions,
+        .btn,
+        #sidebar,
+        .overlay,
+        .dropdown-overlay,
+        .navbar-nav,
+        .search-form,
+        .user-menu {
+            display: none !important;
+        }
+        
+        /* Ajuster la mise en page */
+        .page-wrapper {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+        
+        body {
+            padding-top: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+        }
+        
+        .container-xl {
+            max-width: 100% !important;
+            padding: 0 15px !important;
+        }
+        
+        /* Styles pour les cartes */
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+            page-break-inside: avoid;
+        }
+        
+        .card-header {
+            background-color: white !important;
+            color: black !important;
+            border-bottom: 2px solid #000 !important;
+        }
+        
+        /* Styles pour le tableau */
+        .table {
+            width: 100% !important;
+            font-size: 12px !important;
+        }
+        
+        .table th,
+        .table td {
+            padding: 4px 8px !important;
+        }
+        
+        /* Styles pour les badges */
+        .badge {
+            border: 1px solid #000 !important;
+            color: black !important;
+            background-color: white !important;
+            padding: 2px 6px !important;
+        }
+        
+        .text-bg-success {
+            background-color: #d4edda !important;
+        }
+        
+        .text-bg-danger {
+            background-color: #f8d7da !important;
+        }
+        
+        /* Masquer les graphiques lors de l'impression */
+        canvas {
+            display: none !important;
+        }
+        
+        /* Ajouter un en-tête d'impression */
+        .print-header {
+            display: block !important;
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+        
+        .print-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .print-date {
+            font-size: 14px;
+            color: #666;
+        }
+    }
+    
+    /* Styles spécifiques pour l'impression des graphiques */
+    .print-chart {
+        display: none;
+    }
+    
+    @media print {
+        .print-chart {
+            display: block;
+            text-align: center;
+            margin: 15px 0;
+            page-break-inside: avoid;
+        }
+        
+        .print-chart img {
+            max-width: 100%;
+            height: auto;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <!-- En-tête d'impression (masqué à l'écran) -->
+        <div class="print-header" style="display: none;">
+            <div class="print-title">État des véhicules</div>
+            <div class="print-date">Rapport généré le {{ "now"|date("d/m/Y à H:i") }}</div>
+        </div>
+        
+        <div class="row row-cards">
+            <!-- Cartes de statistiques -->
+            <div class="col-md-4">
+                <div class="card card-sm">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <span class="bg-primary text-white avatar">
+                                    <i class="fas fa-car"></i>
+                                </span>
+                            </div>
+                            <div class="col">
+                                <div class="font-weight-medium">
+                                    {{ vehicules|length }} véhicules
+                                </div>
+                                <div class="text-muted">
+                                    Total
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-sm">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <span class="bg-success text-white avatar">
+                                    <i class="fas fa-check-circle"></i>
+                                </span>
+                            </div>
+                            <div class="col">
+                                <div class="font-weight-medium">
+                                    {{ vehiculesActifs }} véhicules actifs
+                                </div>
+                                <div class="text-muted">
+                                    En service
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-sm">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <span class="bg-warning text-white avatar">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </span>
+                            </div>
+                            <div class="col">
+                                <div class="font-weight-medium">
+                                    {{ vehiculesAvecDocumentsExpirant }} documents expirant
+                                </div>
+                                <div class="text-muted">
+                                    Prochainement
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graphique de répartition par statut -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Répartition par statut</h3>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="statusChart" width="400" height="200"></canvas>
+                        <!-- Version imprimable du graphique (masquée à l'écran) -->
+                        <div class="print-chart" id="printStatusChart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graphique de répartition par type de carburant -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Répartition par type de carburant</h3>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="fuelTypeChart" width="400" height="200"></canvas>
+                        <!-- Version imprimable du graphique (masquée à l'écran) -->
+                        <div class="print-chart" id="printFuelTypeChart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tableau détaillé -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">État des véhicules</h3>
+                        <div class="card-actions">
+                            <button class="btn btn-success" onclick="exportToExcel()">
+                                <i class="fas fa-file-excel"></i> Excel
+                            </button>
+                            <button class="btn btn-danger" onclick="exportToPDF()">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-vcenter table-mobile-md card-table" id="vehiculesTable">
+                                <thead>
+                                    <tr>
+                                        <th>Immatriculation</th>
+                                        <th>Marque/Modèle</th>
+                                        <th>Type carburant</th>
+                                        <th>Statut</th>
+                                        <th>Entité</th>
+                                        <th class="no-export">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for vehicule in vehicules %}
+                                    <tr>
+                                        <td>{{ vehicule.immatriculationVehicule }}</td>
+                                        <td>
+                                            <div>{{ vehicule.idMarque.nomMarque }}</div>
+                                            <div class="text-muted">{{ vehicule.modeleVehicule.nomModele }}</div>
+                                        </td>
+                                        <td>{{ vehicule.typeCarburant.value }}</td>
+                                        <td>
+                                            {% if vehicule.statut %}
+                                                <span class="badge text-bg-success">Actif</span>
+                                            {% else %}
+                                                <span class="badge text-bg-danger">Inactif</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ vehicule.idEntite.libelle }}</td>
+                                        <td class="no-export">
+                                            <a href="{{ path('app_vehicule_show', {'id': vehicule.id}) }}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ path('app_vehicule_edit', {'id': vehicule.id}) }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Graphique de répartition par statut
+    var statusCtx = document.getElementById('statusChart').getContext('2d');
+    var activeCount = {{ vehicules|filter(v => v.statut)|length }};
+    var inactiveCount = {{ vehicules|filter(v => not v.statut)|length }};
+    
+    var statusChart = new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Actifs', 'Inactifs'],
+            datasets: [{
+                data: [activeCount, inactiveCount],
+                backgroundColor: [
+                    '#4caf50',
+                    '#f44336'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Répartition par statut'
+                }
+            }
+        }
+    });
+
+    // Graphique de répartition par type de carburant
+    var fuelTypeCtx = document.getElementById('fuelTypeChart').getContext('2d');
+    
+    // Compter les véhicules par type de carburant
+    var fuelTypes = {};
+    {% for vehicule in vehicules %}
+        var fuelType = '{{ vehicule.typeCarburant.value }}';
+        if (fuelTypes[fuelType]) {
+            fuelTypes[fuelType]++;
+        } else {
+            fuelTypes[fuelType] = 1;
+        }
+    {% endfor %}
+    
+    var fuelTypeLabels = Object.keys(fuelTypes);
+    var fuelTypeData = Object.values(fuelTypes);
+    
+    var fuelTypeChart = new Chart(fuelTypeCtx, {
+        type: 'bar',
+        data: {
+            labels: fuelTypeLabels,
+            datasets: [{
+                label: 'Nombre de véhicules',
+                data: fuelTypeData,
+                backgroundColor: [
+                    '#ff6384',
+                    '#36a2eb',
+                    '#ffce56',
+                    '#4bc0c0',
+                    '#9966ff'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Répartition par type de carburant'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Fonction d'export Excel
+    window.exportToExcel = function() {
+        // Cloner le tableau pour exclure les colonnes non exportables
+        const table = document.getElementById('vehiculesTable');
+        const cloneTable = table.cloneNode(true);
+        
+        // Supprimer les colonnes d'actions
+        const actionColumns = cloneTable.querySelectorAll('.no-export');
+        actionColumns.forEach(col => col.remove());
+        
+        // Créer un classeur Excel
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.table_to_sheet(cloneTable);
+        
+        // Ajouter la feuille au classeur
+        XLSX.utils.book_append_sheet(wb, ws, "Véhicules");
+        
+        // Exporter le fichier
+        XLSX.writeFile(wb, "etat_vehicules_" + new Date().toISOString().slice(0, 10) + ".xlsx");
+    };
+
+    // Fonction d'export PDF
+    window.exportToPDF = function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Ajouter un titre
+        doc.setFontSize(16);
+        doc.text("État des véhicules", 14, 15);
+        doc.setFontSize(10);
+        doc.text("Généré le: " + new Date().toLocaleDateString(), 14, 22);
+        
+        // Préparer les données du tableau
+        const table = document.getElementById('vehiculesTable');
+        const headers = [];
+        const data = [];
+        
+        // Récupérer les en-têtes (en excluant les colonnes d'actions)
+        table.querySelectorAll('thead tr th:not(.no-export)').forEach(th => {
+            headers.push(th.textContent.trim());
+        });
+        
+        // Récupérer les données (en excluant les colonnes d'actions)
+        table.querySelectorAll('tbody tr').forEach(tr => {
+            const row = [];
+            tr.querySelectorAll('td:not(.no-export)').forEach(td => {
+                row.push(td.textContent.trim());
+            });
+            data.push(row);
+        });
+        
+        // Générer le tableau PDF
+        doc.autoTable({
+            head: [headers],
+            body: data,
+            startY: 30,
+            theme: 'grid',
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [41, 128, 185] }
+        });
+        
+        // Sauvegarder le PDF
+        doc.save("etat_vehicules_" + new Date().toISOString().slice(0, 10) + ".pdf");
+    };
+});
+</script>
+{% endblock %}

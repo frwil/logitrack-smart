@@ -1,0 +1,101 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détails du document - {{ document.reference }}{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Détails du document</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_document_vehicule_index', {'id': document.vehicule.id}) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2 d-none d-sm-inline-block"></i>
+                                <span class="d-none d-sm-inline-block">Retour aux documents</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Type de document</label>
+                                    <div class="form-control-plaintext">{{ document.typeDocument.nom }}</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Référence</label>
+                                    <div class="form-control-plaintext">{{ document.reference }}</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Date d'expiration</label>
+                                    <div class="form-control-plaintext">{{ document.dateExpiration|date('d/m/Y') }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Véhicule</label>
+                                    <div class="form-control-plaintext">{{ document.vehicule.immatriculationVehicule }}</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Statut</label>
+                                    <div class="form-control-plaintext">
+                                        {% if document.isActive %}
+                                        <span class="badge text-bg-success">Actif</span>
+                                        {% else %}
+                                        <span class="badge text-bg-secondary">Inactif</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Dossier</label>
+                                    <div class="form-control-plaintext">{{ document.dossier.refDossier }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group" role="group">
+                            <a href="{{ path('app_document_vehicule_edit', {'id': document.vehicule.id, 'documentId': document.id}) }}" class="btn btn-warning">
+                                <i class="fas fa-edit me-2"></i>
+                                Modifier
+                            </a>
+                            
+                            <form method="post" action="{{ path('app_document_vehicule_toggle_active', {'id': document.vehicule.id, 'documentId': document.id}) }}" class="d-inline">
+                                <input type="hidden" name="_token" value="{{ csrf_token('toggle-active' ~ document.id) }}">
+                                <button type="submit" class="btn {{ document.isActive ? 'btn-secondary' : 'btn-success' }}">
+                                    <i class="fas {{ document.isActive ? 'fa-toggle-on' : 'fa-toggle-off' }} me-2"></i>
+                                    {{ document.isActive ? 'Désactiver' : 'Activer' }}
+                                </button>
+                            </form>
+
+                            <form method="post" action="{{ path('app_document_vehicule_delete', {'id': document.vehicule.id, 'documentId': document.id}) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce document ?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ document.id) }}">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash me-2"></i>
+                                    Supprimer
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3 class="card-title">Historique des modifications</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">L'historique des modifications n'est pas encore implémenté.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

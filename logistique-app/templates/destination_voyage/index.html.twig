@@ -1,0 +1,111 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Destinations de Voyage{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Liste des destinations de voyage</h3>
+                        <div class="card-actions">
+                            <a href="{{ path('app_destination_voyage_new') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i> Nouvelle destination
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if destination_voyages is not empty %}
+                            <div class="table-responsive">
+                                <table id="destinationsTable" class="table table-bordered table-hover w-100">
+                                    <thead>
+                                        <tr>
+                                            <th>Lieu de départ</th>
+                                            <th>Lieu d'arrivée</th>
+                                            <th>Libellé</th>
+                                            <th>Distance (km)</th>
+                                            <th>Région</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for destination in destination_voyages %}
+                                            <tr>
+                                                <td>{{ destination.lieuDepart }}</td>
+                                                <td>{{ destination.lieuArrivee }}</td>
+                                                <td>{{ destination.libelle }}</td>
+                                                <td>{{ destination.distance }}</td>
+                                                <td><a href="{{ path('app_region_show', {'id': destination.region.id}) }}">
+                                                        {{ destination.region.nom }}
+                                                    </a></td>
+                                                <td>
+                                                    <div class="btn-group">
+                                                        <a href="{{ path('app_destination_voyage_show', {'id': destination.id}) }}" class="btn btn-sm">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <a href="{{ path('app_destination_voyage_edit', {'id': destination.id}) }}" class="btn btn-sm">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_SUPER_ADMIN') %}
+                                                        <form method="post" action="{{ path('app_destination_voyage_delete', {'id': destination.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette destination ?');">
+                                                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ destination.id) }}">
+                                                            <button type="submit" class="btn btn-sm">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                        {% endif %}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="empty">
+                                <div class="empty-icon">
+                                    <i class="fas fa-map-marker-alt" style="font-size: 3rem;"></i>
+                                </div>
+                                <p class="empty-title">Aucune destination enregistrée</p>
+                                <p class="empty-subtitle text-muted">
+                                    Commencez par ajouter une nouvelle destination de voyage.
+                                </p>
+                                <div class="empty-action">
+                                    <a href="{{ path('app_destination_voyage_new') }}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i> Ajouter une destination
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialiser DataTables si le tableau existe
+        const destinationsTable = document.getElementById('destinationsTable');
+        if (destinationsTable) {
+            $(destinationsTable).DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/fr-FR.json'
+                },
+                responsive: true,
+                columnDefs: [
+                    { orderable: false, targets: 5 } // Désactiver le tri sur la colonne Actions
+                ],
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100]
+            });
+        }
+    });
+</script>
+{% endblock %}

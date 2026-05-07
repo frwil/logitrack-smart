@@ -1,0 +1,64 @@
+{# templates/user/profile.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon Profil{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Mon Profil</h3>
+                    </div>
+                    <div class="card-body">
+                        {% for message in app.flashes('success') %}
+                            <div class="alert alert-success">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+
+                        <form method="post">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="telephone" class="form-label">Téléphone</label>
+                                        <input type="text" class="form-control" id="telephone" name="telephone" value="{{ user.telephone }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="nom" class="form-label">Nom</label>
+                                        <input type="text" class="form-control" id="nom" name="nom" value="{{ user.nom }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="prenom" class="form-label">Prénom</label>
+                                        <input type="text" class="form-control" id="prenom" name="prenom" value="{{ user.prenom }}" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-footer">
+                                <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                                <a href="{{ path('app_user_change_password') }}" class="btn btn-warning">Changer le mot de passe</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

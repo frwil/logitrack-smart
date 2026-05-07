@@ -1,0 +1,105 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des Chauffeurs{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {{ encore_entry_link_tags('app') }}
+{% endblock %}
+
+{% block body %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-cards">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Chauffeurs</h3>
+                        <div class="ms-auto">
+                            <a href="{{ path('app_chauffeurs_new') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2 d-none d-sm-inline-block"></i>
+                                <span class="d-none d-sm-inline-block">Nouveau Chauffeur</span>
+                                <i class="fas fa-plus d-sm-none"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="chauffeur-table" class="table card-table table-vcenter text-nowrap datatable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nom</th>
+                                        <th>Prénom</th>
+                                        <th>Téléphone</th>
+                                        <th>Type de Permis</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% for chauffeur in chauffeurs %}
+                                    <tr>
+                                        <td>{{ chauffeur.id }}</td>
+                                        <td>{{ chauffeur.nom }}</td>
+                                        <td>{{ chauffeur.prenom }}</td>
+                                        <td>{{ chauffeur.telephone }}</td>
+                                        <td>
+                                            {% if chauffeur.permis is not empty %}
+                                                {% for permis in chauffeur.permis %}
+                                                    {{ permis.typePermisVehicule.libellePermis }}{% if not loop.last %}, {% endif %}
+                                                {% endfor %}
+                                            {% else %}
+                                                Aucun permis
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ path('app_chauffeurs_show', {'id': chauffeur.id}) }}" class="btn btn-icon btn-sm" title="Détails" aria-label="Voir détails du chauffeur">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ path('app_chauffeurs_edit', {'id': chauffeur.id}) }}" class="btn btn-icon btn-sm" title="Modifier" aria-label="Modifier le chauffeur">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_SUPER_ADMIN') %}
+                                                <form method="post" action="{{ path('app_chauffeurs_delete', {'id': chauffeur.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce chauffeur ?');" class="d-inline">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ chauffeur.id) }}">
+                                                    <button type="submit" class="btn btn-icon btn-sm text-danger" title="Supprimer" aria-label="Supprimer le chauffeur">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center">Aucun chauffeur trouvé.</td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        $(document).ready(function() {
+            $('#chauffeur-table').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/2.0.8/i18n/fr-FR.json'
+                },
+                order: [[1, 'asc']], // Tri par nom par défaut
+                responsive: true,
+                columnDefs: [
+                    { responsivePriority: 1, targets: 1 }, // Priorité responsive pour le nom
+                    { responsivePriority: 2, targets: -1 } // Priorité responsive pour les actions
+                ]
+            });
+        });
+    </script>
+{% endblock %}
