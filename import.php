@@ -6,7 +6,7 @@ if (isset($_POST['lignes'])):
     $lignes = json_decode($_POST['lignes']);
     for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = $_POST[$keys[$i]] == '' ? '' : mysqli_real_escape_string($con, $_POST[$keys[$i]]);
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($mysqli);
+    mysqli_begin_transaction($con);
     try {
         for ($i = 0; $i < count($lignes); $i++):
             $q = mysqli_query($con, "INSERT ignore INTO `modele_vehicule` (`id_modele_vehicule`, `nom_modele_vehicule`) VALUES (NULL, '{$lignes[$i]->{"Types de véhicule"}}')");
