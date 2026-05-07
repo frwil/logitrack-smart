@@ -1,4 +1,5 @@
-<?php $con = mysqli_connect("localhost", "root", "usbw", "logistiquenjs"); ?>
+<?php require_once __DIR__ . '/env_loader.php'; ?>
+<?php $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME')); ?>
 <?php
 if (isset($_POST['lignes'])):
 

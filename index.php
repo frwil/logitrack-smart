@@ -30,7 +30,8 @@ endif; ?>
     <?php /* ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL); */ ?>
-    <?php $con = mysqli_connect("mysql-responsablelogistiquenjs.alwaysdata.net","390253","211Willy85@2101","responsablelogistiquenjs_logistiquenjs"); ?>
+    <?php require_once __DIR__ . '/env_loader.php'; ?>
+    <?php $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME')); ?>
     <?php if (!isset($_SESSION['usr-con'])): include('login.php');
     else : ?>
         <?php
