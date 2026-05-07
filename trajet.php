@@ -1,7 +1,7 @@
 <?php function getTableauTrajets()
 {
     global $con;
-    $q = mysqli_query($con, "select * from destination_voyage where 1");
+    $q = db_select($con, "select * from destination_voyage where 1", []);
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Libellé</th><th>Distance</th><th></th></tr></thead><tbody>";
     $i = 1;
     while ($r = mysqli_fetch_array($q)):
@@ -14,7 +14,7 @@
 ?>
 <?php include('modalNewTrajet.php'); ?>
 <?php if (isset($_POST['id-destination-forModal'])):
-    $q = mysqli_query($con, "select * from destination_voyage where sha1(concat(id_destination,lib_destination))='{$_POST['id-destination-forModal']}'");
+    $q = db_select($con, "select * from destination_voyage where sha1(concat(id_destination,lib_destination))=?", [$_POST['id-destination-forModal']]);
     while ($r = mysqli_fetch_array($q)):
         $destination = $r;
     endwhile;
@@ -22,12 +22,10 @@
 endif;
 if (isset($_POST['id-destination'])):
     $_POST['nom-upd-destination'] = trim(strtoupper($_POST['nom-upd-destination']));
-    $keys = array_keys($_POST);
-    for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = $_POST[$keys[$i]] == '' ? '' : mysqli_real_escape_string($con, $_POST[$keys[$i]]);
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-      $q = mysqli_query($con, "update destination_voyage set lib_destination='{$_POST['nom-upd-destination']}', distance_destination={$_POST['distance-destination-upd']} where sha1(concat(id_destination,lib_destination))='{$_POST['id-destination']}'");
+      $q = db_exec($con, "update destination_voyage set lib_destination=?, distance_destination=? where sha1(concat(id_destination,lib_destination))=?", [$_POST['nom-upd-destination'], $_POST['distance-destination-upd'], $_POST['id-destination']]);
         mysqli_commit($con);
         die("UpdTrajet%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -36,7 +34,7 @@ if (isset($_POST['id-destination'])):
     }
 endif;
 if (isset($_POST['id-destination-forDel'])):
-    $q = mysqli_query($con, "delete from destination_voyage where sha1(concat(id_destination,lib_destination))='{$_POST['id-destination-forDel']}'");
+    $q = db_exec($con, "delete from destination_voyage where sha1(concat(id_destination,lib_destination))=?", [$_POST['id-destination-forDel']]);
     if ($q) die("UpdTrajet%%%%%%1");
     die("UpdTrajet%%%%%%0");
 endif;

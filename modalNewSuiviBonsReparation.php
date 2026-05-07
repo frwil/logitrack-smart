@@ -2,9 +2,11 @@
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, strtoupper(trim($_POST[$keys[$i]])));
-        $q = mysqli_query($con, "INSERT INTO `bons_reparation` (`id_bon_reparation`, `num_bon_reparation`, `id_affectation_vehicule`, `date_entree`, `diagnostic`, `type_execution`, `id_prestataire`, `montant_reparation`, `id_plus_ou_moins_value`, `plus_ou_moins_value_valeur`, `destination_bon`, `duree_reparation`, `date_justification`, `id_centre_cout`, `date_prevue_sortie`, `date_fin_reparation`, `observations`, `cloture_reparation`) VALUES (NULL, '{$_POST['num-br']}', (select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))='{$_POST['vh-br']}'), '{$_POST['date-entree-br']}', '{$_POST['diagnostic-br']}', '{$_POST['type-execution-br']}', (select id_prestataire from prestataire_intervention where sha1(concat(id_prestataire,nom_prestataire))='{$_POST['prestataire-br']}'), '{$_POST['montant-br']}', (select id_plus_ou_moins_value from plus_ou_moins_value where sha1(concat(id_plus_ou_moins_value,lib_plus_ou_moins_value))='{$_POST['plus-moins-br']}'), '{$_POST['plus-moins-val-br']}', '{$_POST['destination-br']}', '{$_POST['duree-br']}', '{$_POST['date-justif-br']}', (select id_centre_cout from centre_couts where sha1(concat(id_centre_cout,lib_centre_cout))='{$_POST['centrecout-br']}'), " . ($_POST['date-prevue-br'] == "" ? "NULL" : "'{$_POST['date-prevue-br']}'") . ", " . ($_POST['date-fin-br'] == "" ? "NULL" : "'{$_POST['date-fin-br']}'") . ", " . ($_POST['observation-br'] == "" ? "NULL" : "'{$_POST['observation-br']}'") . ", '0')");
+        $_POST['num-br'] = strtoupper(trim($_POST['num-br']));
+        $_POST['diagnostic-br'] = strtoupper(trim($_POST['diagnostic-br']));
+        $_POST['destination-br'] = strtoupper(trim($_POST['destination-br']));
+        $_POST['observation-br'] = strtoupper(trim($_POST['observation-br']));
+        $q = db_exec($con, "INSERT INTO `bons_reparation` (`id_bon_reparation`, `num_bon_reparation`, `id_affectation_vehicule`, `date_entree`, `diagnostic`, `type_execution`, `id_prestataire`, `montant_reparation`, `id_plus_ou_moins_value`, `plus_ou_moins_value_valeur`, `destination_bon`, `duree_reparation`, `date_justification`, `id_centre_cout`, `date_prevue_sortie`, `date_fin_reparation`, `observations`, `cloture_reparation`) VALUES (NULL, ?, (select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?), ?, ?, ?, (select id_prestataire from prestataire_intervention where sha1(concat(id_prestataire,nom_prestataire))=?), ?, (select id_plus_ou_moins_value from plus_ou_moins_value where sha1(concat(id_plus_ou_moins_value,lib_plus_ou_moins_value))=?), ?, ?, ?, ?, (select id_centre_cout from centre_couts where sha1(concat(id_centre_cout,lib_centre_cout))=?), ?, ?, ?, '0')", [$_POST['num-br'], $_POST['vh-br'], $_POST['date-entree-br'], $_POST['diagnostic-br'], $_POST['type-execution-br'], $_POST['prestataire-br'], $_POST['montant-br'], $_POST['plus-moins-br'], $_POST['plus-moins-val-br'], $_POST['destination-br'], $_POST['duree-br'], $_POST['date-justif-br'], $_POST['centrecout-br'], $_POST['date-prevue-br'] === '' ? null : $_POST['date-prevue-br'], $_POST['date-fin-br'] === '' ? null : $_POST['date-fin-br'], $_POST['observation-br'] === '' ? null : $_POST['observation-br']]);
         mysqli_commit($con);
         die("NEWBR%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -14,7 +16,7 @@
     }
 endif;
 if (isset($_POST['load-cc-br'])):
-    $q = mysqli_query($con, "select * from centre_couts");
+    $q = db_select($con, "select * from centre_couts");
     $options = "";
     while ($r = mysqli_fetch_array($q)):
         $options .= "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
@@ -41,7 +43,10 @@ endif;
                     <div class="col-6">
                         <div class="form-floating mb-3">
                             <select id="vh-br" name="vh-br" class="form-select">
-                                <?php $q = mysqli_query($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and affectation_vehicule.id_region " . ($_SESSION['usr-con']['region-sel'] != '' ? "=({$_SESSION['usr-con']['region-sel']})" : "=''"));
+                                <?php $sqlBr = "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0";
+                                $paramsBr = [];
+                                if ($_SESSION['usr-con']['region-sel'] != '') { $sqlBr .= " and affectation_vehicule.id_region=?"; $paramsBr[] = (int)$_SESSION['usr-con']['region-sel']; }
+                                $q = db_select($con, $sqlBr, $paramsBr);
                                 while ($r = mysqli_fetch_array($q)):
                                     echo "<option value='" . sha1($r[0] . $r['id_vehicule']) . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == sha1($r[0] . $r['id_vehicule']) ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >{$r['immatriculation_vehicule']} ({$r['nom_chauffeur']})</option>";
                                 endwhile;
@@ -75,7 +80,7 @@ endif;
                         <div class="input-group mb-3">
                             <div class="form-floating">
                                 <select class="form-select" id="prestataire-br" name="prestataire-br">
-                                    <?php $q = mysqli_query($con, "select * from prestataire_intervention");
+                                    <?php $q = db_select($con, "select * from prestataire_intervention");
                                     while ($r = mysqli_fetch_array($q)):
                                         echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                                     endwhile;
@@ -96,7 +101,7 @@ endif;
                     <div class="col-6">
                         <div class="form-floating mb-3">
                             <select class="form-select" id="plus-moins-br" name="plus-moins-br">
-                                <?php $q = mysqli_query($con, "select * from plus_ou_moins_value");
+                                <?php $q = db_select($con, "select * from plus_ou_moins_value");
                                 while ($r = mysqli_fetch_array($q)):
                                     echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                                 endwhile;
@@ -134,7 +139,7 @@ endif;
                         <div class="input-group mb-3">
                             <div class="form-floating">
                                 <select class="form-select" id="centrecout-br" name="centrecout-br" required>
-                                    <?php $q = mysqli_query($con, "select * from centre_couts");
+                                    <?php $q = db_select($con, "select * from centre_couts");
                                     while ($r = mysqli_fetch_array($q)):
                                         echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                                     endwhile;

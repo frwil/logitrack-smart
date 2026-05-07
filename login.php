@@ -1,12 +1,12 @@
 <?php
 if (isset($_POST['name-user'])):
-    $q = mysqli_query($con, "select * from users where name_user='{$_POST['name-user']}'");
+    $q = db_select($con, "select * from users where name_user=?", [$_POST['name-user']]);
     while ($r = mysqli_fetch_array($q)):
         $user = $r;
     endwhile;
     if (mysqli_num_rows($q) > 0):
         $regions = explode(',', $user['users_region']);
-        $q=mysqli_query($con,"select * from region where sha1(concat(id_region,nom_region))='{$_POST['region-user']}'");
+        $q = db_select($con, "select * from region where sha1(concat(id_region,nom_region))=?", [$_POST['region-user']]);
         while($r=mysqli_fetch_array($q)) $region=$r;
         $trouve=false;
         for($i=0;$i<count($regions);$i++){
@@ -17,7 +17,7 @@ if (isset($_POST['name-user'])):
             $user['region-sel-name']=$region[1];
             $user['region-sel-admin']=$region['is_admin'];
             if (password_verify($_POST['pass-user'], $user['pass_user'])) {
-                $q = mysqli_query($con, "select * from users_rights where id_user={$user['id_user']}");
+                $q = db_select($con, "select * from users_rights where id_user=?", [(int)$user['id_user']]);
                 $rights = array();
                 while ($r = mysqli_fetch_array($q)) :
                     array_push($rights, $r);
@@ -52,7 +52,7 @@ endif;
                 <div class="login__field">
                     <label for="region-user">Région</label>
                     <select class="login__select" placeholder="Region" id="region-user" name="region-user">
-                        <?php $q = mysqli_query($con, "select * from region where 1");
+                        <?php $q = db_select($con, "select * from region where 1", []);
                         while ($r = mysqli_fetch_array($q)):
                             echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                         endwhile;

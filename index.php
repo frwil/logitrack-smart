@@ -31,11 +31,12 @@ endif; ?>
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL); */ ?>
     <?php require_once __DIR__ . '/env_loader.php'; ?>
+    <?php require_once __DIR__ . '/db.php'; ?>
     <?php $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME')); ?>
     <?php if (!isset($_SESSION['usr-con'])): include('login.php');
     else : ?>
         <?php
-        $q = mysqli_query($con, "select * from users where id_user='{$_SESSION['usr-con']['id_user']}'");
+        $q = db_select($con, "select * from users where id_user=?", [(int)$_SESSION['usr-con']['id_user']]);
         while ($r = mysqli_fetch_array($q)):
             $user = $r;
         endwhile;
@@ -43,7 +44,7 @@ error_reporting(E_ALL); */ ?>
         $user['region-sel-name']=(isset($_SESSION['usr-con']['region-sel-name']) ? $_SESSION['usr-con']['region-sel-name'] : '');
         $user['region-sel-admin']=(isset($_SESSION['usr-con']['region-sel-admin']) ? $_SESSION['usr-con']['region-sel-admin'] : '');
         $_SESSION['usr-con']=$user;
-        $q = mysqli_query($con, "select * from users_rights where id_user={$_SESSION['usr-con']['id_user']}");
+        $q = db_select($con, "select * from users_rights where id_user=?", [(int)$_SESSION['usr-con']['id_user']]);
         $rights = array();
         while ($r = mysqli_fetch_array($q)):
             array_push($rights, $r);

@@ -54,7 +54,7 @@
             $_POST['date_fin'] = date("Y-m-d");
           }
           // Récupération des données de la base de données
-          $q = mysqli_query($con, "SELECT * FROM vehicule");
+          $q = db_select($con, "SELECT * FROM vehicule", []);
           $table = "";
           $sum_chargement = array();
           $sum_kms= array();
@@ -62,7 +62,7 @@
           while ($row = mysqli_fetch_array($q)) {
             $i = 0;
             $id_vehicule = $row['id_vehicule'];
-            $q2 = mysqli_query($con, "SELECT * FROM voyage left join affectation_vehicule on affectation_vehicule.id_affectation=voyage.id_affectation left join type_chargement_voyage on type_chargement_voyage.id_type_chargement=voyage.id_type_chargement left join voyage_vehicule on voyage_vehicule.id_voyage=voyage.id_voyage left join destination_voyage on destination_voyage.id_destination=voyage_vehicule.id_destination WHERE id_vehicule='$id_vehicule' AND date_voyage between '{$_POST['date_debut']}' and '{$_POST['date_fin']}' and is_ferme=0 and affectation_vehicule.id_region=".$_SESSION['usr-con']['region-sel']." order by type_chargement_voyage.id_type_chargement, date_voyage");
+            $q2 = db_select($con, "SELECT * FROM voyage left join affectation_vehicule on affectation_vehicule.id_affectation=voyage.id_affectation left join type_chargement_voyage on type_chargement_voyage.id_type_chargement=voyage.id_type_chargement left join voyage_vehicule on voyage_vehicule.id_voyage=voyage.id_voyage left join destination_voyage on destination_voyage.id_destination=voyage_vehicule.id_destination WHERE id_vehicule=? AND date_voyage between ? and ? and is_ferme=0 and affectation_vehicule.id_region=? order by type_chargement_voyage.id_type_chargement, date_voyage", [(int)$id_vehicule, $_POST['date_debut'], $_POST['date_fin'], (int)$_SESSION['usr-con']['region-sel']]);
             $id_vehicule = $row['id_vehicule'];
             $sum_chargement[$id_vehicule] = array();
             $sum_kms[$id_vehicule] = array();
@@ -77,7 +77,7 @@
               $sum_kms[$id_vehicule][$row2['id_type_chargement']] += $row2['distance_destination'];
               $sum_conso[$id_vehicule][$row2['id_type_chargement']] += $row2['qte_carburant'];
             }
-            $q2 = mysqli_query($con, "SELECT * FROM voyage left join affectation_vehicule on affectation_vehicule.id_affectation=voyage.id_affectation left join type_chargement_voyage on type_chargement_voyage.id_type_chargement=voyage.id_type_chargement left join voyage_vehicule on voyage_vehicule.id_voyage=voyage.id_voyage left join destination_voyage on destination_voyage.id_destination=voyage_vehicule.id_destination WHERE id_vehicule='$id_vehicule' AND date_voyage between '{$_POST['date_debut']}' and '{$_POST['date_fin']}' and is_ferme=0 and affectation_vehicule.id_region=".$_SESSION['usr-con']['region-sel']." order by type_chargement_voyage.id_type_chargement, date_voyage");
+            $q2 = db_select($con, "SELECT * FROM voyage left join affectation_vehicule on affectation_vehicule.id_affectation=voyage.id_affectation left join type_chargement_voyage on type_chargement_voyage.id_type_chargement=voyage.id_type_chargement left join voyage_vehicule on voyage_vehicule.id_voyage=voyage.id_voyage left join destination_voyage on destination_voyage.id_destination=voyage_vehicule.id_destination WHERE id_vehicule=? AND date_voyage between ? and ? and is_ferme=0 and affectation_vehicule.id_region=? order by type_chargement_voyage.id_type_chargement, date_voyage", [(int)$id_vehicule, $_POST['date_debut'], $_POST['date_fin'], (int)$_SESSION['usr-con']['region-sel']]);
             while ($row2 = mysqli_fetch_array($q2)) { 
               $table .= "<tr><td>" . $row['immatriculation_vehicule'] . " (" . mysqli_num_rows($q2) . " Voyages)" . "</td><td>".$row['immatriculation_vehicule']."</td>";
               $table .= "<td>".date('d/m/Y',strtotime($row2['date_voyage']))."</td><td>".$row['immatriculation_vehicule']." - ".$row2['lib_type_chargement']. " (".$sum_chargement[$id_vehicule][$row2['id_type_chargement']]." - ". $sum_kms[$id_vehicule][$row2['id_type_chargement']]."kms - " .$sum_conso[$id_vehicule][$row2['id_type_chargement']]."Litres)"."</td><td>".$row2['lib_type_chargement']."</td><td>" . $row2['qte_chargement'] . "</td><td>".$row2['distance_destination']."</td><td>".$row2['qte_carburant']."</td></tr>";

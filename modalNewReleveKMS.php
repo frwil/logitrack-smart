@@ -1,6 +1,6 @@
 <?php
 if (isset($_POST['idvhlkms'])):
-    $q = mysqli_query($con, "select max(km_releve) from releve_kms_vehicule where id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))='{$_POST['idvhlkms']}') and date_fin_periode_releve<='{$_POST['dtkms']}' order by date_fin_periode_releve desc");
+    $q = db_select($con, "select max(km_releve) from releve_kms_vehicule where id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?) and date_fin_periode_releve<=? order by date_fin_periode_releve desc", [$_POST['idvhlkms'], $_POST['dtkms']]);
     $km_releve = 0;
     while ($r = mysqli_fetch_array($q)):
         $km_releve = $r[0] != "" ? $r[0] : 0;
@@ -11,7 +11,8 @@ if (isset($_POST['per-releve'])):
     $per = json_decode($_POST['per-releve']);
     $options = array();
     for ($i = 0; $i < count($per); $i++):
-        $q = mysqli_query($con, "select * from releve_kms_vehicule where periode_releve='Semaine " . ($i + 1) . "' and id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))='{$_POST['id-vh']}') and date_debut_periode_releve='{$per[$i]->start}' and date_fin_periode_releve='{$per[$i]->end}'");
+        $periodeLabel = 'Semaine ' . ($i + 1);
+        $q = db_select($con, "select * from releve_kms_vehicule where periode_releve=? and id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?) and date_debut_periode_releve=? and date_fin_periode_releve=?", [$periodeLabel, $_POST['id-vh'], $per[$i]->start, $per[$i]->end]);
         $options[$i] = mysqli_num_rows($q);
     endfor;
     die("PERRELEVE%%%%%%" . json_encode($options));
@@ -21,9 +22,8 @@ if (isset($_POST['date-releve-kms'])):
     mysqli_begin_transaction($con);
     try {
 
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
-        $q = mysqli_query($con, "INSERT INTO `releve_kms_vehicule` (`id_releve`, `date_releve`, `km_releve`, `id_affectation_vehicule`, `periode_releve`, `date_debut_periode_releve`, `date_fin_periode_releve`,semaine_annee) VALUES (NULL, CURRENT_TIMESTAMP, '{$_POST['val-releve-kms']}', (select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))='{$_POST['vh-releve-kms']}'),'Semaine ".date('W',strtotime($_POST['start-per']))."','{$_POST['start-per']}','{$_POST['end-per']}',weekofyear('{$_POST['start-per']}'))");
+        $periodeLabel = 'Semaine '.date('W',strtotime($_POST['start-per']));
+        $q = db_exec($con, "INSERT INTO `releve_kms_vehicule` (`id_releve`, `date_releve`, `km_releve`, `id_affectation_vehicule`, `periode_releve`, `date_debut_periode_releve`, `date_fin_periode_releve`,semaine_annee) VALUES (NULL, CURRENT_TIMESTAMP, ?, (select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?), ?, ?, ?, weekofyear(?))", [$_POST['val-releve-kms'], $_POST['vh-releve-kms'], $periodeLabel, $_POST['start-per'], $_POST['end-per'], $_POST['start-per']]);
         mysqli_commit($con);
         die("NewReleveKMS%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -43,8 +43,10 @@ endif;
                 <form method="post" action="#" id="form-new-relevekms">
                     <div class="form-floating mb-3">
                         <select required id="vh-releve-kms" name="vh-releve-kms" class="form-select" onchange="$('#date-releve-kms').change();">
-                            <?php echo "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and affectation_vehicule.id_region " . ($_SESSION['usr-con']['region-sel'] != '' ? "=({$_SESSION['usr-con']['region-sel']})" : "=''");
-                            $q = mysqli_query($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and affectation_vehicule.id_region " . ($_SESSION['usr-con']['region-sel'] != '' ? "=({$_SESSION['usr-con']['region-sel']})" : "=''"));
+                            <?php $sqlRkms = "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0";
+                            $paramsRkms = [];
+                            if ($_SESSION['usr-con']['region-sel'] != '') { $sqlRkms .= " and affectation_vehicule.id_region=?"; $paramsRkms[] = (int)$_SESSION['usr-con']['region-sel']; }
+                            $q = db_select($con, $sqlRkms, $paramsRkms);
                             while ($r = mysqli_fetch_array($q)):
                                 echo "<option value='" . sha1($r[0] . $r['id_vehicule']) . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == sha1($r[0] . $r['id_vehicule']) ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >{$r['immatriculation_vehicule']} ({$r['nom_chauffeur']})</option>";
                             endwhile;

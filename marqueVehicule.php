@@ -2,7 +2,7 @@
 {
     global $con;
     global $rights_vehicule;
-    $q = mysqli_query($con, "SELECT * FROM `marque_vehicule` WHERE 1");
+    $q = db_select($con, "SELECT * FROM `marque_vehicule` WHERE 1", []);
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Nom marque</th><th></th></tr></thead><tbody>";
     $i = 1;
     while ($r = mysqli_fetch_array($q)):
@@ -15,7 +15,7 @@
 include("modalNewMarque.php");
 ?>
 <?php if (isset($_POST['id-marque-forModal'])):
-    $q = mysqli_query($con, "select * from marque_vehicule where id_marque={$_POST['id-marque-forModal']}");
+    $q = db_select($con, "select * from marque_vehicule where id_marque=?", [(int)$_POST['id-marque-forModal']]);
     while ($r = mysqli_fetch_array($q)):
         $marque = $r;
     endwhile;
@@ -23,12 +23,10 @@ include("modalNewMarque.php");
 endif;
 if (isset($_POST['id-marque'])):
     $_POST['nom-upd-marque'] = trim(strtoupper($_POST['nom-upd-marque']));
-    $keys = array_keys($_POST);
-    for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $q = mysqli_query($con, "update marque_vehicule set nom_marque='{$_POST['nom-upd-marque']}' where id_marque={$_POST['id-marque']}");
+        $q = db_exec($con, "update marque_vehicule set nom_marque=? where id_marque=?", [$_POST['nom-upd-marque'], (int)$_POST['id-marque']]);
         mysqli_commit($con);
         die("UpdMarque%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -37,7 +35,7 @@ if (isset($_POST['id-marque'])):
     }
 endif;
 if(isset($_POST['id-marque-forDel'])):
-    $q=mysqli_query($con,"delete from marque_vehicule where id_marque={$_POST['id-marque-forDel']}");
+    $q=db_exec($con,"delete from marque_vehicule where id_marque=?", [(int)$_POST['id-marque-forDel']]);
     if($q) die("UpdMarque%%%%%%1");
     die("UpdMarque%%%%%%0");
 endif;

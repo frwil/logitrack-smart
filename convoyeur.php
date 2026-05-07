@@ -1,7 +1,7 @@
 <?php function getTableauConvoyeurs()
 {
     global $con;
-    $q = mysqli_query($con, "SELECT * FROM `convoyeur` WHERE 1");
+    $q = db_select($con, "SELECT * FROM `convoyeur` WHERE 1", []);
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Nom Convoyeur</th><th></th></tr></thead><tbody>";
     $i = 1;
     while ($r = mysqli_fetch_array($q)):
@@ -19,7 +19,7 @@
 </script>
 <?php endif; ?>
 <?php if (isset($_POST['id-convoyeur-forModal'])):
-    $q = mysqli_query($con, "select * from convoyeur where sha1(concat(id_convoyeur,nom_convoyeur))='{$_POST['id-convoyeur-forModal']}'");
+    $q = db_select($con, "select * from convoyeur where sha1(concat(id_convoyeur,nom_convoyeur))=?", [$_POST['id-convoyeur-forModal']]);
     while ($r = mysqli_fetch_array($q)):
         $convoyeur = $r;
     endwhile;
@@ -27,12 +27,10 @@
 endif;
 if (isset($_POST['id-convoyeur'])):
     $_POST['nom-upd-convoyeur'] = trim(strtoupper($_POST['nom-upd-convoyeur']));
-    $keys = array_keys($_POST);
-    for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $q = mysqli_query($con, "update convoyeur set nom_convoyeur='{$_POST['nom-upd-convoyeur']}' where sha1(concat(id_convoyeur,nom_convoyeur))='{$_POST['id-convoyeur']}'");
+        $q = db_exec($con, "update convoyeur set nom_convoyeur=? where sha1(concat(id_convoyeur,nom_convoyeur))=?", [$_POST['nom-upd-convoyeur'], $_POST['id-convoyeur']]);
         mysqli_commit($con);
         die("UpdConvoyeur%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -41,7 +39,7 @@ if (isset($_POST['id-convoyeur'])):
     }
 endif;
 if(isset($_POST['id-convoyeur-forDel'])):
-    $q=mysqli_query($con,"delete from convoyeur where sha1(concat(id_convoyeur,nom_convoyeur))='{$_POST['id-convoyeur-forDel']}'");
+    $q=db_exec($con,"delete from convoyeur where sha1(concat(id_convoyeur,nom_convoyeur))=?", [$_POST['id-convoyeur-forDel']]);
     if($q) die("UpdConvoyeur%%%%%%1");
     die("UpdConvoyeur%%%%%%0");
 endif;

@@ -2,9 +2,7 @@
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 mysqli_begin_transaction($con);
 try {
-    $keys=array_keys($_POST);
-    for($i=0;$i<count($keys);$i++) $_POST[$keys[$i]]=mysqli_real_escape_string($con,strtoupper($_POST[$keys[$i]]));
-    $q=mysqli_query($con,"INSERT INTO `centre_couts` (`id_centre_cout`, `lib_centre_cout`) VALUES (NULL, '{$_POST['nom-cc']}')");
+    $q=db_exec($con,"INSERT INTO `centre_couts` (`id_centre_cout`, `lib_centre_cout`) VALUES (NULL, ?)", [$_POST['nom-cc']]);
     mysqli_commit($con);
         die("NEWCC%%%%%%1");
     } catch (mysqli_sql_exception $e) {

@@ -2,9 +2,7 @@
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 mysqli_begin_transaction($con);
 try {
-    $keys = array_keys($_POST);
-    for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, trim($_POST[$keys[$i]]));
-    $q=mysqli_query($con,"INSERT INTO `document_vehicule` (`id_document`, `nom_document`, `validite_document`) VALUES (NULL, '{$_POST['nom-doc']}', '{$_POST['valid-doc']}')");
+    $q=db_exec($con,"INSERT INTO `document_vehicule` (`id_document`, `nom_document`, `validite_document`) VALUES (NULL, ?, ?)", [$_POST['nom-doc'], $_POST['valid-doc']]);
     mysqli_commit($con);
     die("NEWDOC%%%%%%1");
 } catch (mysqli_sql_exception $e) {

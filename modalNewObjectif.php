@@ -3,9 +3,7 @@ if (isset($_POST['date-objectif'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
-        $q = mysqli_query($con, "INSERT INTO `objectif_periode_region` (`id_objectif_periode`, `date_objectif_periode`, `id_region`, `objectif`) VALUES (NULL, '{$_POST['date-objectif']}', {$_SESSION['usr-con']['region-sel']}, {$_POST['objectif']})");
+        $q = db_exec($con, "INSERT INTO `objectif_periode_region` (`id_objectif_periode`, `date_objectif_periode`, `id_region`, `objectif`) VALUES (NULL, ?, ?, ?)", [$_POST['date-objectif'], (int)$_SESSION['usr-con']['region-sel'], (int)$_POST['objectif']]);
         mysqli_commit($con);
         die("NewObjectif%%%%%%1");
     } catch (mysqli_sql_exception $e) {

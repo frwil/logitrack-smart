@@ -2,7 +2,7 @@
 {
     global $con;
     global $rights_vehicule;
-    $q = mysqli_query($con, "SELECT * FROM `modele_vehicule` WHERE 1");
+    $q = db_select($con, "SELECT * FROM `modele_vehicule` WHERE 1", []);
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Nom modele</th><th></th></tr></thead><tbody>";
     $i = 1;
     while ($r = mysqli_fetch_array($q)):
@@ -15,7 +15,7 @@
 include("modalNewModele.php");
 ?>
 <?php if (isset($_POST['id-modele-forModal'])):
-    $q = mysqli_query($con, "select * from modele_vehicule where id_modele_vehicule={$_POST['id-modele-forModal']}");
+    $q = db_select($con, "select * from modele_vehicule where id_modele_vehicule=?", [(int)$_POST['id-modele-forModal']]);
     while ($r = mysqli_fetch_array($q)):
         $modele = $r;
     endwhile;
@@ -23,12 +23,10 @@ include("modalNewModele.php");
 endif;
 if (isset($_POST['id-modele'])):
     $_POST['nom-upd-modele'] = trim(strtoupper($_POST['nom-upd-modele']));
-    $keys = array_keys($_POST);
-    for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $q = mysqli_query($con, "update modele_vehicule set nom_modele_vehicule='{$_POST['nom-upd-modele']}' where id_modele_vehicule={$_POST['id-modele']}");
+        $q = db_exec($con, "update modele_vehicule set nom_modele_vehicule=? where id_modele_vehicule=?", [$_POST['nom-upd-modele'], (int)$_POST['id-modele']]);
         mysqli_commit($con);
         die("UpdModele%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -37,7 +35,7 @@ if (isset($_POST['id-modele'])):
     }
 endif;
 if(isset($_POST['id-modele-forDel'])):
-    $q=mysqli_query($con,"delete from modele_vehicule where id_modele_vehicule={$_POST['id-modele-forDel']}");
+    $q=db_exec($con,"delete from modele_vehicule where id_modele_vehicule=?", [(int)$_POST['id-modele-forDel']]);
     if($q) die("UpdModele%%%%%%1");
     die("UpdModele%%%%%%0");
 endif;

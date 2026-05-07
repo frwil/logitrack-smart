@@ -6,7 +6,7 @@
 {
     global $con;
     global $rights_config;
-    $q = mysqli_query($con, "select * from type_permis_vehicule");
+    $q = db_select($con, "select * from type_permis_vehicule", []);
     $tableau = "<table class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-drivelicence'><thead><tr><th>#</th><th>Catégorie</th><th>Description</th><th></th></tr></thead><tbody>";
     $i = 1;
     while ($r = mysqli_fetch_array($q)):
@@ -21,7 +21,7 @@ function getTableauDocs()
 {
     global $con;
     global $rights_config;
-    $q = mysqli_query($con, "select * from document_vehicule");
+    $q = db_select($con, "select * from document_vehicule", []);
     $tableau = "<table class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-docs'><thead><tr><th>#</th><th>Désignation</th><th>Validité (en mois)</th><th></th></tr></thead><tbody>";
     $i = 1;
     while ($r = mysqli_fetch_array($q)):
@@ -38,9 +38,9 @@ function getTableauFolder()
     global $rights_config;
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
-    $q = mysqli_query($con, "select *,(select id_dossier_vehicule_document from dossier_vehicule_document where dossier_vehicule_document.id_vehicule=vehicule.id_vehicule limit 1) as id_v from vehicule left join affectation_vehicule on affectation_vehicule.id_vehicule=vehicule.id_vehicule left join chauffeur c on c.id_chauffeur=affectation_vehicule.id_chauffeur left join marque_vehicule on marque_vehicule.id_marque=vehicule.id_marque left join entite on entite.id_entite=vehicule.id_entite where is_ferme=0 and affectation_vehicule.id_region". ($_SESSION['usr-con']['region-sel'] != '' ? "=({$_SESSION['usr-con']['region-sel']})" : "=''")." order by immatriculation_vehicule");
+    $q = db_select($con, "select *,(select id_dossier_vehicule_document from dossier_vehicule_document where dossier_vehicule_document.id_vehicule=vehicule.id_vehicule limit 1) as id_v from vehicule left join affectation_vehicule on affectation_vehicule.id_vehicule=vehicule.id_vehicule left join chauffeur c on c.id_chauffeur=affectation_vehicule.id_chauffeur left join marque_vehicule on marque_vehicule.id_marque=vehicule.id_marque left join entite on entite.id_entite=vehicule.id_entite where is_ferme=0 and affectation_vehicule.id_region=? order by immatriculation_vehicule", [(int)$_SESSION['usr-con']['region-sel']]);
     $tableau = "<table style='font-size:0.8rem' class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-folder' ><thead><tr><th>Chassis</th><th>Véhicule</th><th>Marque</th><th>1ère mise en circulation</th><th>Entité</th><th>Places assises</th><th>Source d'énergie</th>";
-    $q1 = mysqli_query($con, "select * from document_vehicule");
+    $q1 = db_select($con, "select * from document_vehicule", []);
     $docs = array();
     while ($r1 = mysqli_fetch_array($q1)):
         $tableau .= "<th class='text-center'>{$r1['nom_document']} ({$r1['validite_document']} mois)<br>Date Expiration : </th>";
@@ -52,14 +52,14 @@ function getTableauFolder()
         $tableau .= "<tr ".($r['id_v']!="" ? "style='font-weight:bold' class='doc-saved'" : "")."><td>{$r['chassis_vehicule']}</td><td>{$r['immatriculation_vehicule']}</td><td>{$r['nom_marque']}</td><td>{$r['premiere_utilisation']}</td><td>{$r['nom_entite']}</td><td>{$r['nb_place']}</td><td>{$r['type_carburant']}</td>";
         $ref_dossier = "";
         for ($i = 0; $i < count($docs); $i++):
-            $q1 = mysqli_query($con, "select * from dossier_vehicule_document left join dossier_vehicule on dossier_vehicule.id_dossier_vehicule=dossier_vehicule_document.id_dossier_vehicule where id_vehicule={$r[0]} and id_document={$docs[$i]['id_document']} and is_active=1 limit 1");
+            $q1 = db_select($con, "select * from dossier_vehicule_document left join dossier_vehicule on dossier_vehicule.id_dossier_vehicule=dossier_vehicule_document.id_dossier_vehicule where id_vehicule=? and id_document=? and is_active=1 limit 1", [(int)$r[0], (int)$docs[$i]['id_document']]);
             while ($r1 = mysqli_fetch_array($q1)):
                 $tableau .= "<td title='Réf : {$r1['ref_document']}'>{$r1['date_expiration_document']}</td>";
                 $ref_dossier = $r1['ref_dossier'];
             endwhile;
             if (mysqli_num_rows($q1) == 0) $tableau .= "<td></td>";
         endfor;
-        $q1=mysqli_query($con,"select * from type_permis_vehicule inner join qualification_permis_vehicule on qualification_permis_vehicule.id_type_permis=type_permis_vehicule.id_type_permis and id_vehicule={$r[0]}");
+        $q1=db_select($con,"select * from type_permis_vehicule inner join qualification_permis_vehicule on qualification_permis_vehicule.id_type_permis=type_permis_vehicule.id_type_permis and id_vehicule=?", [(int)$r[0]]);
         $permis="";
         $i=0;
         while($r1=mysqli_fetch_array($q1)):
@@ -77,7 +77,7 @@ if (isset($_POST['dl-id'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $q = mysqli_query($con, "delete from `type_permis_vehicule` where sha1(concat(id_type_permis,lib_type_permis))='{$_POST['dl-id']}'");
+        $q = db_exec($con, "delete from `type_permis_vehicule` where sha1(concat(id_type_permis,lib_type_permis))=?", [$_POST['dl-id']]);
         mysqli_commit($con);
         die("DELDL%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -89,7 +89,7 @@ if (isset($_POST['lib-type-upd'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $q = mysqli_query($con, "update type_permis_vehicule set lib_type_permis='{$_POST['lib-type-upd']}', desc_type_permis=" . ($_POST['desc-type-upd'] == "" ? "NULL" : "'{$_POST['desc-type-upd']}'") . " where sha1(concat(id_type_permis,lib_type_permis))='{$_POST['id-type-permis']}'");
+        $q = db_exec($con, "update type_permis_vehicule set lib_type_permis=?, desc_type_permis=? where sha1(concat(id_type_permis,lib_type_permis))=?", [$_POST['lib-type-upd'], $_POST['desc-type-upd'] === '' ? null : $_POST['desc-type-upd'], $_POST['id-type-permis']]);
         mysqli_commit($con);
         die("UPDDL%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -98,7 +98,7 @@ if (isset($_POST['lib-type-upd'])):
     }
 endif;
 if (isset($_POST['c-dl-s'])):
-    $q = mysqli_query($con, "select *,(sha1(concat(id_type_permis,lib_type_permis))) as id_dl from type_permis_vehicule where sha1(concat(id_type_permis,lib_type_permis))='{$_POST['c-dl-s']}'");
+    $q = db_select($con, "select *,(sha1(concat(id_type_permis,lib_type_permis))) as id_dl from type_permis_vehicule where sha1(concat(id_type_permis,lib_type_permis))=?", [$_POST['c-dl-s']]);
     $liste = array();
     while ($r = mysqli_fetch_array($q)):
         $liste = $r;
@@ -111,9 +111,7 @@ if (isset($_POST['nom-doc-upd'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, trim($_POST[$keys[$i]]));
-        $q = mysqli_query($con, "update document_vehicule set nom_document='{$_POST['nom-doc-upd']}',validite_document='{$_POST['valid-doc-upd']}' where sha1(concat(id_document,nom_document))='{$_POST['id-doc']}'");
+        $q = db_exec($con, "update document_vehicule set nom_document=?,validite_document=? where sha1(concat(id_document,nom_document))=?", [$_POST['nom-doc-upd'], $_POST['valid-doc-upd'], $_POST['id-doc']]);
         mysqli_commit($con);
         die("UPDDOC%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -125,9 +123,9 @@ if (isset($_POST['vh-folder-upd'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $q = mysqli_query($con, "delete from `dossier_vehicule_document` where id_dossier_vehicule=(select id_dossier_vehicule from dossier_vehicule where ref_dossier= '{$_POST['ref-folder']}')");
+        $q = db_exec($con, "delete from `dossier_vehicule_document` where id_dossier_vehicule=(select id_dossier_vehicule from dossier_vehicule where ref_dossier=?)", [$_POST['ref-folder']]);
         for ($i = 0; $i < count($_POST['doc-list-name']); $i++):
-            $q = mysqli_query($con, "INSERT INTO `dossier_vehicule_document` (`id_dossier_vehicule_document`, `id_document`, `date_expiration_document`, `id_vehicule`, `id_dossier_vehicule`,ref_document) VALUES (NULL, (select id_document from document_vehicule where sha1(concat(id_document,nom_document))='{$_POST['doc-list-id'][$i]}'), '{$_POST['dt-list-name'][$i]}', (select id_vehicule from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))='{$_POST['vh-folder-upd']}'), (select id_dossier_vehicule from dossier_vehicule where ref_dossier='{$_POST['ref-folder']}'),'{$_POST['refd-list-name'][$i]}')");
+            $q = db_exec($con, "INSERT INTO `dossier_vehicule_document` (`id_dossier_vehicule_document`, `id_document`, `date_expiration_document`, `id_vehicule`, `id_dossier_vehicule`,ref_document) VALUES (NULL, (select id_document from document_vehicule where sha1(concat(id_document,nom_document))=?), ?, (select id_vehicule from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?), (select id_dossier_vehicule from dossier_vehicule where ref_dossier=?),?)", [$_POST['doc-list-id'][$i], $_POST['dt-list-name'][$i], $_POST['vh-folder-upd'], $_POST['ref-folder'], $_POST['refd-list-name'][$i]]);
         endfor;
         mysqli_commit($con);
         die("UPDFLD%%%%%%1");
@@ -275,7 +273,7 @@ endif;
         <hr>
         <?php echo getTableauDocs(); ?>
         <?php if (isset($_GET['action']) && $_GET['action'] == 'upd' && isset($_GET['id']) && $_GET['id'] != ""): ?>
-            <?php $q = mysqli_query($con, "select * from document_vehicule where sha1(concat(id_document,nom_document))='{$_GET['id']}'");
+            <?php $q = db_select($con, "select * from document_vehicule where sha1(concat(id_document,nom_document))=?", [$_GET['id']]);
             $doc = array();
             while ($r = mysqli_fetch_array($q)):
                 $doc = $r;
@@ -368,7 +366,7 @@ endif;
             </script>
         <?php elseif (isset($_GET['action']) && $_GET['action'] == 'upd' && (isset($_GET['id']) && $_GET['id'] != "")): ?>
             <?php
-            $q = mysqli_query($con, "select *,(select sha1(concat(id_document,nom_document)) from document_vehicule dv where dv.id_document=dossier_vehicule_document.id_document) as iddoc from dossier_vehicule_document left join dossier_vehicule on dossier_vehicule.id_dossier_vehicule=dossier_vehicule_document.id_dossier_vehicule left join document_vehicule on document_vehicule.id_document=dossier_vehicule_document.id_document where ref_dossier='{$_GET['id']}'");
+            $q = db_select($con, "select *,(select sha1(concat(id_document,nom_document)) from document_vehicule dv where dv.id_document=dossier_vehicule_document.id_document) as iddoc from dossier_vehicule_document left join dossier_vehicule on dossier_vehicule.id_dossier_vehicule=dossier_vehicule_document.id_dossier_vehicule left join document_vehicule on document_vehicule.id_document=dossier_vehicule_document.id_document where ref_dossier=?", [$_GET['id']]);
             $folder = array();
             while ($r = mysqli_fetch_array($q)) array_push($folder, $r); ?>
             <div class="modal fade" id="modal-folder" tabindex="-1" aria-labelledby="modal-folderLabel" aria-hidden="true">
@@ -387,7 +385,7 @@ endif;
                                 <div class="form-floating mb-3">
                                     <select id="vh-folder" name="vh-folder-upd" class="form-select">
                                         <?php 
-                                        $q = mysqli_query($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and vehicule.id_vehicule={$folder[0]['id_vehicule']} and affectation_vehicule.id_region " . ($_SESSION['usr-con']['region-sel'] != '' ? "=({$_SESSION['usr-con']['region-sel']})" : "=''"));
+                                        $q = db_select($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and vehicule.id_vehicule=? and affectation_vehicule.id_region=?", [(int)$folder[0]['id_vehicule'], (int)$_SESSION['usr-con']['region-sel']]);
                                         while ($r = mysqli_fetch_array($q)):
                                             echo "<option value='" . sha1($r[0] . $r['id_vehicule']) . "' " . ($folder[0]['id_vehicule'] == $r['id_vehicule'] ? 'selected' : '') . " >{$r['immatriculation_vehicule']} ({$r['nom_chauffeur']})</option>";
                                         endwhile;
@@ -398,7 +396,7 @@ endif;
                                 <div class="input-group mb-3">
                                     <div class="form-floating">
                                         <select class="form-select" id="folder-doc">
-                                            <?php $q = mysqli_query($con, "select * from document_vehicule");
+                                            <?php $q = db_select($con, "select * from document_vehicule", []);
                                             while ($r = mysqli_fetch_array($q)):
                                                 echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                                             endwhile;

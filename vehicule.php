@@ -2,7 +2,7 @@
 {
     global $con;
     global $rights_vehicule;
-    $q = mysqli_query($con, "SELECT * FROM `vehicule` left join marque_vehicule on vehicule.id_marque=marque_vehicule.id_marque left join modele_vehicule on vehicule.id_modele_vehicule=modele_vehicule.id_modele_vehicule WHERE 1");
+    $q = db_select($con, "SELECT * FROM `vehicule` left join marque_vehicule on vehicule.id_marque=marque_vehicule.id_marque left join modele_vehicule on vehicule.id_modele_vehicule=modele_vehicule.id_modele_vehicule WHERE 1", []);
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Immatriculation</th><th>Marque</th><th>Modèle</th><th>Chassis</th><th>1ère utilisation</th><th>Expir. carte grise</th><th>Nb. places</th><th>Carburant</th><th>Puissance</th><th>Capacité</th><th></th></tr></thead><tbody>";
     $i = 1;
     while ($r = mysqli_fetch_array($q)):
@@ -13,7 +13,7 @@
     return $tableau;
 }
 if (isset($_POST['im-vh-upd'])):
-    $q = mysqli_query($con, "select *,(select sha1(concat(id_marque,nom_marque)) from marque_vehicule mv where mv.id_marque=vehicule.id_marque) as id_m,(select sha1(concat(id_modele_vehicule,nom_modele_vehicule)) from modele_vehicule mdv where mdv.id_modele_vehicule=vehicule.id_marque) as id_md from vehicule where sha1(concat(id_vehicule,immatriculation_vehicule))='{$_POST['im-vh-upd']}'");
+    $q = db_select($con, "select *,(select sha1(concat(id_marque,nom_marque)) from marque_vehicule mv where mv.id_marque=vehicule.id_marque) as id_m,(select sha1(concat(id_modele_vehicule,nom_modele_vehicule)) from modele_vehicule mdv where mdv.id_modele_vehicule=vehicule.id_marque) as id_md from vehicule where sha1(concat(id_vehicule,immatriculation_vehicule))=?", [$_POST['im-vh-upd']]);
     $liste = array();
     while ($r = mysqli_fetch_array($q)):
         $liste = $r;
@@ -26,7 +26,7 @@ if(isset($_POST['vh-del-id'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $q=mysqli_query($con,"delete from vehicule where immatriculation_vehicule='{$_POST['vh-del-id']}'");
+        $q = db_exec($con, "delete from vehicule where immatriculation_vehicule=?", [$_POST['vh-del-id']]);
         mysqli_commit($con);
         die("DELVH%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -38,10 +38,8 @@ if (isset($_POST['immat-vh-upd'])) {
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
-        $q = mysqli_query($con, "update vehicule set puissance_vehicule='{$_POST['puissance-vh-upd']}', id_marque=(select id_marque from marque_vehicule where sha1(concat(id_marque,nom_marque))='{$_POST['marque-vh-upd']}'),id_modele_vehicule=(select id_modele_vehicule from modele_vehicule where sha1(concat(id_modele_vehicule,nom_modele_vehicule))='{$_POST['modele-vh-upd']}'),chassis_vehicule='{$_POST['chassis-vh-upd']}',premiere_utilisation='{$_POST['dutil-vh-upd']}',expiration_carte_grise='{$_POST['dexpir-vh-upd']}',puissance_vehicule='{$_POST['puissance-vh-upd']}',capacite_consommation_vehicule='{$_POST['capacite-vh-upd']}',nb_place='{$_POST['nbplace-vh-upd']}',type_carburant='{$_POST['tcarb-vh-upd']}' where immatriculation_vehicule='{$_POST['immat-vh-upd']}'");
-        $q = mysqli_query($con, "replace into qualification_permis_vehicule (id_vehicule,id_type_permis) values((select id_vehicule from vehicule where immatriculation_vehicule='{$_POST['immat-vh-upd']}'),(select id_type_permis from type_permis_vehicule where sha1(concat(id_type_permis,lib_type_permis))='{$_POST['qualif-permis-upd']}'))");
+        $q = db_exec($con, "update vehicule set puissance_vehicule=?, id_marque=(select id_marque from marque_vehicule where sha1(concat(id_marque,nom_marque))=?),id_modele_vehicule=(select id_modele_vehicule from modele_vehicule where sha1(concat(id_modele_vehicule,nom_modele_vehicule))=?),chassis_vehicule=?,premiere_utilisation=?,expiration_carte_grise=?,capacite_consommation_vehicule=?,nb_place=?,type_carburant=? where immatriculation_vehicule=?", [$_POST['puissance-vh-upd'], $_POST['marque-vh-upd'], $_POST['modele-vh-upd'], $_POST['chassis-vh-upd'], $_POST['dutil-vh-upd'], $_POST['dexpir-vh-upd'], $_POST['capacite-vh-upd'], $_POST['nbplace-vh-upd'], $_POST['tcarb-vh-upd'], $_POST['immat-vh-upd']]);
+        $q = db_exec($con, "replace into qualification_permis_vehicule (id_vehicule,id_type_permis) values((select id_vehicule from vehicule where immatriculation_vehicule=?),(select id_type_permis from type_permis_vehicule where sha1(concat(id_type_permis,lib_type_permis))=?))", [$_POST['immat-vh-upd'], $_POST['qualif-permis-upd']]);
         mysqli_commit($con);
         die("UPDVH%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -71,7 +69,7 @@ if (isset($_POST['immat-vh-upd'])) {
                             <div class="input-group mb-3">
                                 <div class="form-floating">
                                     <select type="text" id="marque-vh-upd" name="marque-vh-upd" required class="form-select">
-                                        <?php $q = mysqli_query($con, "select * from marque_vehicule where 1");
+                                        <?php $q = db_select($con, "select * from marque_vehicule where 1", []);
                                         while ($r = mysqli_fetch_array($q)):
                                             echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                                         endwhile;
@@ -86,7 +84,7 @@ if (isset($_POST['immat-vh-upd'])) {
                             <div class="input-group mb-3">
                                 <div class="form-floating">
                                     <select type="text" id="modele-vh-upd" name="modele-vh-upd" required class="form-select">
-                                        <?php $q = mysqli_query($con, "select * from modele_vehicule where 1");
+                                        <?php $q = db_select($con, "select * from modele_vehicule where 1", []);
                                         while ($r = mysqli_fetch_array($q)):
                                             echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                                         endwhile;
@@ -137,7 +135,7 @@ if (isset($_POST['immat-vh-upd'])) {
                         <hr>
                         <div class="form-floating mb-3 col-6">
                             <select id="qualif-permis-upd" name="qualif-permis-upd" required class="form-select">
-                                <?php $q = mysqli_query($con, "select * from type_permis_vehicule");
+                                <?php $q = db_select($con, "select * from type_permis_vehicule", []);
                                 while ($r = mysqli_fetch_array($q)) :
                                     echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                                 endwhile;

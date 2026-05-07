@@ -2,7 +2,9 @@
 {
     global $con;
     global $rights_affectation;
-    $q = mysqli_query($con, "SELECT * FROM `affectation_vehicule` left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on region.id_region=affectation_vehicule.id_region left join entite on entite.id_entite=affectation_vehicule.id_entite left join type_utilisation_vehicule on type_utilisation_vehicule.id_type_utilisation=affectation_vehicule.id_type_utilisation left join mode_utilisation_vehicule on mode_utilisation_vehicule.id_mode_utilisation=affectation_vehicule.id_mode_utilisation left join marque_vehicule on marque_vehicule.id_marque=vehicule.id_marque left join modele_vehicule on modele_vehicule.id_modele_vehicule=vehicule.id_modele_vehicule WHERE 1 and affectation_vehicule.id_region ".($_SESSION['usr-con']['users_region']!='' ? "in({$_SESSION['usr-con']['users_region']})" : "=''")." order by date_affectation desc");
+    $regionIds = array_map('intval', explode(',', $_SESSION['usr-con']['users_region']));
+    [$placeholders, $params] = db_in($regionIds);
+    $q = db_select($con, "SELECT * FROM `affectation_vehicule` left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on region.id_region=affectation_vehicule.id_region left join entite on entite.id_entite=affectation_vehicule.id_entite left join type_utilisation_vehicule on type_utilisation_vehicule.id_type_utilisation=affectation_vehicule.id_type_utilisation left join mode_utilisation_vehicule on mode_utilisation_vehicule.id_mode_utilisation=affectation_vehicule.id_mode_utilisation left join marque_vehicule on marque_vehicule.id_marque=vehicule.id_marque left join modele_vehicule on modele_vehicule.id_modele_vehicule=vehicule.id_modele_vehicule WHERE 1 and affectation_vehicule.id_region in ($placeholders) order by date_affectation desc", $params);
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Immatriculation</th><th>Chauffeur</th><th>Région</th><th>Entité</th><th>Type d'utilisation</th><th>Mode d'utilisation</th><th>Objet d'affectation</th><th>Date début</th><th>Date fin</th><th>Clôturé</th><th></th></tr></thead><tbody>";
     $i = 1;
     //$user_rights = $_SESSION['usr-con']['users-rights'];
@@ -17,19 +19,17 @@
 ?>
 <?php include('modalNewAffectation.php'); ?>
 <?php if (isset($_POST['id-affectation-forModal'])):
-    $q = mysqli_query($con, "select * from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))='{$_POST['id-affectation-forModal']}'");
+    $q = db_select($con, "select * from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?", [$_POST['id-affectation-forModal']]);
     while ($r = mysqli_fetch_array($q)):
         $affectation = $r;
     endwhile;
     die("UpdAffectation%%%%%%" . json_encode($affectation));
 endif;
 if (isset($_POST['id-affectation'])):
-    $keys = array_keys($_POST);
-    for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $q = mysqli_query($con, "update affectation_vehicule set nom_chauffeur='{$_POST['nom-upd-chauffeur']}' where sha1(concat(id_affectation,id_vehicule))='{$_POST['id-affectation']}'");
+        $q = db_exec($con, "update affectation_vehicule set nom_chauffeur=? where sha1(concat(id_affectation,id_vehicule))=?", [$_POST['nom-upd-chauffeur'], $_POST['id-affectation']]);
         mysqli_commit($con);
         die("UpdAffectation%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -38,7 +38,7 @@ if (isset($_POST['id-affectation'])):
     }
 endif;
 if(isset($_POST['id-affectation-forDel'])):
-    $q=mysqli_query($con,"delete from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))='{$_POST['id-affectation-forDel']}'");
+    $q = db_exec($con, "delete from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?", [$_POST['id-affectation-forDel']]);
     if($q) die("UpdAffectation%%%%%%1");
     die("UpdAffectation%%%%%%0");
 endif;
@@ -46,7 +46,7 @@ if(isset($_POST['id-aff-toClose'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $q=mysqli_query($con,"update affectation_vehicule set is_ferme=1,date_fin_affectation=CURRENT_DATE where sha1(concat(id_affectation,id_vehicule))='{$_POST['id-aff-toClose']}'");
+        $q = db_exec($con, "update affectation_vehicule set is_ferme=1,date_fin_affectation=CURRENT_DATE where sha1(concat(id_affectation,id_vehicule))=?", [$_POST['id-aff-toClose']]);
         mysqli_commit($con);
         die("CloseAffectation%%%%%%1");
     } catch (mysqli_sql_exception $e) {

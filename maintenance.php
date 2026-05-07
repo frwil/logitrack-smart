@@ -6,7 +6,20 @@ function getTableauReleveKMS()
     global $con;
     global $rights_maintenance;
     if (in_array('viewReleveKms', $rights_maintenance)):
-        $q = mysqli_query($con, "select * from releve_kms_vehicule,affectation_vehicule,vehicule,chauffeur,region where affectation_vehicule.id_vehicule=vehicule.id_vehicule and affectation_vehicule.id_affectation=releve_kms_vehicule.id_affectation_vehicule and chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur and affectation_vehicule.id_region=region.id_region " . (isset($_POST['date-f']) ? "and semaine_annee >= weekofyear('" . date('Y-m-01', strtotime($_POST['date-f'])) . "') and semaine_annee <=weekofyear('" . date('Y-m-t', strtotime($_POST['date-t'])) . "') and date_releve>='". date('Y-m-d',strtotime($_POST['date-f'])) . "'" : "and semaine_annee >= weekofyear('" . date('Y-m-01') . "') and date_releve>='". date('Y-m-01') . "'"). " order by vehicule.id_vehicule,date_releve,semaine_annee");
+        $sqlRel = "select * from releve_kms_vehicule,affectation_vehicule,vehicule,chauffeur,region where affectation_vehicule.id_vehicule=vehicule.id_vehicule and affectation_vehicule.id_affectation=releve_kms_vehicule.id_affectation_vehicule and chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur and affectation_vehicule.id_region=region.id_region ";
+        $paramsRel = [];
+        if (isset($_POST['date-f'])) {
+            $sqlRel .= "and semaine_annee >= weekofyear(?) and semaine_annee <=weekofyear(?) and date_releve>=?";
+            $paramsRel[] = date('Y-m-01', strtotime($_POST['date-f']));
+            $paramsRel[] = date('Y-m-t', strtotime($_POST['date-t']));
+            $paramsRel[] = date('Y-m-d', strtotime($_POST['date-f']));
+        } else {
+            $sqlRel .= "and semaine_annee >= weekofyear(?) and date_releve>=?";
+            $paramsRel[] = date('Y-m-01');
+            $paramsRel[] = date('Y-m-01');
+        }
+        $sqlRel .= " order by vehicule.id_vehicule,date_releve,semaine_annee";
+        $q = db_select($con, $sqlRel, $paramsRel);
         $table = "<table id='table-releve-kms' class='no-datatable' style='display:none'><thead><tr><th>Véhicule</th><th>Région</th><th>Date Relevé</th><th>Kms</th></tr></thead><tbody>";
         while ($r = mysqli_fetch_array($q)):
             $table .= "<tr><td>{$r['immatriculation_vehicule']} - {$r['nom_chauffeur']}</td><td>{$r['nom_region']}</td><td>{$r['periode_releve']} (" . date('d M Y', strtotime($r['date_debut_periode_releve'])) . "-" . date('d M Y', strtotime($r['date_fin_periode_releve'])) . ")</td><td>{$r['km_releve']}</td></tr>";
@@ -23,7 +36,7 @@ function getTableauVidange()
     global $con;
     global $rights_maintenance;
     if (in_array('viewVidange', $rights_maintenance)):
-        $q = mysqli_query($con, "select *,(select km_releve from releve_kms_vehicule where id_affectation_vehicule=vidange_vehicule.id_affectation_vehicule and date_fin_periode_releve=(select max(date_fin_periode_releve) from releve_kms_vehicule where id_affectation_vehicule=vidange_vehicule.id_affectation_vehicule)) as kms_actuel from vidange_vehicule,affectation_vehicule,vehicule,chauffeur,region where affectation_vehicule.id_vehicule=vehicule.id_vehicule and affectation_vehicule.id_affectation=vidange_vehicule.id_affectation_vehicule and chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur and affectation_vehicule.id_region=region.id_region and date_vidange=(select max(date_vidange) from vidange_vehicule v where v.id_affectation_vehicule=affectation_vehicule.id_affectation) and region.id_region={$_SESSION['usr-con']['region-sel']} order by vehicule.id_vehicule");
+        $q = db_select($con, "select *,(select km_releve from releve_kms_vehicule where id_affectation_vehicule=vidange_vehicule.id_affectation_vehicule and date_fin_periode_releve=(select max(date_fin_periode_releve) from releve_kms_vehicule where id_affectation_vehicule=vidange_vehicule.id_affectation_vehicule)) as kms_actuel from vidange_vehicule,affectation_vehicule,vehicule,chauffeur,region where affectation_vehicule.id_vehicule=vehicule.id_vehicule and affectation_vehicule.id_affectation=vidange_vehicule.id_affectation_vehicule and chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur and affectation_vehicule.id_region=region.id_region and date_vidange=(select max(date_vidange) from vidange_vehicule v where v.id_affectation_vehicule=affectation_vehicule.id_affectation) and region.id_region=? order by vehicule.id_vehicule", [(int)$_SESSION['usr-con']['region-sel']]);
         $table = "<table id='table-suivi-vidanges' class='table table-striped'><thead><tr><th>Véhicule</th><th>Date dernière vidange</th><th>Kms (avant vidange)</th><th>Kms (prochaine vidange)</th><th>Kms actuel (dernier relevé)</th><th>Statut</th><th></th></tr></thead><tbody>";
         $danger = 0;
         $success = 0;
@@ -47,7 +60,7 @@ function getTableauPrestataire()
     global $con;
     global $rights_maintenance;
     if (in_array("viewPrestataire", $rights_maintenance)):
-        $q = mysqli_query($con, "select * from prestataire_intervention");
+        $q = db_select($con, "select * from prestataire_intervention", []);
         $table = "<table id='table-prestataire' class='table table-striped'><thead><tr><th>Prestataire</th><th>Contact</th><th>Localisation</th><th></th></tr></thead><tbody>";
         while ($r = mysqli_fetch_array($q)):
             $table .= "<tr><td>{$r['nom_prestataire']}</td><td>{$r['contact_prestataire']}</td><td>{$r['localisation_prestataire']}</td><td><div class='btn-group'>" . (in_array("updPrestataire", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le prestataire' data-bs-toggle='modal' data-bs-target='#modal-upd-prestataire' data-bs-id-pt='" . sha1($r[0] . $r[1]) . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delPrestataire", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delPrestataire(\"" . sha1($r[0] . $r[1]) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
@@ -62,7 +75,7 @@ function getTableauCentreCout()
     global $con;
     global $rights_maintenance;
     if (in_array("viewCentreCout", $rights_maintenance)):
-        $q = mysqli_query($con, "select * from centre_couts");
+        $q = db_select($con, "select * from centre_couts", []);
         $table = "<table id='table-centrecouts' class='table table-striped'><thead><tr><th>Centre de coûts</th><th></th></tr></thead><tbody>";
         while ($r = mysqli_fetch_array($q)):
             $table .= "<tr><td>{$r['lib_centre_cout']}</td><td><div class='btn-group'>" . (in_array("updCentreCout", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le centre de coûts' data-bs-toggle='modal' data-bs-target='#modal-upd-centrecout' data-bs-id-cc='" . sha1($r[0] . $r[1]) . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delCentreCout", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delCentreCout(\"" . sha1($r[0] . $r[1]) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div>";
@@ -77,7 +90,7 @@ function getTableauBonsReparation()
     global $con;
     global $rights_maintenance;
     if (in_array("viewBonsReparation", $rights_maintenance)):
-        $q = mysqli_query($con, "select * from bons_reparation left join affectation_vehicule on id_affectation_vehicule=id_affectation left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join prestataire_intervention on prestataire_intervention.id_prestataire=bons_reparation.id_prestataire left join plus_ou_moins_value on plus_ou_moins_value.id_plus_ou_moins_value=bons_reparation.id_plus_ou_moins_value left join centre_couts on centre_couts.id_centre_cout=bons_reparation.id_centre_cout");
+        $q = db_select($con, "select * from bons_reparation left join affectation_vehicule on id_affectation_vehicule=id_affectation left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join prestataire_intervention on prestataire_intervention.id_prestataire=bons_reparation.id_prestataire left join plus_ou_moins_value on plus_ou_moins_value.id_plus_ou_moins_value=bons_reparation.id_plus_ou_moins_value left join centre_couts on centre_couts.id_centre_cout=bons_reparation.id_centre_cout", []);
         $table = "<table id='table-centrecouts' class='table table-striped responsive'><thead><tr><th>N°</th><th>Véhicule</th><th>Date d'entrée</th><th>Diagnostic</th><th>Type d'exécution</th><th>Prestataire</th><th>Montant</th><th>Opération additionnelle</th><th>Montant opération</th><th>Montant réel</th><th>Destination</th><th>Durée réparation</th><th>Date de justification</th><th>Centre de coûts</th><th>Date prévue de sortie</th><th>Date effective de fin des travaux</th><th>Observations</th><th></th></tr></thead><tbody>";
         while ($r = mysqli_fetch_array($q)):
             $table .= "<tr><td>{$r['num_bon_reparation']}</td><td>{$r['immatriculation_vehicule']} - {$r['nom_chauffeur']}</td><td>" . date('d-m-Y', strtotime($r['date_entree'])) . "</td><td>{$r['diagnostic']}</td><td>" . ($r['type_execution'] == '0' ? "Interne" : "Externe") . "</td><td>{$r['nom_prestataire']}</td><td>{$r['montant_reparation']}</td><td>{$r['lib_plus_ou_moins_value']}</td><td>{$r['plus_ou_moins_value_valeur']}</td><td>" . ($r['montant_reparation'] + $r['plus_ou_moins_value_valeur'] * ($r['type_plus_ou_moins_value'] == 0 ? 1 : -1)) . "</td><td>{$r['destination_bon']}</td><td>{$r['duree_reparation']}</td><td>" . ($r['date_justification'] == '' ? "" : date('d-m-Y', strtotime($r['date_justification']))) . "</td><td>{$r['lib_centre_cout']}</td><td>" . ($r['date_prevue_sortie'] == "" ? "" : date('d-m-Y', strtotime($r['date_prevue_sortie']))) . "</td><td>" . ($r['date_fin_reparation'] == "" ? "" : date('d-m-Y', strtotime($r['date_fin_reparation']))) . "</td><td>{$r['observations']}</td><td><div class='btn-group'>" . (in_array("updBonsReparation", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-bonsReparation' data-bs-id-cc='" . sha1($r[0] . $r[1]) . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delBonsReparation", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delBonsReparation(\"" . sha1($r[0] . $r[1]) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
@@ -89,7 +102,7 @@ function getTableauBonsReparation()
 }
 
 if (isset($_POST['c-vd-s'])):
-    $q = mysqli_query($con, "select * from vidange_vehicule where code_vidange='{$_POST['c-vd-s']}'");
+    $q = db_select($con, "select * from vidange_vehicule where code_vidange=?", [$_POST['c-vd-s']]);
     $liste = array();
     while ($r = mysqli_fetch_array($q)):
         $liste = $r;
@@ -99,7 +112,7 @@ if (isset($_POST['c-vd-s'])):
     die("LISTEVD%%%%%%" . json_encode($liste));
 endif;
 if (isset($_POST['c-pt-s'])):
-    $q = mysqli_query($con, "select *,sha1(concat(id_prestataire,nom_prestataire)) as id_pt from prestataire_intervention where sha1(concat(id_prestataire,nom_prestataire))='{$_POST['c-pt-s']}'");
+    $q = db_select($con, "select *,sha1(concat(id_prestataire,nom_prestataire)) as id_pt from prestataire_intervention where sha1(concat(id_prestataire,nom_prestataire))=?", [$_POST['c-pt-s']]);
     $liste = array();
     while ($r = mysqli_fetch_array($q)):
         $liste = $r;
@@ -112,9 +125,7 @@ if (isset($_POST['c-upd-vd'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
-        $q = mysqli_query($con, "update vidange_vehicule set id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))='{$_POST['vh-upd-vd']}'),date_vidange='{$_POST['date-upd-vd']}',km_vidange={$_POST['km-upd-av-vd']},km_prochaine_vidange={$_POST['km-upd-next-vd']},id_prestataire=(select id_prestataire from prestataire_intervention where sha1(concat(id_prestataire,nom_prestataire))='{$_POST['id-upd-pt-vd']}'),commentaire_vidange=" . ($_POST['comment-upd-vd'] == '' ? "NULL" : "'{$_POST['comment-upd-vd']}'") . " where code_vidange='{$_POST['c-upd-vd']}'");
+        $q = db_exec($con, "update vidange_vehicule set id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?),date_vidange=?,km_vidange=?,km_prochaine_vidange=?,id_prestataire=(select id_prestataire from prestataire_intervention where sha1(concat(id_prestataire,nom_prestataire))=?),commentaire_vidange=? where code_vidange=?", [$_POST['vh-upd-vd'], $_POST['date-upd-vd'], $_POST['km-upd-av-vd'], $_POST['km-upd-next-vd'], $_POST['id-upd-pt-vd'], $_POST['comment-upd-vd'] === '' ? null : $_POST['comment-upd-vd'], $_POST['c-upd-vd']]);
         mysqli_commit($con);
         die("VIDANGEMOD%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -126,9 +137,7 @@ if (isset($_POST['id-upd-pt'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
-        $q = mysqli_query($con, "update prestataire_intervention set nom_prestataire='{$_POST['nom-upd-pt']}', contact_prestataire=" . ($_POST['contact-upd-pt'] == '' ? "NULL" : "'{$_POST['contact-upd-pt']}'") . ", localisation_prestataire=" . ($_POST['localisation-upd-pt'] == '' ? "NULL" : "'{$_POST['localisation-upd-pt']}'") . " where sha1(concat(id_prestataire,nom_prestataire))='{$_POST['id-upd-pt']}'");
+        $q = db_exec($con, "update prestataire_intervention set nom_prestataire=?, contact_prestataire=?, localisation_prestataire=? where sha1(concat(id_prestataire,nom_prestataire))=?", [$_POST['nom-upd-pt'], $_POST['contact-upd-pt'] === '' ? null : $_POST['contact-upd-pt'], $_POST['localisation-upd-pt'] === '' ? null : $_POST['localisation-upd-pt'], $_POST['id-upd-pt']]);
         mysqli_commit($con);
         die("PTMOD%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -137,7 +146,7 @@ if (isset($_POST['id-upd-pt'])):
     }
 endif;
 if (isset($_POST['cd-vd-hist'])):
-    $q = mysqli_query($con, "select *,(select km_releve from releve_kms_vehicule where id_affectation_vehicule=vidange_vehicule.id_affectation_vehicule and date_fin_periode_releve=(select max(date_fin_periode_releve) from releve_kms_vehicule where id_affectation_vehicule=vidange_vehicule.id_affectation_vehicule)) as kms_actuel from vidange_vehicule,affectation_vehicule,vehicule,chauffeur,region,prestataire_intervention where prestataire_intervention.id_prestataire=vidange_vehicule.id_prestataire and affectation_vehicule.id_vehicule=vehicule.id_vehicule and affectation_vehicule.id_affectation=vidange_vehicule.id_affectation_vehicule and chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur and affectation_vehicule.id_region=region.id_region and id_affectation_vehicule=(select id_affectation_vehicule from vidange_vehicule vv where vv.code_vidange='{$_POST['cd-vd-hist']}') and region.id_region={$_SESSION['usr-con']['region-sel']} order by vehicule.id_vehicule");
+    $q = db_select($con, "select *,(select km_releve from releve_kms_vehicule where id_affectation_vehicule=vidange_vehicule.id_affectation_vehicule and date_fin_periode_releve=(select max(date_fin_periode_releve) from releve_kms_vehicule where id_affectation_vehicule=vidange_vehicule.id_affectation_vehicule)) as kms_actuel from vidange_vehicule,affectation_vehicule,vehicule,chauffeur,region,prestataire_intervention where prestataire_intervention.id_prestataire=vidange_vehicule.id_prestataire and affectation_vehicule.id_vehicule=vehicule.id_vehicule and affectation_vehicule.id_affectation=vidange_vehicule.id_affectation_vehicule and chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur and affectation_vehicule.id_region=region.id_region and id_affectation_vehicule=(select id_affectation_vehicule from vidange_vehicule vv where vv.code_vidange=?) and region.id_region=? order by vehicule.id_vehicule", [$_POST['cd-vd-hist'], (int)$_SESSION['usr-con']['region-sel']]);
     $table_content = "";
     $i = 0;
     while ($r = mysqli_fetch_array($q)):
@@ -155,7 +164,7 @@ endif;
 if (isset($_POST['semPer'])):
     $_POST['semPer'] = date('Y-m-01', strtotime($_POST['semPer']));
     $psem = getPremiereSemaineDuMois($_POST['semPer']);
-    $q = mysqli_query($con, "select distinct periode_releve from releve_kms_vehicule where date_debut_periode_releve>='" . $psem[0] . "' and date_fin_periode_releve<='" . date('Y-m-t', strtotime($_POST['semPer'])) . "' order by periode_releve");
+    $q = db_select($con, "select distinct periode_releve from releve_kms_vehicule where date_debut_periode_releve>=? and date_fin_periode_releve<=? order by periode_releve", [$psem[0], date('Y-m-t', strtotime($_POST['semPer']))]);
     $options = "";
     while ($r = mysqli_fetch_array($q)):
         $options .= "<option value='" . sha1($r[0]) . "'>{$r[0]}</option>";
@@ -163,7 +172,7 @@ if (isset($_POST['semPer'])):
     die("SEMPER%%%%%%$options");
 endif;
 if (isset($_POST['vhPer'])):
-    $q = mysqli_query($con, "select km_releve from releve_kms_vehicule where sha1(periode_releve)='{$_POST['perSem']}' and id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation, id_vehicule))='{$_POST['vhPer']}')");
+    $q = db_select($con, "select km_releve from releve_kms_vehicule where sha1(periode_releve)=? and id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation, id_vehicule))=?)", [$_POST['perSem'], $_POST['vhPer']]);
     $kms = 0;
     while ($r = mysqli_fetch_array($q)):
         $kms = $r[0];
@@ -174,9 +183,7 @@ if (isset($_POST['updRel'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
-        $q = mysqli_query($con, "update releve_kms_vehicule set km_releve={$_POST['kmsRel']} where sha1(periode_releve)='{$_POST['updRel']}' and id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))='{$_POST['vhRel']}')");
+        $q = db_exec($con, "update releve_kms_vehicule set km_releve=? where sha1(periode_releve)=? and id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?)", [$_POST['kmsRel'], $_POST['updRel'], $_POST['vhRel']]);
         mysqli_commit($con);
         die("UPDREL%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -213,9 +220,7 @@ if (isset($_POST['del-pt-id'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
-        $q = mysqli_query($con, "delete from prestataire_intervention where sha1(concat(id_prestataire,nom_prestataire))='{$_POST['del-pt-id']}'");
+        $q = db_exec($con, "delete from prestataire_intervention where sha1(concat(id_prestataire,nom_prestataire))=?", [$_POST['del-pt-id']]);
         mysqli_commit($con);
         die("DELPT%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -224,7 +229,7 @@ if (isset($_POST['del-pt-id'])):
     }
 endif;
 if (isset($_POST['c-cc-s'])):
-    $q = mysqli_query($con, "select *,sha1(concat(id_centre_cout,lib_centre_cout)) from centre_couts where sha1(concat(id_centre_cout,lib_centre_cout))='{$_POST['c-cc-s']}'");
+    $q = db_select($con, "select *,sha1(concat(id_centre_cout,lib_centre_cout)) as id_cc from centre_couts where sha1(concat(id_centre_cout,lib_centre_cout))=?", [$_POST['c-cc-s']]);
     $liste = array();
     while ($r = mysqli_fetch_array($q)):
         $liste = $r;
@@ -235,9 +240,7 @@ if (isset($_POST['del-cc-id'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
-        $q = mysqli_query($con, "delete from centre_couts where sha1(concat(id_centre_cout,lib_centre_cout))='{$_POST['del-cc-id']}'");
+        $q = db_exec($con, "delete from centre_couts where sha1(concat(id_centre_cout,lib_centre_cout))=?", [$_POST['del-cc-id']]);
         mysqli_commit($con);
         die("DELCC%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -249,9 +252,7 @@ if(isset($_POST['del-vd-id'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
-        $q = mysqli_query($con, "delete from vidange_vehicule where sha1(concat(id_vidange_vehicule,code_vidange))='{$_POST['del-vd-id']}'");
+        $q = db_exec($con, "delete from vidange_vehicule where sha1(concat(id_vidange_vehicule,code_vidange))=?", [$_POST['del-vd-id']]);
         mysqli_commit($con);
         die("DELVD%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -290,7 +291,7 @@ endif;
                         </div>
                         <div class="form-floating mb-3">
                             <select required id="vh-upd-releve-kms" name="vh-upd-releve-kms" class="form-select" onchange="getKmsPeriode(this.value,$('#per-upd-releve-kms').val())">
-                                <?php $q = mysqli_query($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and affectation_vehicule.id_region " . ($_SESSION['usr-con']['region-sel'] != '' ? "=({$_SESSION['usr-con']['region-sel']})" : "=''"));
+                                <?php $q = db_select($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and affectation_vehicule.id_region=?", [(int)$_SESSION['usr-con']['region-sel']]);
                                 while ($r = mysqli_fetch_array($q)):
                                     echo "<option value='" . sha1($r[0] . $r['id_vehicule']) . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == sha1($r[0] . $r['id_vehicule']) ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >{$r['immatriculation_vehicule']} ({$r['nom_chauffeur']})</option>";
                                 endwhile;
@@ -540,7 +541,7 @@ endif;
                         </div>
                         <div class="form-floating mb-3">
                             <select id="vh-upd-vd" name="vh-upd-vd" class="form-select">
-                                <?php $q = mysqli_query($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and affectation_vehicule.id_region " . ($_SESSION['usr-con']['region-sel'] != '' ? "=({$_SESSION['usr-con']['region-sel']})" : "=''"));
+                                <?php $q = db_select($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and affectation_vehicule.id_region=?", [(int)$_SESSION['usr-con']['region-sel']]);
                                 while ($r = mysqli_fetch_array($q)):
                                     echo "<option value='" . sha1($r[0] . $r['id_vehicule']) . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == sha1($r[0] . $r['id_vehicule']) ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >{$r['immatriculation_vehicule']} ({$r['nom_chauffeur']})</option>";
                                 endwhile;
@@ -558,7 +559,7 @@ endif;
                         </div>
                         <div class="form-floating mb-3">
                             <select class="form-select" id="id-upd-pt-vd" name="id-upd-pt-vd">
-                                <?php $q = mysqli_query($con, "select * from prestataire_intervention");
+                                <?php $q = db_select($con, "select * from prestataire_intervention", []);
                                 while ($r = mysqli_fetch_array($q)):
                                     echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                                 endwhile;

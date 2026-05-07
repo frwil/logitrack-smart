@@ -3,11 +3,9 @@ if (isset($_POST['id-vehicule-aff'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $q=mysqli_query($con,"select id_vehicule from affectation_vehicule where id_vehicule in(select id_vehicule from vehicule where sha1(concat(id_vehicule,immatriculation_vehicule))='{$_POST['id-vehicule-aff']}') and is_ferme=0");
+        $q=db_select($con,"select id_vehicule from affectation_vehicule where id_vehicule in(select id_vehicule from vehicule where sha1(concat(id_vehicule,immatriculation_vehicule))=?) and is_ferme=0", [$_POST['id-vehicule-aff']]);
         if(mysqli_num_rows($q)==0):
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = $_POST[$keys[$i]]=='' ? '' : mysqli_real_escape_string($con, trim($_POST[$keys[$i]]));
-        $q = mysqli_query($con, "INSERT INTO `affectation_vehicule` (`id_affectation`, `id_vehicule`, `id_chauffeur`, `id_type_utilisation`, `id_mode_utilisation`, `id_entite`, `objet_affectation`, `date_debut_affectation`, `date_fin_affectation`, `id_region`, `date_affectation`, `is_ferme`) VALUES (NULL, (select id_vehicule from vehicule where sha1(concat(id_vehicule,immatriculation_vehicule))='{$_POST['id-vehicule-aff']}'), (select id_chauffeur from chauffeur where sha1(concat(id_chauffeur,nom_chauffeur))='{$_POST['id-chauffeur-aff']}'), (select id_type_utilisation from type_utilisation_vehicule where sha1(concat(id_type_utilisation,lib_type_utilisation))='{$_POST['id-typeutilisation-aff']}'), (select id_mode_utilisation from mode_utilisation_vehicule where sha1(concat(id_mode_utilisation,nom_mode_utilisation))='{$_POST['id-modeutilisation-aff']}'), (select id_entite from entite where sha1(concat(id_entite,nom_entite))='{$_POST['id-entite-aff']}'), ".($_POST['objet-aff']=='' ? 'NULL' : "'{$_POST['objet-aff']}'").", '{$_POST['date-debut-aff']}', ".($_POST['date-fin-aff']=='' ? 'NULL' : "'{$_POST['date-fin-aff']}'").", (select id_region from region where sha1(concat(id_region,nom_region))='{$_POST['id-region-aff']}'), CURRENT_TIMESTAMP, '0')");
+        $q = db_exec($con, "INSERT INTO `affectation_vehicule` (`id_affectation`, `id_vehicule`, `id_chauffeur`, `id_type_utilisation`, `id_mode_utilisation`, `id_entite`, `objet_affectation`, `date_debut_affectation`, `date_fin_affectation`, `id_region`, `date_affectation`, `is_ferme`) VALUES (NULL, (select id_vehicule from vehicule where sha1(concat(id_vehicule,immatriculation_vehicule))=?), (select id_chauffeur from chauffeur where sha1(concat(id_chauffeur,nom_chauffeur))=?), (select id_type_utilisation from type_utilisation_vehicule where sha1(concat(id_type_utilisation,lib_type_utilisation))=?), (select id_mode_utilisation from mode_utilisation_vehicule where sha1(concat(id_mode_utilisation,nom_mode_utilisation))=?), (select id_entite from entite where sha1(concat(id_entite,nom_entite))=?), ?, ?, ?, (select id_region from region where sha1(concat(id_region,nom_region))=?), CURRENT_TIMESTAMP, '0')", [$_POST['id-vehicule-aff'], $_POST['id-chauffeur-aff'], $_POST['id-typeutilisation-aff'], $_POST['id-modeutilisation-aff'], $_POST['id-entite-aff'], $_POST['objet-aff'] === '' ? null : $_POST['objet-aff'], $_POST['date-debut-aff'], $_POST['date-fin-aff'] === '' ? null : $_POST['date-fin-aff'], $_POST['id-region-aff']]);
         mysqli_commit($con);
         die("NewAffectation%%%%%%1");
         else:
@@ -19,7 +17,7 @@ if (isset($_POST['id-vehicule-aff'])):
     }
 endif;
 if (isset($_POST['refresh-vehicule'])):
-    $q = mysqli_query($con, "select * from vehicule");
+    $q = db_select($con, "select * from vehicule");
     $liste = "";
     while ($r = mysqli_fetch_array($q)):
         $liste .= "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
@@ -38,7 +36,7 @@ endif;
                 <form method="post" action="#" id="form-new-affectation">
                     <div class="form-floating mb-3">
                         <select class="form-select" id="id-vehicule-aff" name="id-vehicule-aff" required>
-                            <?php $q = mysqli_query($con, "select * from vehicule left join marque_vehicule on vehicule.id_marque=marque_vehicule.id_marque");
+                            <?php $q = db_select($con, "select * from vehicule left join marque_vehicule on vehicule.id_marque=marque_vehicule.id_marque");
                             while ($r = mysqli_fetch_array($q)):
                                 echo "<option value='" . sha1($r[0] . $r['immatriculation_vehicule']) . "'>{$r['immatriculation_vehicule']} - {$r['nom_marque']}</option>";
                             endwhile;
@@ -48,7 +46,7 @@ endif;
                     </div>
                     <div class="form-floating mb-3">
                         <select class="form-select" id="id-chauffeur-aff" name="id-chauffeur-aff" required>
-                            <?php $q = mysqli_query($con, "select * from chauffeur where 1");
+                            <?php $q = db_select($con, "select * from chauffeur where 1");
                             while ($r = mysqli_fetch_array($q)):
                                 echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                             endwhile;
@@ -60,7 +58,7 @@ endif;
                         <div class="col-6">
                             <div class="form-floating mb-3">
                                 <select class="form-select" id="id-typeutilisation-aff" name="id-typeutilisation-aff" required>
-                                    <?php $q = mysqli_query($con, "select * from type_utilisation_vehicule where 1");
+                                    <?php $q = db_select($con, "select * from type_utilisation_vehicule where 1");
                                     while ($r = mysqli_fetch_array($q)):
                                         echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                                     endwhile;
@@ -72,7 +70,7 @@ endif;
                         <div class="col-6">
                             <div class="form-floating mb-3">
                                 <select class="form-select" id="id-modeutilisation-aff" name="id-modeutilisation-aff" required>
-                                    <?php $q = mysqli_query($con, "select * from mode_utilisation_vehicule where 1");
+                                    <?php $q = db_select($con, "select * from mode_utilisation_vehicule where 1");
                                     while ($r = mysqli_fetch_array($q)):
                                         echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                                     endwhile;
@@ -84,7 +82,7 @@ endif;
                         <div class="col-6">
                             <div class="form-floating mb-3">
                                 <select class="form-select" id="id-entite-aff" name="id-entite-aff" required>
-                                    <?php $q = mysqli_query($con, "select * from entite where 1");
+                                    <?php $q = db_select($con, "select * from entite where 1");
                                     while ($r = mysqli_fetch_array($q)):
                                         echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                                     endwhile;
@@ -96,7 +94,7 @@ endif;
                         <div class="col-6">
                             <div class="form-floating mb-3">
                                 <select class="form-select" id="id-region-aff" name="id-region-aff" required>
-                                    <?php $q = mysqli_query($con, "select * from region where 1");
+                                    <?php $q = db_select($con, "select * from region where 1");
                                     while ($r = mysqli_fetch_array($q)):
                                         echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
                                     endwhile;

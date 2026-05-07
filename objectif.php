@@ -2,7 +2,9 @@
 {
     global $con;
     global $rights_voyage;
-    $q = mysqli_query($con, "SELECT * FROM `objectif_periode_region` WHERE 1 and date_objectif_periode between '".(isset($_POST['date-f']) ? $_POST['date-f'] : date('Y-m-01'))."' and '".(isset($_POST['date-t']) ? $_POST['date-t'] : date('Y-m-t'))."' and id_region={$_SESSION['usr-con']['region-sel']}");
+    $sqlObj = "SELECT * FROM `objectif_periode_region` WHERE 1 and date_objectif_periode between ? and ? and id_region=?";
+    $paramsObj = [isset($_POST['date-f']) ? $_POST['date-f'] : date('Y-m-01'), isset($_POST['date-t']) ? $_POST['date-t'] : date('Y-m-t'), (int)$_SESSION['usr-con']['region-sel']];
+    $q = db_select($con, $sqlObj, $paramsObj);
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Date</th><th>Objectif voyages</th><th></th></tr></thead><tbody>";
     $i = 1;
     while ($r = mysqli_fetch_array($q)):
@@ -16,19 +18,17 @@
 ?>
 <?php include('modalNewObjectif.php'); ?>
 <?php if (isset($_POST['id-objectif-forModal'])):
-    $q = mysqli_query($con, "select * from objectif_periode_region where sha1(concat(id_objectif_periode,date_objectif_periode))='{$_POST['id-objectif-forModal']}'");
+    $q = db_select($con, "select * from objectif_periode_region where sha1(concat(id_objectif_periode,date_objectif_periode))=?", [$_POST['id-objectif-forModal']]);
     while ($r = mysqli_fetch_array($q)):
         $objectif = $r;
     endwhile;
     die("UpdObjectif%%%%%%" . json_encode($objectif));
 endif;
 if (isset($_POST['id-objectif'])):
-    $keys = array_keys($_POST);
-    for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $q = mysqli_query($con, "update objectif_periode_region set date_objectif_periode='{$_POST['date-upd-objectif']}',objectif={$_POST['objectif-upd']} where sha1(concat(id_objectif_periode,date_objectif_periode))='{$_POST['id-objectif']}'");
+        $q = db_exec($con, "update objectif_periode_region set date_objectif_periode=?,objectif=? where sha1(concat(id_objectif_periode,date_objectif_periode))=?", [$_POST['date-upd-objectif'], $_POST['objectif-upd'], $_POST['id-objectif']]);
         mysqli_commit($con);
         die("UpdObjectif%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -37,7 +37,7 @@ if (isset($_POST['id-objectif'])):
     }
 endif;
 if(isset($_POST['id-objectif-forDel'])):
-    $q=mysqli_query($con,"delete from objectif_periode_region where sha1(concat(id_objectif_periode,date_objectif_periode))='{$_POST['id-objectif-forDel']}'");
+    $q=db_exec($con,"delete from objectif_periode_region where sha1(concat(id_objectif_periode,date_objectif_periode))=?", [$_POST['id-objectif-forDel']]);
     if($q) die("UpdObjectif%%%%%%1");
     die("UpdObjectif%%%%%%0");
 endif;

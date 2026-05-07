@@ -2,8 +2,9 @@
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 mysqli_begin_transaction($con);
 try{
-    $q=mysqli_query($con,"INSERT INTO `users` (`id_user`, `name_user`, `pass_user`, `fullname_user`, `email_user`) VALUES (NULL, '{$_POST['name-user']}', '".password_hash($_POST['pass-user'],PASSWORD_DEFAULT)."', ".($_POST['fullname-user']=='' ? 'NULL' : "'{$_POST['fullname-user']}'").", '{$_POST['email-user']}')");
-    $q=mysqli_query($con,"INSERT INTO `users_region` (`id_user_region`, `id_user`, `id_region`, `is_active`) VALUES (NULL, (select id_user from users where name_user='{$_POST['name-user']}'), {$_POST['region-user']}, '1')");
+    $passHashed = password_hash($_POST['pass-user'], PASSWORD_DEFAULT);
+    $q=db_exec($con,"INSERT INTO `users` (`id_user`, `name_user`, `pass_user`, `fullname_user`, `email_user`) VALUES (NULL, ?, ?, ?, ?)", [$_POST['name-user'], $passHashed, $_POST['fullname-user'] === '' ? null : $_POST['fullname-user'], $_POST['email-user']]);
+    $q=db_exec($con,"INSERT INTO `users_region` (`id_user_region`, `id_user`, `id_region`, `is_active`) VALUES (NULL, (select id_user from users where name_user=?), ?, '1')", [$_POST['name-user'], (int)$_POST['region-user']]);
     mysqli_commit($con);
     die("%%%%%%1");
 }catch(mysqli_sql_exception $e){
@@ -37,7 +38,7 @@ endif;
             </div>
             <div class="form-floating mb-3">
                 <select id="region-user" name="region-user" class="form-select" required>
-                    <?php $q=mysqli_query($con,"select * from region where is_active=1"); 
+                    <?php $q=db_select($con,"select * from region where is_active=1", []);
                     while($r=mysqli_fetch_array($q)):
                         echo "<option value='{$r[0]}'>{$r[1]}</option>";
                     endwhile;

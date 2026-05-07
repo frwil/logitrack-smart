@@ -1,23 +1,21 @@
 <?php $entityBody = json_decode(file_get_contents('php://input'),true);
 if(isset($entityBody['chrelevekms'])):
     $_POST=$entityBody;
-    $q=mysqli_query($con,"select * from releve_kms_vehicule where id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))='{$_POST['chrelevekms']}') and date_debut_periode_releve>='{$_POST['datevg']}' and date_fin_periode_releve<='{$_POST['finvg']}'");
+    $q=db_select($con,"select * from releve_kms_vehicule where id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?) and date_debut_periode_releve>=? and date_fin_periode_releve<=?", [$_POST['chrelevekms'], $_POST['datevg'], $_POST['finvg']]);
     die("CHECKRELEVE%%%%%%".mysqli_num_rows($q));
 endif;
 if(isset($_POST['dateV'])):
-    $q=mysqli_query($con,"select * from objectif_periode_region where date_objectif_periode='{$_POST['dateV']}' and id_region ".($_SESSION['usr-con']['region-sel']!='' ? "=({$_SESSION['usr-con']['region-sel']})" : "=''"));
-    //die("checkVoyage%%%%%%"."select * from objectif_periode_region where date_objectif_periode='{$_POST['dateV']}' and id_region ".($_SESSION['usr-con']['region-sel']!='' ? "=({$_SESSION['usr-con']['region-sel']})" : "=''"));
+    $sqlObjVg = "select * from objectif_periode_region where date_objectif_periode=?";
+    $paramsObjVg = [$_POST['dateV']];
+    if ($_SESSION['usr-con']['region-sel'] != '') { $sqlObjVg .= " and id_region=?"; $paramsObjVg[] = (int)$_SESSION['usr-con']['region-sel']; }
+    $q=db_select($con, $sqlObjVg, $paramsObjVg);
     die("checkVoyage%%%%%%".mysqli_num_rows($q));
 endif;
 if (isset($_POST['trajets'])):
     $trajets = json_decode($_POST['trajets']);
-    $trajets_query = "";
-    for ($i = 0; $i < count($trajets); $i++) {
-        if ($i > 0) $trajets_query .= ",";
-        $trajets_query .= "'{$trajets[$i]}'";
-    }
-    $trajets_query = $trajets_query == "" ? "''" : $trajets_query;
-    $q = mysqli_query($con, "select * from destination_voyage where sha1(concat(id_destination,lib_destination)) not in($trajets_query) order by lib_destination");
+    if (empty($trajets)) $trajets = [''];
+    list($placeholders, $trajetParams) = db_in($trajets);
+    $q = db_select($con, "select * from destination_voyage where sha1(concat(id_destination,lib_destination)) not in($placeholders) order by lib_destination", $trajetParams);
     $liste = "";
     while ($r = mysqli_fetch_array($q)):
         $liste .= "<option value='" . sha1($r[0] . $r[1]) . "' dest-km='{$r['distance_destination']}'>{$r[1]} ({$r['distance_destination']} km)</option>";
@@ -28,15 +26,12 @@ if (isset($_POST['id-vehicule-vg'])):
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $_POST['nom-voyage'] = trim(strtoupper($_POST['nom-voyage']));
-        $keys = array_keys($_POST);
         $nbTrajets = count($_POST['listeTrajets']);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = $_POST[$keys[$i]] == '' ? '' : ($keys[$i] == 'listeTrajets' ? $_POST['listeTrajets'] : mysqli_real_escape_string($con, $_POST[$keys[$i]]));
-        $q = mysqli_query($con, "INSERT INTO `voyage` (`id_voyage`, `date_voyage`, `id_affectation`, `qte_carburant`, `convoyeur`, `titre_voyage`, `id_type_chargement`, `qte_chargement`, `commentaire_voyage`) VALUES (NULL, '{$_POST['date-vg']}', (select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))='{$_POST['id-vehicule-vg']}'), {$_POST['qtecarburant-vg']}, " . ($_POST['id-convoyeur-vg'] == '' ? "NULL" : "'{$_POST['id-convoyeur-vg']}'") . ", '{$_POST['titre-vg']}', (select id_type_chargement from type_chargement_voyage where sha1(concat(id_type_chargement,lib_type_chargement))='{$_POST['typechargement-vg']}'), {$_POST['qtechargement-vg']}, NULL)");
+        $q = db_exec($con, "INSERT INTO `voyage` (`id_voyage`, `date_voyage`, `id_affectation`, `qte_carburant`, `convoyeur`, `titre_voyage`, `id_type_chargement`, `qte_chargement`, `commentaire_voyage`) VALUES (NULL, ?, (select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?), ?, ?, ?, (select id_type_chargement from type_chargement_voyage where sha1(concat(id_type_chargement,lib_type_chargement))=?), ?, NULL)", [$_POST['date-vg'], $_POST['id-vehicule-vg'], (int)$_POST['qtecarburant-vg'], $_POST['id-convoyeur-vg'] === '' ? null : $_POST['id-convoyeur-vg'], $_POST['titre-vg'], $_POST['typechargement-vg'], (int)$_POST['qtechargement-vg']]);
         $id_voyage = mysqli_insert_id($con);
         $trajets = $_POST['listeTrajets'];
         for ($i = 0; $i < $nbTrajets; $i++):
-            $q = mysqli_query($con, "INSERT INTO `voyage_vehicule` (`id_voyage_vehicule`, `id_voyage`, `id_destination`, `commentaire_voyage_vehicule`) VALUES (NULL, $id_voyage, (select id_destination from destination_voyage where sha1(concat(id_destination,lib_destination))='{$trajets[$i]}'), NULL)");
+            $q = db_exec($con, "INSERT INTO `voyage_vehicule` (`id_voyage_vehicule`, `id_voyage`, `id_destination`, `commentaire_voyage_vehicule`) VALUES (NULL, ?, (select id_destination from destination_voyage where sha1(concat(id_destination,lib_destination))=?), NULL)", [(int)$id_voyage, $trajets[$i]]);
         endfor;
         mysqli_commit($con);
         die("NewVoyage%%%%%%1");
@@ -71,7 +66,10 @@ endif;
                         <div class="col-6">
                             <div class="form-floating mb-3">
                                 <select class="form-select" id="id-vehicule-vg" name="id-vehicule-vg">
-                                    <?php $q = mysqli_query($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and affectation_vehicule.id_region ".($_SESSION['usr-con']['region-sel']!='' ? "=({$_SESSION['usr-con']['region-sel']})" : "=''"));
+                                    <?php $sqlVg = "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0";
+                                    $paramsVg = [];
+                                    if ($_SESSION['usr-con']['region-sel'] != '') { $sqlVg .= " and affectation_vehicule.id_region=?"; $paramsVg[] = (int)$_SESSION['usr-con']['region-sel']; }
+                                    $q = db_select($con, $sqlVg, $paramsVg);
                                     while ($r = mysqli_fetch_array($q)):
                                         echo "<option value='" . sha1($r[0] . $r['id_vehicule']) . "'>{$r['immatriculation_vehicule']} ({$r['nom_chauffeur']})</option>";
                                     endwhile;
@@ -95,7 +93,7 @@ endif;
                         <div class="col-6">
                             <div class="form-floating">
                                 <select class="form-select" id="typechargement-vg" name="typechargement-vg">
-                                    <?php $q = mysqli_query($con, "select * from type_chargement_voyage where 1");
+                                    <?php $q = db_select($con, "select * from type_chargement_voyage where 1");
                                     while ($r = mysqli_fetch_array($q)):
                                         echo "<option value='" . sha1($r[0] . $r[1]) . "' val-min='{$r['valeur_min']}' val-max='{$r['valeur_max']}'>{$r[1]}</option>";
                                     endwhile;
@@ -118,7 +116,7 @@ endif;
                             <div class="input-group mb-3">
                                 <div class="form-floating">
                                     <select class="form-select" id="trajet-list-vg" role="trajet">
-                                        <?php $q = mysqli_query($con, "select * from destination_voyage where 1 order by lib_destination");
+                                        <?php $q = db_select($con, "select * from destination_voyage where 1 order by lib_destination");
                                         while ($r = mysqli_fetch_array($q)):
                                             echo "<option value='" . sha1($r[0] . $r[1]) . "' dest-km='{$r['distance_destination']}'>{$r[1]} ({$r['distance_destination']} km)</option>";
                                         endwhile;

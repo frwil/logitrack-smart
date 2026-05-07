@@ -14,7 +14,7 @@
     $fin = date_create((isset($_POST['date-t']) ? date('Y-m-d', strtotime($_POST['date-t'])) : date('Y-m-d', strtotime(date('Y-m-t')))));
     $interval = new DateInterval('P1D');
     $date_range = new DatePeriod($debut, $interval, $fin->add($interval));
-    $q = mysqli_query($con, "select * from vehicule left join affectation_vehicule on affectation_vehicule.id_vehicule=vehicule.id_vehicule where id_region={$_SESSION['usr-con']['region-sel']} and is_ferme=0");
+    $q = db_select($con, "select * from vehicule left join affectation_vehicule on affectation_vehicule.id_vehicule=vehicule.id_vehicule where id_region=? and is_ferme=0", [(int)$_SESSION['usr-con']['region-sel']]);
     $tableau = "<table class='table table-striped'><thead><tr><th>Immatriculation</th>";
     foreach ($date_range as $date) :
         $tableau .= "<th>{$date->format('d M Y')}</th>";
@@ -29,7 +29,7 @@
         $total_carburant = 0;
         foreach ($date_range as $date) :
             //echo "select * from voyage,voyage_vehicule where voyage.id_voyage=voyage_vehicule.id_voyage and id_affectation=(select id_affectation from affectation_vehicule where id_vehicule={$r[0]} and is_ferme=0 order by date_affectation limit 1) and date_voyage='{$date->format('Y-m-d')}'";
-            $q1 = mysqli_query($con, "select * from voyage,voyage_vehicule,destination_voyage,type_chargement_voyage where voyage.id_voyage=voyage_vehicule.id_voyage and destination_voyage.id_destination=voyage_vehicule.id_destination and voyage.id_type_chargement=type_chargement_voyage.id_type_chargement and id_affectation=(select id_affectation from affectation_vehicule where id_vehicule={$r[0]} and is_ferme=0 order by date_affectation limit 1) and date_voyage='{$date->format('Y-m-d')}'");
+            $q1 = db_select($con, "select * from voyage,voyage_vehicule,destination_voyage,type_chargement_voyage where voyage.id_voyage=voyage_vehicule.id_voyage and destination_voyage.id_destination=voyage_vehicule.id_destination and voyage.id_type_chargement=type_chargement_voyage.id_type_chargement and id_affectation=(select id_affectation from affectation_vehicule where id_vehicule=? and is_ferme=0 order by date_affectation limit 1) and date_voyage=?", [(int)$r[0], $date->format('Y-m-d')]);
             $voyage .= "<td><ul class='list-group'>";
             if (mysqli_num_rows($q1) == 0) $voyage .= "</ul></td>";
             $cpte = 0;
@@ -53,10 +53,10 @@
 function getTableauVoyagesVehicules()
 {
     global $con;
-    $q = mysqli_query($con, "select *,(select nom_chauffeur from chauffeur where id_chauffeur=(select id_chauffeur from affectation_vehicule where id_vehicule=vehicule.id_vehicule and is_ferme=0 limit 1)) as n_chauffeur from vehicule  where 1 ");
+    $q = db_select($con, "select *,(select nom_chauffeur from chauffeur where id_chauffeur=(select id_chauffeur from affectation_vehicule where id_vehicule=vehicule.id_vehicule and is_ferme=0 limit 1)) as n_chauffeur from vehicule  where 1 ", []);
     $nblignes = mysqli_num_rows($q);
     $tableau = "<table class='table table-striped'><thead><tr><th>#</th><th>Immatriculation</th><th># Voyages</th><th># Kms</th><th>Carburant (en L)</th><th>Conso. 100km</th>";
-    $q1 = mysqli_query($con, "select * from destination_voyage where 1");
+    $q1 = db_select($con, "select * from destination_voyage where 1", []);
     $nbTrajets = mysqli_num_rows($q1);
     $trajets = array();
     while ($r = mysqli_fetch_array($q1)):
@@ -86,7 +86,19 @@ function getTableauVoyagesVehicules()
         for ($j = 0; $j < count($trajets); $j++):
             //if($k==0) echo  "select id_voyage_vehicule,id_voyage,(select distance_destination from destination_voyage where id_destination={$trajets[$j]}) as dist_trajet from voyage_vehicule where id_destination={$trajets[$j]} and id_voyage in(select id_voyage from voyage where id_affectation in(select id_affectation from affectation_vehicule where id_vehicule={$r[0]})" . (isset($_POST['date-f']) ? " and date_voyage between '{$_POST['date-f']}' and '{$_POST['date-t']}'" : "") . ")";
             $v_arr[$trajets[$j]] = array();
-            $q1 = mysqli_query($con, "select id_voyage_vehicule,voyage_vehicule.id_voyage,voyage.*,(select distance_destination from destination_voyage where id_destination={$trajets[$j]}) as dist_trajet from voyage_vehicule left join voyage on voyage.id_voyage=voyage_vehicule.id_voyage where id_destination={$trajets[$j]} and voyage.id_voyage in(select id_voyage from voyage where id_affectation in(select id_affectation from affectation_vehicule where id_vehicule={$r[0]})" . (isset($_POST['date-f']) ? " and date_voyage between '{$_POST['date-f']}' and '{$_POST['date-t']}'" : " and date_voyage between '" . date('Y-m-01') . "' and '" . date('Y-m-t') . "'") . ")");
+            $sqlVh = "select id_voyage_vehicule,voyage_vehicule.id_voyage,voyage.*,(select distance_destination from destination_voyage where id_destination=?) as dist_trajet from voyage_vehicule left join voyage on voyage.id_voyage=voyage_vehicule.id_voyage where id_destination=? and voyage.id_voyage in(select id_voyage from voyage where id_affectation in(select id_affectation from affectation_vehicule where id_vehicule=?)";
+            $paramsVh = [(int)$trajets[$j], (int)$trajets[$j], (int)$r[0]];
+            if (isset($_POST['date-f'])) {
+                $sqlVh .= " and date_voyage between ? and ?";
+                $paramsVh[] = $_POST['date-f'];
+                $paramsVh[] = $_POST['date-t'];
+            } else {
+                $sqlVh .= " and date_voyage between ? and ?";
+                $paramsVh[] = date('Y-m-01');
+                $paramsVh[] = date('Y-m-t');
+            }
+            $sqlVh .= ")";
+            $q1 = db_select($con, $sqlVh, $paramsVh);
             //$total_distance=0;
             while ($r1 = mysqli_fetch_array($q1)) :
                 $total_distance += $r1['dist_trajet'];
@@ -102,7 +114,7 @@ function getTableauVoyagesVehicules()
 
             if (mysqli_num_rows($q1) > 0):
                 $total_voyage_ligne++;
-                $q1 = mysqli_query($con, "select distance_destination from destination_voyage where id_destination={$trajets[$j]}");
+                $q1 = db_select($con, "select distance_destination from destination_voyage where id_destination=?", [(int)$trajets[$j]]);
                 $kms = 0;
                 while ($r1 = mysqli_fetch_array($q1)) $kms += $r1[0];
                 $total_kms_ligne  = $total_distance;
@@ -167,7 +179,7 @@ error_reporting(E_ALL); */
     $date_range = new DatePeriod($debut, $interval, $fin->add($interval));
     $nblignes = ((int)$fin->diff($debut)->format('%a')) + 1;
     $tableau = "<table class='table table-striped'><thead><tr><th>#</th><th>Date</th><th># Voyages</th><th># Kms</th><th>Carburant (en L)</th><th>Conso. 100km</th>";
-    $q1 = mysqli_query($con, "select * from destination_voyage");
+    $q1 = db_select($con, "select * from destination_voyage", []);
     $nbTrajets = mysqli_num_rows($q1);
     $trajets = array();
     while ($r = mysqli_fetch_array($q1)):
@@ -193,7 +205,7 @@ error_reporting(E_ALL); */
         $total_cbt_ligne = 0;
         $tableau .= "<tr><td>$i</td><td>" . $date->format('d M Y') . "</td><td><span id='total_vg_ln_{$date->format('dmY')}'></span></td><td><span id='total_kms_ln_{$date->format('dmY')}'></span></td><td><span id='total_cbt_ln_{$date->format('dmY')}'></span></td><td><span id='total_cbt_100_ln_{$date->format('dmY')}'></span></td>";
         for ($j = 0; $j < count($trajets); $j++):
-            $q1 = mysqli_query($con, "select id_voyage_vehicule,voyage_vehicule.id_voyage,voyage.*,(select distance_destination from destination_voyage where id_destination={$trajets[$j]}) as dist_trajet from voyage_vehicule left join voyage on voyage.id_voyage=voyage_vehicule.id_voyage where id_destination={$trajets[$j]} and voyage_vehicule.id_voyage in(select id_voyage from voyage where date_voyage ='{$date->format('Y-m-d')}')");
+            $q1 = db_select($con, "select id_voyage_vehicule,voyage_vehicule.id_voyage,voyage.*,(select distance_destination from destination_voyage where id_destination=?) as dist_trajet from voyage_vehicule left join voyage on voyage.id_voyage=voyage_vehicule.id_voyage where id_destination=? and voyage_vehicule.id_voyage in(select id_voyage from voyage where date_voyage=?)", [(int)$trajets[$j], (int)$trajets[$j], $date->format('Y-m-d')]);
             while ($r1 = mysqli_fetch_array($q1)) :
                 $total_distance += $r1['dist_trajet'];
                 $total_cbt_ligne += $r1['qte_carburant'];
@@ -205,7 +217,7 @@ error_reporting(E_ALL); */
             if (mysqli_num_rows($q1) > 0):
                 $total_voyage_ligne++;
                 $nbv = mysqli_num_rows($q1);
-                $q1 = mysqli_query($con, "select distance_destination from destination_voyage where id_destination={$trajets[$j]}");
+                $q1 = db_select($con, "select distance_destination from destination_voyage where id_destination=?", [(int)$trajets[$j]]);
                 while ($r1 = mysqli_fetch_array($q1)) $kms = $r1[0] * $nbv;
                 $total_kms_ligne += $kms;
                 if (!isset($total_voyage_col[$i])) :
@@ -270,7 +282,9 @@ function getTableauEvaluationVoyages()
     $nblignes = ((int)$fin->diff($debut)->format('%a')) + 1;
     $tableau = "<table class='table table-striped no-datatable' id='table-evaluation'><thead><tr><th rowspan=2>Date</th>";
     $regions = explode(",", $_SESSION['usr-con']['users_region']);
-    $q = mysqli_query($con, "select * from region where is_admin<1 and id_region in({$_SESSION['usr-con']['users_region']})");
+    $regionIds = array_map('intval', explode(',', $_SESSION['usr-con']['users_region']));
+    [$placeholdersEval, $paramsEval] = db_in($regionIds);
+    $q = db_select($con, "select * from region where is_admin<1 and id_region in($placeholdersEval)", $paramsEval);
     $nb_regions = mysqli_num_rows($q);
     $reg = array();
     while ($r = mysqli_fetch_array($q)):
@@ -289,7 +303,7 @@ function getTableauEvaluationVoyages()
         $total_distances = 0;
         $tableau .= "<tr><td>{$date->format('d M Y')}</td>";
         for ($i = 0; $i < count($reg); $i++):
-            $q = mysqli_query($con, "select * from objectif_periode_region where date_objectif_periode='{$date->format('Y-m-d')}' and id_region={$reg[$i][0]}");
+            $q = db_select($con, "select * from objectif_periode_region where date_objectif_periode=? and id_region=?", [$date->format('Y-m-d'), (int)$reg[$i][0]]);
             $plan = 0;
             while ($r = mysqli_fetch_array($q)):
                 $tableau .= "<td>{$r['objectif']}</td>";
@@ -299,7 +313,7 @@ function getTableauEvaluationVoyages()
                 $tableau .= "<td>0</td>";
             endif;
             $total_plan += $plan;
-            $q = mysqli_query($con, "select *,(select sum(distance_destination) from destination_voyage where id_destination in(select id_destination from voyage_vehicule where id_voyage=voyage.id_voyage)) as total_dest from voyage where date_voyage='{$date->format('Y-m-d')}' and id_voyage in(select id_voyage from voyage_vehicule where id_affectation in(select id_affectation from affectation_vehicule where id_region={$reg[$i][0]}))");
+            $q = db_select($con, "select *,(select sum(distance_destination) from destination_voyage where id_destination in(select id_destination from voyage_vehicule where id_voyage=voyage.id_voyage)) as total_dest from voyage where date_voyage=? and id_voyage in(select id_voyage from voyage_vehicule where id_affectation in(select id_affectation from affectation_vehicule where id_region=?))", [$date->format('Y-m-d'), (int)$reg[$i][0]]);
             $tableau .= "<td>" . mysqli_num_rows($q) . "</td>";
             $real = mysqli_num_rows($q);
             $total_real += $real;
@@ -324,7 +338,7 @@ function getTableauEvaluationVoyages()
 ?>
 <?php include('modalNewVoyage.php'); ?>
 <?php if (isset($_POST['id-voyage-forModal'])):
-   $q = mysqli_query($con, "select *,(select id_vehicule from vehicule where sha1(concat(voyage.id_affectation,id_vehicule))='{$_POST['id-vh-forModal']}') as vh,sha1(concat(type_chargement_voyage.id_type_chargement,lib_type_chargement)) as tc from voyage,voyage_vehicule,destination_voyage,type_chargement_voyage where voyage.id_voyage=voyage_vehicule.id_voyage and destination_voyage.id_destination=voyage_vehicule.id_destination and voyage.id_type_chargement=type_chargement_voyage.id_type_chargement and sha1(concat(voyage.id_voyage,titre_voyage))='{$_POST['id-voyage-forModal']}'");
+   $q = db_select($con, "select *,(select id_vehicule from vehicule where sha1(concat(voyage.id_affectation,id_vehicule))=?) as vh,sha1(concat(type_chargement_voyage.id_type_chargement,lib_type_chargement)) as tc from voyage,voyage_vehicule,destination_voyage,type_chargement_voyage where voyage.id_voyage=voyage_vehicule.id_voyage and destination_voyage.id_destination=voyage_vehicule.id_destination and voyage.id_type_chargement=type_chargement_voyage.id_type_chargement and sha1(concat(voyage.id_voyage,titre_voyage))=?", [$_POST['id-vh-forModal'], $_POST['id-voyage-forModal']]);
     while ($r = mysqli_fetch_array($q)):
         $voyage = $r;
     endwhile;
@@ -332,12 +346,10 @@ function getTableauEvaluationVoyages()
 endif;
 if (isset($_POST['id-voyage'])):
     $_POST['nom-upd-voyage'] = trim(strtoupper($_POST['nom-upd-voyage']));
-    $keys = array_keys($_POST);
-    for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = $_POST[$keys[$i]] == '' ? '' : mysqli_real_escape_string($con, $_POST[$keys[$i]]);
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $q = mysqli_query($con, "update voyage set date_voyage='{$_POST['date-upd-voyage']}',qte_carburant='{$_POST['cb-upd-voyage']}',convoyeur='{$_POST['cv-upd-voyage']}',id_type_chargement=(select id_type_chargement from type_chargement_voyage where sha1(concat(id_type_chargement,lib_type_chargement))='{$_POST['tc-upd-voyage']}'),qte_chargement='{$_POST['qtec-upd-voyage']}' where sha1(concat(id_voyage,titre_voyage))='{$_POST['id-voyage']}'");
+        $q = db_exec($con, "update voyage set date_voyage=?,qte_carburant=?,convoyeur=?,id_type_chargement=(select id_type_chargement from type_chargement_voyage where sha1(concat(id_type_chargement,lib_type_chargement))=?),qte_chargement=? where sha1(concat(id_voyage,titre_voyage))=?", [$_POST['date-upd-voyage'], $_POST['cb-upd-voyage'], $_POST['cv-upd-voyage'], $_POST['tc-upd-voyage'], $_POST['qtec-upd-voyage'], $_POST['id-voyage']]);
         mysqli_commit($con);
         die("UpdVoyage%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -346,7 +358,7 @@ if (isset($_POST['id-voyage'])):
     }
 endif;
 if (isset($_POST['id-voyage-forDel'])):
-    $q = mysqli_query($con, "delete from voyage where sha1(concat(id_voyage,titre_voyage))='{$_POST['id-voyage-forDel']}'");
+    $q = db_exec($con, "delete from voyage where sha1(concat(id_voyage,titre_voyage))=?", [$_POST['id-voyage-forDel']]);
     if ($q) die("UpdVoyage%%%%%%1");
     die("UpdVoyage%%%%%%0");
 endif;
@@ -456,7 +468,7 @@ endif;
                     <div class="col-6">
                         <div class="form-floating mb-3">
                             <select class="form-select" id="id-upd-vh-voyage" name="id-upd-vh-voyage">
-                                <?php $q = mysqli_query($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and affectation_vehicule.id_region " . ($_SESSION['usr-con']['region-sel'] != '' ? "=({$_SESSION['usr-con']['region-sel']})" : "=''"));
+                                <?php $q = db_select($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and affectation_vehicule.id_region=?", [(int)$_SESSION['usr-con']['region-sel']]);
                                 while ($r = mysqli_fetch_array($q)):
                                     echo "<option value='" . sha1($r[0] . $r['id_vehicule']) . "'>{$r['immatriculation_vehicule']} ({$r['nom_chauffeur']})</option>";
                                 endwhile;
@@ -480,7 +492,7 @@ endif;
                     <div class="col-6">
                         <div class="form-floating mb-3">
                             <select class="form-select" id="tc-upd-voyage" name="tc-upd-voyage" required>
-                            <?php $q = mysqli_query($con, "select * from type_chargement_voyage where 1");
+                            <?php $q = db_select($con, "select * from type_chargement_voyage where 1", []);
                                     while ($r = mysqli_fetch_array($q)):
                                         echo "<option value='" . sha1($r[0] . $r[1]) . "' val-min='{$r['valeur_min']}' val-max='{$r['valeur_max']}'>{$r[1]}</option>";
                                     endwhile;

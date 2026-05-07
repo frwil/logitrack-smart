@@ -4,9 +4,7 @@ if (isset($_POST['nom-chauffeur'])):
     mysqli_begin_transaction($con);
     try {
         $_POST['nom-chauffeur'] = trim(strtoupper($_POST['nom-chauffeur']));
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
-        $q = mysqli_query($con, "INSERT INTO `chauffeur` (`id_chauffeur`, `nom_chauffeur`,id_type_permis) VALUES (NULL, '{$_POST['nom-chauffeur']}',(select id_type_permis from type_permis_vehicule where sha1(concat(id_type_permis,lib_type_permis))='{$_POST['type-permis']}'))");
+        $q = db_exec($con, "INSERT INTO `chauffeur` (`id_chauffeur`, `nom_chauffeur`,id_type_permis) VALUES (NULL, ?,(select id_type_permis from type_permis_vehicule where sha1(concat(id_type_permis,lib_type_permis))=?))", [$_POST['nom-chauffeur'], $_POST['type-permis']]);
         mysqli_commit($con);
         die("NewChauffeur%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -16,7 +14,7 @@ if (isset($_POST['nom-chauffeur'])):
     }
 endif;
 if (isset($_POST['refresh-marque'])):
-    $q = mysqli_query($con, "select * from marque_vehicule");
+    $q = db_select($con, "select * from marque_vehicule");
     $liste = "";
     while ($r = mysqli_fetch_array($q)):
         $liste .= "<option value='{$r[0]}'>{$r[1]}</option>";
@@ -39,7 +37,7 @@ endif;
                     </div>
                     <div class="form-floating mb-3">
                         <select id="type-permis" name="type-permis" required class="form-select">
-                            <?php $q = mysqli_query($con, "select * from type_permis_vehicule");
+                            <?php $q = db_select($con, "select * from type_permis_vehicule");
                             while ($r = mysqli_fetch_array($q)):
                                 echo "<option value='".sha1($r[0].$r[1])."'>{$r[1]}</option>";
                             endwhile;

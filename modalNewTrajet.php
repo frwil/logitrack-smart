@@ -4,9 +4,7 @@ if (isset($_POST['nom-destination'])):
     mysqli_begin_transaction($con);
     try {
         $_POST['nom-destination'] = trim(strtoupper($_POST['nom-destination']));
-        $keys = array_keys($_POST);
-        for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
-        $q = mysqli_query($con, "INSERT INTO `destination_voyage` (`id_destination`, `lib_destination`,`distance_destination`) VALUES (NULL, '{$_POST['nom-destination']}',{$_POST['distance-destination']})");
+        $q = db_exec($con, "INSERT INTO `destination_voyage` (`id_destination`, `lib_destination`,`distance_destination`) VALUES (NULL, ?,?)", [$_POST['nom-destination'], $_POST['distance-destination']]);
         mysqli_commit($con);
         die("NewTrajet%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -16,7 +14,7 @@ if (isset($_POST['nom-destination'])):
     }
 endif;
 if (isset($_POST['refresh-destination'])):
-    $q = mysqli_query($con, "select * from destination_voyage");
+    $q = db_select($con, "select * from destination_voyage", []);
     $liste = "";
     while ($r = mysqli_fetch_array($q)):
         $liste .= "<option value='".sha1($r[0].$r[1])."'>{$r[1]}</option>";

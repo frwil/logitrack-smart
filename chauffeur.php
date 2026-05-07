@@ -1,7 +1,7 @@
 <?php function getTableauChauffeurs()
 {
     global $con;
-    $q = mysqli_query($con, "SELECT * FROM `chauffeur` WHERE 1");
+    $q = db_select($con, "SELECT * FROM `chauffeur` WHERE 1", []);
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Nom Chauffeur</th><th></th></tr></thead><tbody>";
     $i = 1;
     while ($r = mysqli_fetch_array($q)):
@@ -14,7 +14,7 @@
 ?>
 <?php include('modalNewChauffeur.php'); ?>
 <?php if (isset($_POST['id-chauffeur-forModal'])):
-    $q = mysqli_query($con, "select * from chauffeur where sha1(concat(id_chauffeur,nom_chauffeur))='{$_POST['id-chauffeur-forModal']}'");
+    $q = db_select($con, "select * from chauffeur where sha1(concat(id_chauffeur,nom_chauffeur))=?", [$_POST['id-chauffeur-forModal']]);
     while ($r = mysqli_fetch_array($q)):
         $chauffeur = $r;
     endwhile;
@@ -22,12 +22,10 @@
 endif;
 if (isset($_POST['id-chauffeur'])):
     $_POST['nom-upd-chauffeur'] = trim(strtoupper($_POST['nom-upd-chauffeur']));
-    $keys = array_keys($_POST);
-    for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = mysqli_real_escape_string($con, $_POST[$keys[$i]]);
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
-        $q = mysqli_query($con, "update chauffeur set nom_chauffeur='{$_POST['nom-upd-chauffeur']}' where sha1(concat(id_chauffeur,nom_chauffeur))='{$_POST['id-chauffeur']}'");
+        $q = db_exec($con, "update chauffeur set nom_chauffeur=? where sha1(concat(id_chauffeur,nom_chauffeur))=?", [$_POST['nom-upd-chauffeur'], $_POST['id-chauffeur']]);
         mysqli_commit($con);
         die("UpdChauffeur%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -36,7 +34,7 @@ if (isset($_POST['id-chauffeur'])):
     }
 endif;
 if(isset($_POST['id-chauffeur-forDel'])):
-    $q=mysqli_query($con,"delete from chauffeur where sha1(concat(id_chauffeur,nom_chauffeur))='{$_POST['id-chauffeur-forDel']}'");
+    $q=db_exec($con,"delete from chauffeur where sha1(concat(id_chauffeur,nom_chauffeur))=?", [$_POST['id-chauffeur-forDel']]);
     if($q) die("UpdChauffeur%%%%%%1");
     die("UpdChauffeur%%%%%%0");
 endif;

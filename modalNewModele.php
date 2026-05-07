@@ -4,9 +4,7 @@ if (isset($_POST['nom-modele'])):
     mysqli_begin_transaction($con);
     try {
         $_POST['nom-modele'] = trim(strtoupper($_POST['nom-modele']));
-        $keys=array_keys($_POST);
-        for($i=0;$i<count($keys);$i++) $_POST[$keys[$i]]=mysqli_real_escape_string($con,$_POST[$keys[$i]]);
-        $q = mysqli_query($con, "INSERT INTO `modele_vehicule` (`id_modele_vehicule`, `nom_modele_vehicule`) VALUES (NULL, '{$_POST['nom-modele']}')");
+        $q = db_exec($con, "INSERT INTO `modele_vehicule` (`id_modele_vehicule`, `nom_modele_vehicule`) VALUES (NULL, ?)", [$_POST['nom-modele']]);
         mysqli_commit($con);
         die("NewModele%%%%%%1");
     } catch (mysqli_sql_exception $e) {
@@ -17,7 +15,7 @@ if (isset($_POST['nom-modele'])):
 endif;
 
 if (isset($_POST['refresh-modele'])):
-    $q = mysqli_query($con, "select * from modele_vehicule");
+    $q = db_select($con, "select * from modele_vehicule", []);
     $liste = "";
     while ($r = mysqli_fetch_array($q)):
         $liste .= "<option value='{$r[0]}'>{$r[1]}</option>";

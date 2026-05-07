@@ -1,25 +1,27 @@
 <?php require_once __DIR__ . '/env_loader.php'; ?>
+<?php require_once __DIR__ . '/db.php'; ?>
 <?php $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME')); ?>
 <?php
 if (isset($_POST['lignes'])):
 
     $lignes = json_decode($_POST['lignes']);
-    for ($i = 0; $i < count($keys); $i++) $_POST[$keys[$i]] = $_POST[$keys[$i]] == '' ? '' : mysqli_real_escape_string($con, $_POST[$keys[$i]]);
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     mysqli_begin_transaction($con);
     try {
         for ($i = 0; $i < count($lignes); $i++):
-            $q = mysqli_query($con, "INSERT ignore INTO `modele_vehicule` (`id_modele_vehicule`, `nom_modele_vehicule`) VALUES (NULL, '{$lignes[$i]->{"Types de véhicule"}}')");
-            $q = mysqli_query($con, "INSERT ignore INTO `marque_vehicule` (`id_marque`, `nom_marque`) VALUES (NULL, '{$lignes[$i]->Marque}')");
+            $q = db_exec($con, "INSERT ignore INTO `modele_vehicule` (`id_modele_vehicule`, `nom_modele_vehicule`) VALUES (NULL, ?)", [$lignes[$i]->{"Types de véhicule"}]);
+            $q = db_exec($con, "INSERT ignore INTO `marque_vehicule` (`id_marque`, `nom_marque`) VALUES (NULL, ?)", [$lignes[$i]->Marque]);
             $date_1_utilisation = explode("/", $lignes[$i]->{"1ere mise en circulation"});
             $date_carte_grise = explode("/", $lignes[$i]->{"Carte grise expiry"});
-            $q = mysqli_query($con, "INSERT ignore INTO `vehicule` (`id_vehicule`, `puissance_vehicule`, `chassis_vehicule`, `premiere_utilisation`, `expiration_carte_grise`, `nb_place`, `type_carburant`, `id_marque`, `id_modele_vehicule`, `id_entite`, `immatriculation_vehicule`, `capacite_consommation_vehicule`) VALUES (NULL, ".($lignes[$i]->Puissance=='-' ? 0 :$lignes[$i]->Puissance).", '{$lignes[$i]->Chassis}', '" . date('Y-m-d', strtotime($date_1_utilisation[2] . "-" . $date_1_utilisation[0] . "-" . $date_1_utilisation[1])) . "', '" . date('Y-m-d', strtotime($date_carte_grise[2] . "-" . $date_carte_grise[0] . "-" . $date_carte_grise[1])) . "', ".($lignes[$i]->Places=='-' ? 0 : $lignes[$i]->Places).", '{$lignes[$i]->{"Type carburant"}}', (select id_marque from marque_vehicule where nom_marque='{$lignes[$i]->Marque}'), (select id_modele_vehicule from modele_vehicule where nom_modele_vehicule='{$lignes[$i]->{"Types de véhicule"}}'), NULL, '{$lignes[$i]->Immatriculation}', '{$lignes[$i]->{"Capacité"}}')");
-            $q=mysqli_query($con,"INSERT ignore INTO `chauffeur` (`id_chauffeur`, `nom_chauffeur`) VALUES (NULL, upper('{$lignes[$i]->{"Nom chauffeur"}}'))");
-            $q=mysqli_query($con,"INSERT ignore INTO `type_utilisation_vehicule` (`id_type_utilisation`, `lib_type_utilisation`) VALUES (NULL, upper('{$lignes[$i]->{"Type utilisation"}}'))");
-            $q=mysqli_query($con,"INSERT ignore INTO `mode_utilisation_vehicule` (`id_mode_utilisation`, `nom_mode_utilisation`) VALUES (NULL, upper('{$lignes[$i]->Utilisation}'))");
+            $date1util = date('Y-m-d', strtotime($date_1_utilisation[2] . "-" . $date_1_utilisation[0] . "-" . $date_1_utilisation[1]));
+            $dateCg = date('Y-m-d', strtotime($date_carte_grise[2] . "-" . $date_carte_grise[0] . "-" . $date_carte_grise[1]));
+            $q = db_exec($con, "INSERT ignore INTO `vehicule` (`id_vehicule`, `puissance_vehicule`, `chassis_vehicule`, `premiere_utilisation`, `expiration_carte_grise`, `nb_place`, `type_carburant`, `id_marque`, `id_modele_vehicule`, `id_entite`, `immatriculation_vehicule`, `capacite_consommation_vehicule`) VALUES (NULL, ?, ?, ?, ?, ?, ?, (select id_marque from marque_vehicule where nom_marque=?), (select id_modele_vehicule from modele_vehicule where nom_modele_vehicule=?), NULL, ?, ?)", [($lignes[$i]->Puissance == '-' ? 0 : (int)$lignes[$i]->Puissance), $lignes[$i]->Chassis, $date1util, $dateCg, ($lignes[$i]->Places == '-' ? 0 : (int)$lignes[$i]->Places), $lignes[$i]->{"Type carburant"}, $lignes[$i]->Marque, $lignes[$i]->{"Types de véhicule"}, $lignes[$i]->Immatriculation, $lignes[$i]->{"Capacité"}]);
+            $q=db_exec($con,"INSERT ignore INTO `chauffeur` (`id_chauffeur`, `nom_chauffeur`) VALUES (NULL, upper(?))", [$lignes[$i]->{"Nom chauffeur"}]);
+            $q=db_exec($con,"INSERT ignore INTO `type_utilisation_vehicule` (`id_type_utilisation`, `lib_type_utilisation`) VALUES (NULL, upper(?))", [$lignes[$i]->{"Type utilisation"}]);
+            $q=db_exec($con,"INSERT ignore INTO `mode_utilisation_vehicule` (`id_mode_utilisation`, `nom_mode_utilisation`) VALUES (NULL, upper(?))", [$lignes[$i]->Utilisation]);
             print_r($lignes[$i]);
-            $q=mysqli_query($con,"INSERT ignore INTO `entite` (`id_entite`, `nom_entite`) VALUES (NULL, '".trim($lignes[$i]->{"Entité"})."')");
-            $q=mysqli_query($con,"INSERT ignore INTO `affectation_vehicule` (`id_affectation`, `id_vehicule`, `id_chauffeur`, `id_type_utilisation`, `id_mode_utilisation`, `id_entite`, `objet_affectation`, `date_debut_affectation`, `date_fin_affectation`, `id_region`, `date_affectation`, `is_ferme`) VALUES (NULL, (select id_vehicule from vehicule where immatriculation_vehicule='{$lignes[$i]->Immatriculation}'), (select id_chauffeur from chauffeur where nom_chauffeur='{$lignes[$i]->{"Nom chauffeur"}}'), (select id_type_utilisation from type_utilisation_vehicule where lib_type_utilisation='{$lignes[$i]->{"Type utilisation"}}'), (select id_mode_utilisation from mode_utilisation_vehicule where nom_mode_utilisation='{$lignes[$i]->Utilisation}'), (select id_entite from entite where nom_entite='".trim($lignes[$i]->{"Entité"})."'), NULL, CURRENT_TIMESTAMP, NULL, NULL, CURRENT_TIMESTAMP, '0')");
+            $q=db_exec($con,"INSERT ignore INTO `entite` (`id_entite`, `nom_entite`) VALUES (NULL, ?)", [trim($lignes[$i]->{"Entité"})]);
+            $q=db_exec($con,"INSERT ignore INTO `affectation_vehicule` (`id_affectation`, `id_vehicule`, `id_chauffeur`, `id_type_utilisation`, `id_mode_utilisation`, `id_entite`, `objet_affectation`, `date_debut_affectation`, `date_fin_affectation`, `id_region`, `date_affectation`, `is_ferme`) VALUES (NULL, (select id_vehicule from vehicule where immatriculation_vehicule=?), (select id_chauffeur from chauffeur where nom_chauffeur=?), (select id_type_utilisation from type_utilisation_vehicule where lib_type_utilisation=?), (select id_mode_utilisation from mode_utilisation_vehicule where nom_mode_utilisation=?), (select id_entite from entite where nom_entite=?), NULL, CURRENT_TIMESTAMP, NULL, NULL, CURRENT_TIMESTAMP, '0')", [$lignes[$i]->Immatriculation, $lignes[$i]->{"Nom chauffeur"}, $lignes[$i]->{"Type utilisation"}, $lignes[$i]->Utilisation, trim($lignes[$i]->{"Entité"})]);
         endfor;
         mysqli_commit($con);
         die("UpdVoyage%%%%%%1");

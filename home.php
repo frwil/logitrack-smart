@@ -1,5 +1,5 @@
 <?php if (isset($_POST['nSess'])):
-    $q = mysqli_query($con, "select * from region where sha1(concat(id_region,nom_region))='{$_POST['nSess']}'");
+    $q = db_select($con, "select * from region where sha1(concat(id_region,nom_region))=?", [$_POST['nSess']]);
     $region = explode(',', $_SESSION['usr-con']['users_region']);
     while ($r = mysqli_fetch_array($q)) $reg = $r;
     if (isset($reg)):
@@ -115,7 +115,7 @@ endif;
             <?php $uright = explode(',', $_SESSION['usr-con']['users_region']);
             for ($i = 0; $i < count($uright); $i++):
                 if ($uright[$i] != $_SESSION['usr-con']['region-sel']): ?>
-                    <?php $q = mysqli_query($con, "select * from region where id_region={$uright[$i]}");
+                    <?php $q = db_select($con, "select * from region where id_region=?", [(int)$uright[$i]]);
                     while ($r = mysqli_fetch_array($q)): ?>
                         <li><a class="dropdown-item" href="#" onclick="changeSessionRegion('<?php echo sha1($r[0] . $r[1]); ?>')"><?php echo $r[1]; ?></a></li>
                     <?php endwhile; ?>
