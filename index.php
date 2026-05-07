@@ -1,4 +1,5 @@
 <?php @session_start(); ?>
+<?php if (!isset($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); ?>
 <?php if (isset($_GET['logout'])): unset($_SESSION['usr-con']);
 endif; ?>
 <?php //print_r($_SESSION); 
@@ -12,6 +13,7 @@ endif; ?>
     <title>Gestion Logistique</title>
     <link rel="stylesheet" href="public/build/css/main.css">
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script>window.CSRF_TOKEN = <?= j($_SESSION['csrf_token']) ?>;</script>
 
 </head>
 
@@ -32,6 +34,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL); */ ?>
     <?php require_once __DIR__ . '/env_loader.php'; ?>
     <?php require_once __DIR__ . '/db.php'; ?>
+    <?php require_once __DIR__ . '/sanitize.php'; ?>
     <?php $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME')); ?>
     <?php if (!isset($_SESSION['usr-con'])): include('login.php');
     else : ?>
