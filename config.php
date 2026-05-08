@@ -102,7 +102,7 @@ function getTableauFolder()
 <?php else : ?>
     <?php if ($_GET['subpage'] == 'drivelicence') : ?>
         <?php if (isset($_GET['action']) && $_GET['action'] == 'new') include("modalNewDriveLicence.php"); ?>
-        <div class="alert alert-primary">Catégories de Permis de conduire</div>
+        <div class="lt-page-title">Catégories de Permis de conduire</div>
         <a href="?page=configuration&subpage=drivelicence&action=new" class="btn btn-primary">Nouvelle catégorie de permis</a>&nbsp;<a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-drivelicence" class="btn btn-primary">Exporter</a>
         <hr>
         <?php echo getTableauDriveLicence(); ?>
@@ -223,7 +223,7 @@ function getTableauFolder()
         </script>
     <?php elseif ($_GET['subpage'] == 'documentslist') : ?>
         <?php if (isset($_GET['action']) && $_GET['action'] == 'new') include("modalNewDocs.php"); ?>
-        <div class="alert alert-primary">Documents de véhicule</div>
+        <div class="lt-page-title">Documents de véhicule</div>
         <a href="?page=configuration&subpage=documentslist&action=new" class="btn btn-primary">Nouveau document de véhicules</a>&nbsp;<a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-docs" class="btn btn-primary">Exporter</a>
         <hr>
         <?php echo getTableauDocs(); ?>
@@ -308,7 +308,7 @@ function getTableauFolder()
         <?php endif; ?>
     <?php elseif ($_GET['subpage'] == 'folderdetails') : ?>
         <?php if (isset($_GET['action']) && $_GET['action'] == 'new') include("modalNewFolder.php"); ?>
-        <div class="alert alert-primary">Dossier de véhicule</div>
+        <div class="lt-page-title">Dossier de véhicule</div>
         <a href="?page=configuration&subpage=folderdetails&action=new" class="btn btn-primary">Nouveau dossier de véhicule</a>&nbsp;<a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-folder" class="btn btn-primary">Exporter</a>
         <hr>
         <?php echo getTableauFolder(); ?>
