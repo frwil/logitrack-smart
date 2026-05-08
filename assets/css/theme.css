@@ -144,6 +144,12 @@ table, .table {
   background: rgba(255, 255, 255, 0.1);
 }
 
+.lt-navbar-user {
+  color: #fff;
+  font-size: var(--lt-font-base);
+  opacity: 0.85;
+}
+
 .lt-layout {
   display: flex;
   min-height: calc(100vh - 56px);

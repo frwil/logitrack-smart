@@ -22,48 +22,49 @@ if (isset($_POST['name-user'])) {
     }
 }
 ?>
-<div class="container container-fluid" style="display: flex;justify-content: center;padding:80px">
-    <div class="main border row" style="width:50%;padding:80px">
-        <form method="post" action="#" id="form-user-reg" class="col">
-            <div class="form-floating mb-3">
-                <input type="text" id="name-user" name="name-user" class="form-control" required>
-                <label for="name-user">Nom Utilisateur</label>
-            </div>
-            <div class="form-floating mb-3">
-                <input type="password" id="pass-user" name="pass-user" class="form-control" required>
-                <label for="pass-user">Mot de passe</label>
-            </div>
-            <div class="form-floating mb-3">
-                <input type="password" id="pass-user-confirm" name="pass-user-confirm" class="form-control" required>
-                <label for="pass-user-confirm">Confirmation</label>
-            </div>
-            <div class="form-floating mb-3">
-                <input type="email" id="email-user" name="email-user" class="form-control" required>
-                <label for="email-user">E-mail</label>
-            </div>
-            <div class="form-floating mb-3">
-                <input type="text" id="fullname-user" name="fullname-user" class="form-control">
-                <label for="fullname-user">Nom Complet</label>
-            </div>
-            <div class="mb-3">
+<div class="d-flex justify-content-center">
+    <div class="lt-card" style="max-width:500px;width:100%">
+        <div class="lt-card-title mb-3">Nouvel utilisateur</div>
+            <form method="post" action="#" id="form-user-reg" class="col">
+                <div class="form-floating mb-3">
+                    <input type="text" id="name-user" name="name-user" class="form-control" required>
+                    <label for="name-user">Nom Utilisateur</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="password" id="pass-user" name="pass-user" class="form-control" required>
+                    <label for="pass-user">Mot de passe</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="password" id="pass-user-confirm" name="pass-user-confirm" class="form-control" required>
+                    <label for="pass-user-confirm">Confirmation</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="email" id="email-user" name="email-user" class="form-control" required>
+                    <label for="email-user">E-mail</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="text" id="fullname-user" name="fullname-user" class="form-control">
+                    <label for="fullname-user">Nom Complet</label>
+                </div>
+                <div class="mb-3">
 
-                <label for="region-user">Région</label>
+                    <label for="region-user">Région</label>
 
-                <select id="region-user" name="region-user" required>
-                    <?php $regionRepo = new RegionRepository($con);
-                    foreach ($regionRepo->findActive() as $r):
-                        echo "<option value='" . h($r['id_region']) . "'>" . h($r['nom_region']) . "</option>";
-                    endforeach;
-                    ?>
-                </select>
+                    <select id="region-user" name="region-user" required>
+                        <?php $regionRepo = new RegionRepository($con);
+                        foreach ($regionRepo->findActive() as $r):
+                            echo "<option value='" . h($r['id_region']) . "'>" . h($r['nom_region']) . "</option>";
+                        endforeach;
+                        ?>
+                    </select>
 
-            </div>
-            <div class="text-end" style="width:100%">
-                <button class="btn btn-primary" id="btn-save-user" type="button">Enregistrer</button>
-            </div>
-        </form>
+                </div>
+                <div class="text-end">
+                    <button class="btn btn-primary" id="btn-save-user" type="button">Enregistrer</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 <script>
     $('#btn-save-user').click((e)=>{
         var valid=true

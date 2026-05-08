@@ -35,7 +35,7 @@ if(!isset($user_rights)) $user_rights = [];
     
 </script>
 <div class="lt-navbar">
-    <div class="d-flex align-items-center" style="flex:1">
+    <div class="d-flex align-items-center flex-grow-1">
         <a class="lt-navbar-brand" href="?page=vehicules">
             <i class="fa fa-truck"></i> LogiTrack
         </a>
@@ -67,11 +67,11 @@ if(!isset($user_rights)) $user_rights = [];
             <a class="nav-link <?php if (isset($_GET['page']) && $_GET['page'] == 'reports') echo "active"; ?>" href="?page=reports">Rapports</a>
         <?php endif; ?>
     </div>
-    <div class="d-flex align-items-center" style="gap:0.5rem">
-        <span class="text-white" style="font-size:0.8125rem;opacity:.85">
+    <div class="d-flex align-items-center gap-2">
+        <span class="lt-navbar-user">
             <?php echo h($_SESSION['usr-con']['name_user'] != "" ? strtoupper($_SESSION['usr-con']['name_user']) : ""); ?>
         </span>
-        <a class="dropdown-toggle" style="text-decoration:none" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false"><?php echo h($_SESSION['usr-con']['region-sel-name']); ?></a>
+        <a class="dropdown-toggle text-decoration-none" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false"><?php echo h($_SESSION['usr-con']['region-sel-name']); ?></a>
         <ul class="dropdown-menu">
             <?php $regionRepo = new RegionRepository($con);
             $uright = explode(',', $_SESSION['usr-con']['users_region']);
