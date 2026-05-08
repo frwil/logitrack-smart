@@ -27,6 +27,9 @@ import 'select2'
 
 import '@fortawesome/fontawesome-free/css/all.min.css'
 
+import 'jquery-ui/ui/version.js'
+import 'jquery-ui/ui/widget.js'
+import 'jquery-ui/ui/keycode.js'
 import 'jquery-ui/ui/widgets/button.js'
 
 import 'pivottable/dist/pivot.min.css'
