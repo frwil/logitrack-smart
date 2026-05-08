@@ -21,7 +21,6 @@
     "jquery-ui": "^1.13.3",
     "jszip": "^3.10.1",
     "moment": "^2.29.4",
-    "notifyjs": "^3.0.0",
     "pivottable": "^2.23.0",
     "tom-select": "^2.6.0",
     "xlsx": "^0.18.5"
