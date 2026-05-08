@@ -828,7 +828,7 @@ endif;
         position: relative
     }
 
-    th span.select2 {
+    .ts-wrapper {
         display: block
     }
 </style>

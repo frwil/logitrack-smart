@@ -57,59 +57,44 @@ endif;
     }
     
 </script>
-<div class="container-fluid d-flex">
-    <ul class="nav nav-underline bg-primary navbar-expand-lg" style="padding:15px;width:100%">
+<div class="lt-navbar">
+    <div class="d-flex align-items-center" style="flex:1">
+        <a class="lt-navbar-brand" href="?page=vehicules">
+            <i class="fa fa-truck"></i> LogiTrack
+        </a>
         <?php $rights_vehicule = array();
         if (isRightObjectAllowed('vehicules', $user_rights) != false): $rights_vehicule = explode(',', isRightObjectAllowed('vehicules', $user_rights)); ?>
-            <li class="nav-item">
-                <a class="nav-link <?php if (!isset($_GET['page']) || $_GET['page'] == 'vehicules') echo "active"; ?> text-white" aria-current="page" href="?page=vehicules">Véhicules</a>
-            </li>
+            <a class="nav-link <?php if (!isset($_GET['page']) || $_GET['page'] == 'vehicules') echo "active"; ?>" href="?page=vehicules">Véhicules</a>
         <?php endif; ?>
         <?php $rights_affectation = array();
         if (isRightObjectAllowed('voyages', $user_rights) != false): $rights_voyage = explode(',', isRightObjectAllowed('voyages', $user_rights)); ?>
-            <li class="nav-item">
-                <a class="nav-link text-white <?php if (isset($_GET['page']) && $_GET['page'] == 'voyages') echo "active"; ?>" href="?page=voyages">Voyages</a>
-            </li>
+            <a class="nav-link <?php if (isset($_GET['page']) && $_GET['page'] == 'voyages') echo "active"; ?>" href="?page=voyages">Voyages</a>
         <?php endif; ?>
         <?php if (isRightObjectAllowed('affectationVehicules', $user_rights) != false): $rights_affectation = explode(',', isRightObjectAllowed('affectationVehicules', $user_rights)); ?>
-            <li class="nav-item">
-                <a class="nav-link text-white <?php if (isset($_GET['page']) && $_GET['page'] == 'affectationVehicules') echo "active"; ?>" href="?page=affectationVehicules">Affectation de véhicules</a>
-            </li>
+            <a class="nav-link <?php if (isset($_GET['page']) && $_GET['page'] == 'affectationVehicules') echo "active"; ?>" href="?page=affectationVehicules">Affectation</a>
         <?php endif; ?>
         <?php $rights_maintenance = array();
         if (isRightObjectAllowed('maintenances', $user_rights) != false): $rights_maintenance = explode(',', isRightObjectAllowed('maintenances', $user_rights)); ?>
-            <li class="nav-item">
-                <a class="nav-link text-white <?php if (isset($_GET['page']) && $_GET['page'] == 'maintenances') echo "active"; ?>" href="?page=maintenances">Gestion Maintenances</a>
-            </li>
+            <a class="nav-link <?php if (isset($_GET['page']) && $_GET['page'] == 'maintenances') echo "active"; ?>" href="?page=maintenances">Maintenance</a>
         <?php endif; ?>
         <?php $rights_user=array();
         if (isRightObjectAllowed('users', $user_rights) != false): $rights_user = explode(',', isRightObjectAllowed('users', $user_rights)); ?>
-            <li class="nav-item">
-                <a class="nav-link text-white <?php if (isset($_GET['page']) && $_GET['page'] == 'users') echo "active"; ?>" href="?page=users">Utilisateurs</a>
-            </li>
+            <a class="nav-link <?php if (isset($_GET['page']) && $_GET['page'] == 'users') echo "active"; ?>" href="?page=users">Utilisateurs</a>
         <?php endif; ?>
         <?php $rights_config=array();
         if (isRightObjectAllowed('config', $user_rights) != false): $rights_config = explode(',', isRightObjectAllowed('config', $user_rights)); ?>
-            <li class="nav-item">
-                <a class="nav-link text-white <?php if (isset($_GET['page']) && $_GET['page'] == 'config') echo "active"; ?>" href="?page=configuration">Configuration</a>
-            </li>
+            <a class="nav-link <?php if (isset($_GET['page']) && $_GET['page'] == 'config') echo "active"; ?>" href="?page=configuration">Configuration</a>
         <?php endif; ?>
         <?php $rights_report=array();
         if (isRightObjectAllowed('report', $user_rights) != false): $rights_report = explode(',', isRightObjectAllowed('report', $user_rights)); ?>
-            <li class="nav-item">
-                <a class="nav-link text-white <?php if (isset($_GET['page']) && $_GET['page'] == 'reports') echo "active"; ?>" href="?page=reports">Rapports</a>
-            </li>
+            <a class="nav-link <?php if (isset($_GET['page']) && $_GET['page'] == 'reports') echo "active"; ?>" href="?page=reports">Rapports</a>
         <?php endif; ?>
-    </ul>
-    <div class="d-flex bg-primary" style="padding:10px">
-        <ul class="nav nav-underline bg-primary navbar-expand-lg text-center" style="padding:5px;width:100%;font-size:1.1em">
-            <li class="nav-item">
-                <a class="nav-link text-white">
-                    <?php echo h($_SESSION['usr-con']['name_user'] != "" ? strtoupper($_SESSION['usr-con']['name_user']) : ""); ?>
-                </a>
-            </li>
-        </ul>
-        <a class="dropdown-toggle text-white" style="padding:15px;font-weight:bold" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false"><?php echo h($_SESSION['usr-con']['region-sel-name']); ?></a>
+    </div>
+    <div class="d-flex align-items-center" style="gap:0.5rem">
+        <span class="text-white" style="font-size:0.8125rem;opacity:.85">
+            <?php echo h($_SESSION['usr-con']['name_user'] != "" ? strtoupper($_SESSION['usr-con']['name_user']) : ""); ?>
+        </span>
+        <a class="dropdown-toggle" style="text-decoration:none" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false"><?php echo h($_SESSION['usr-con']['region-sel-name']); ?></a>
         <ul class="dropdown-menu">
             <?php $uright = explode(',', $_SESSION['usr-con']['users_region']);
             for ($i = 0; $i < count($uright); $i++):
@@ -121,159 +106,120 @@ endif;
             <?php endif;
             endfor; ?>
         </ul>
-        <a class="btn btn-link text-white" style="padding:15px" href="?logout"><i class="fa fa-power-off"></i></a>
+        <a class="btn-logout" href="?logout" title="Déconnexion"><i class="fa fa-power-off"></i></a>
     </div>
 </div>
-<div class="container-fluid" style="margin-top:30px">
-    <div class="row">
-        <div class="col-2">
-            <ul class="nav nav-tabs flex-column">
-                <?php if ((isset($_GET['page']) && $_GET['page'] == 'vehicules') || !isset($_GET['page']) && in_array('view', $rights_vehicule)) : ?>
-                    <?php if (in_array('save', $rights_vehicule)): ?>
-                        <li class="nav-item">
-                            <a class="nav-link" aria-current="page" href="?page=vehicules" title="Ajouter un nouveau véhicule" data-bs-toggle="modal" data-bs-target="#modal-new-vehicule">Nouveau véhicule</a>
-                        </li>
-                    <?php endif; ?>
-                    <?php if (isset($_GET['subpage'])) : ?>
-                        <li class="nav-item">
-                            <a class="nav-link" href="?page=<?php echo h($_GET['page'] != '' ? $_GET['page'] : 'vehicules'); ?>" title="Afficher la liste des véhicules">Liste des véhicules</a>
-                        </li>
-                    <?php endif; ?>
-                    <?php if (in_array('save', $rights_vehicule)): ?>
-                        <li class="nav-item">
-                            <a class="nav-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeMarquesVehicules') echo 'active'; ?>" href="?page=<?php echo h(isset($_GET['page']) && $_GET['page'] != '' ? $_GET['page'] : 'vehicules'); ?>&subpage=listeMarquesVehicules" title="Afficher la liste des marques de véhicules">Marques de véhicule</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeModelesVehicules') echo 'active'; ?>" href="?page=<?php echo h(isset($_GET['page']) && $_GET['page'] != '' ? $_GET['page'] : 'vehicules'); ?>&subpage=listeModelesVehicules" title="Afficher la liste des modèles de véhicules">Modèles de véhicule</a>
-                        </li>
-                        <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeMarquesVehicules') : ?>
-                            <hr>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#" onclick="openModalMarque()" title="Ajouter une marque de véhicule">Nouvelle marque de véhicule</a>
-                            </li>
-                        <?php elseif (isset($_GET['subpage']) &&  $_GET['subpage'] == 'listeModelesVehicules') : ?>
-                            <hr>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#" onclick="openModalModele()" title="Ajouter une marque de véhicule">Nouveau modèle de véhicule</a>
-                            </li>
-                        <?php endif; ?>
-                    <?php endif; ?>
-                <?php elseif (isset($_GET['page']) && $_GET['page'] == 'affectationVehicules' && in_array('view', $rights_affectation)): ?>
-                    <?php if (in_array('save', $rights_affectation)): ?>
-                        <li class="nav-item">
-                            <a class="nav-link" aria-current="page" href="?page=affectationVehicules&subpage=listeChauffeurs&action=new" title="Créer un chauffeur de véhicule">Nouveau chauffeur</a>
-                        </li>
-                        <!-- <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="?page=affectationVehicules&subpage=listeConvoyeurs&action=new" title="Créer un convoyeur de véhicule">Nouveau convoyeur</a>
-                    </li> -->
-                        <li class="nav-item">
-                            <a class="nav-link" aria-current="page" href="?page=affectationVehicules&action=new" title="Créer une affectation de véhicule">Nouvelle affectation</a>
-                        </li>
-                    <?php endif; ?>
-                <?php elseif (isset($_GET['page']) && $_GET['page'] == 'voyages' && in_array('view', $rights_voyage)): ?>
-                    <?php if (in_array('save', $rights_voyage)): ?>
-                        <?php if (in_array('savetrajet', $rights_voyage)): ?>
-                            <li class="nav-item">
-                                <a class="nav-link" aria-current="page" href="?page=voyages&subpage=listeTrajets&action=new" title="Créer un trajet de voyage">Nouveau trajet</a>
-                            </li>
-                        <?php endif; ?>
-                        <li class="nav-item">
-                            <a class="nav-link" aria-current="page" href="?page=voyages&action=new" title="Créer un voyage">Nouveau voyage</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" aria-current="page" href="?page=voyages&subpage=listeObjectifsVoyages&action=new" title="Définir les objectifs des voyages">Objectifs de voyages</a>
-                        </li>
-                    <?php endif; ?>
-                    <?php if (in_array('report', $rights_voyage)): ?>
-                        <li class="nav-item">
-                            <a class="nav-link" aria-current="page" href="?page=voyages&subpage=evaluationVoyages" title="Afficher l'évaluation des voyages">Evaluation des voyages</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" aria-current="page" href="?page=voyages&subpage=listeVoyagesVehicules" title="Afficher les voyages groupés par véhicule par trajet">Voyages/Véhicules/Trajets</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" aria-current="page" href="?page=voyages&subpage=listeVoyagesPeriodes" title="Afficher les voyages groupés par période par trajet">Voyages/Périodes/Trajets</a>
-                        </li>
-                    <?php endif; ?>
-                <?php elseif (isset($_GET['page']) && $_GET['page'] == 'maintenances' && in_array('view', $rights_maintenance)): ?>
-                    <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="?page=maintenances&subpage=releveKms" title="Afficher les relevés de kms">Relevés de kilométrage</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="?page=maintenances&subpage=suiviVidanges" title="Afficher les suivis de vidanges">Suivi de vidanges</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="?page=maintenances&subpage=centreCouts" title="Gestion des centres de coûts">Centre de coûts</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="?page=maintenances&subpage=suiviBonsReparation" title="Suivi des bons de réparation">Bons de réparation</a>
-                    </li>
+<div class="lt-layout">
+    <div class="lt-sidebar">
+        <div class="lt-sidebar-title">Navigation</div>
+        <?php if ((isset($_GET['page']) && $_GET['page'] == 'vehicules') || !isset($_GET['page']) && in_array('view', $rights_vehicule)) : ?>
+            <?php if (in_array('save', $rights_vehicule)): ?>
+                <a class="lt-sidebar-link new-item" href="?page=vehicules" data-bs-toggle="modal" data-bs-target="#modal-new-vehicule"><i class="fa fa-plus-circle"></i> Nouveau véhicule</a>
+            <?php endif; ?>
+            <?php if (isset($_GET['subpage'])) : ?>
+                <a class="lt-sidebar-link" href="?page=<?php echo h($_GET['page'] != '' ? $_GET['page'] : 'vehicules'); ?>"><i class="fa fa-list"></i> Liste des véhicules</a>
+            <?php endif; ?>
+            <?php if (in_array('save', $rights_vehicule)): ?>
+                <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeMarquesVehicules') echo 'active'; ?>" href="?page=<?php echo h(isset($_GET['page']) && $_GET['page'] != '' ? $_GET['page'] : 'vehicules'); ?>&subpage=listeMarquesVehicules"><i class="fa fa-tag"></i> Marques de véhicule</a>
+                <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeModelesVehicules') echo 'active'; ?>" href="?page=<?php echo h(isset($_GET['page']) && $_GET['page'] != '' ? $_GET['page'] : 'vehicules'); ?>&subpage=listeModelesVehicules"><i class="fa fa-cubes"></i> Modèles de véhicule</a>
+                <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeMarquesVehicules') : ?>
+                    <div class="lt-sidebar-divider"></div>
+                    <a class="lt-sidebar-link new-item" href="#" onclick="openModalMarque()"><i class="fa fa-plus-circle"></i> Nouvelle marque</a>
+                <?php elseif (isset($_GET['subpage']) &&  $_GET['subpage'] == 'listeModelesVehicules') : ?>
+                    <div class="lt-sidebar-divider"></div>
+                    <a class="lt-sidebar-link new-item" href="#" onclick="openModalModele()"><i class="fa fa-plus-circle"></i> Nouveau modèle</a>
                 <?php endif; ?>
-            </ul>
-        </div>
-        <div class="col-10">
+            <?php endif; ?>
+        <?php elseif (isset($_GET['page']) && $_GET['page'] == 'affectationVehicules' && in_array('view', $rights_affectation)): ?>
+            <?php if (in_array('save', $rights_affectation)): ?>
+                <a class="lt-sidebar-link new-item" href="?page=affectationVehicules&subpage=listeChauffeurs&action=new"><i class="fa fa-user-plus"></i> Nouveau chauffeur</a>
+                <a class="lt-sidebar-link new-item" href="?page=affectationVehicules&action=new"><i class="fa fa-plus-circle"></i> Nouvelle affectation</a>
+            <?php endif; ?>
+        <?php elseif (isset($_GET['page']) && $_GET['page'] == 'voyages' && in_array('view', $rights_voyage)): ?>
+            <?php if (in_array('save', $rights_voyage)): ?>
+                <?php if (in_array('savetrajet', $rights_voyage)): ?>
+                    <a class="lt-sidebar-link new-item" href="?page=voyages&subpage=listeTrajets&action=new"><i class="fa fa-map-marker-alt"></i> Nouveau trajet</a>
+                <?php endif; ?>
+                <a class="lt-sidebar-link new-item" href="?page=voyages&action=new"><i class="fa fa-plus-circle"></i> Nouveau voyage</a>
+                <a class="lt-sidebar-link new-item" href="?page=voyages&subpage=listeObjectifsVoyages&action=new"><i class="fa fa-bullseye"></i> Objectifs de voyages</a>
+            <?php endif; ?>
+            <?php if (in_array('report', $rights_voyage)): ?>
+                <div class="lt-sidebar-divider"></div>
+                <div class="lt-sidebar-title">Rapports</div>
+                <a class="lt-sidebar-link" href="?page=voyages&subpage=evaluationVoyages"><i class="fa fa-chart-bar"></i> Evaluation des voyages</a>
+                <a class="lt-sidebar-link" href="?page=voyages&subpage=listeVoyagesVehicules"><i class="fa fa-truck-moving"></i> Voyages / Véhicules</a>
+                <a class="lt-sidebar-link" href="?page=voyages&subpage=listeVoyagesPeriodes"><i class="fa fa-calendar-alt"></i> Voyages / Périodes</a>
+            <?php endif; ?>
+        <?php elseif (isset($_GET['page']) && $_GET['page'] == 'maintenances' && in_array('view', $rights_maintenance)): ?>
+            <a class="lt-sidebar-link <?php if (!isset($_GET['subpage']) || $_GET['subpage'] == 'releveKms') echo 'active'; ?>" href="?page=maintenances&subpage=releveKms"><i class="fa fa-tachometer-alt"></i> Relevés kilométrage</a>
+            <a class="lt-sidebar-link <?php if ($_GET['subpage'] == 'suiviVidanges') echo 'active'; ?>" href="?page=maintenances&subpage=suiviVidanges"><i class="fa fa-oil-can"></i> Suivi vidanges</a>
+            <a class="lt-sidebar-link <?php if ($_GET['subpage'] == 'centreCouts') echo 'active'; ?>" href="?page=maintenances&subpage=centreCouts"><i class="fa fa-euro-sign"></i> Centre de coûts</a>
+            <a class="lt-sidebar-link <?php if ($_GET['subpage'] == 'suiviBonsReparation') echo 'active'; ?>" href="?page=maintenances&subpage=suiviBonsReparation"><i class="fa fa-tools"></i> Bons de réparation</a>
+        <?php endif; ?>
+    </div>
+    <div class="lt-content">
             <?php if (!isset($_GET['page']) || ($_GET['page'] == 'vehicules' || $_GET['page'] == '')) : ?>
                 <?php include("vehicule.php"); ?>
                 <?php if (!isset($_GET['subpage']) || ($_GET['subpage'] == 'listeVehicules' || $_GET['subpage'] == '')) : ?>
-                    <div class="alert alert-primary">Liste des véhicules</div>
+                    <div class="lt-page-title">Liste des véhicules</div>
                     <hr>
                     <?php echo getTableauVehicules(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listeMarquesVehicules') : ?>
-                    <div class="alert alert-primary">Liste des marques de véhicules</div>
+                    <div class="lt-page-title">Liste des marques de véhicules</div>
                     <hr>
                     <?php include("marqueVehicule.php");
                     echo getTableauMarqueVehicules(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listeModelesVehicules') : ?>
-                    <div class="alert alert-primary">Liste des modèles de véhicules</div>
+                    <div class="lt-page-title">Liste des modèles de véhicules</div>
                     <hr>
                     <?php include("modeleVehicule.php");
                     echo getTableauModeleVehicules(); ?>
                 <?php endif; ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'affectationVehicules'): ?>
                 <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeChauffeurs'): ?>
-                    <div class="alert alert-primary">Liste des chauffeurs de véhicules</div>
+                    <div class="lt-page-title">Liste des chauffeurs de véhicules</div>
                     <hr>
                     <?php include("chauffeur.php");
                     echo getTableauChauffeurs(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listeConvoyeurs'): ?>
-                    <div class="alert alert-primary">Liste des convoyeurs de véhicules</div>
+                    <div class="lt-page-title">Liste des convoyeurs de véhicules</div>
                     <hr>
                     <?php include("convoyeur.php");
                     echo getTableauConvoyeurs(); ?>
                 <?php elseif (!isset($_GET['subpage']) || $_GET['subpage'] == 'listeAffectationsVehicules'): ?>
-                    <div class="alert alert-primary">Liste des affectations de véhicules</div>
+                    <div class="lt-page-title">Liste des affectations de véhicules</div>
                     <hr>
                     <?php include("affectationVehicule.php");
                     echo getTableauAffectations(); ?>
                 <?php endif; ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'voyages') : ?>
                 <?php if (!isset($_GET['subpage']) || $_GET['subpage'] == 'listeVoyages'): ?>
-                    <div class="alert alert-primary">Liste des voyages de véhicules</div>
+                    <div class="lt-page-title">Liste des voyages de véhicules</div>
                     <hr>
                     <?php include("voyage.php");
                     echo getTableauVoyages(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listeTrajets'): ?>
-                    <div class="alert alert-primary">Liste des trajets de voyage</div>
+                    <div class="lt-page-title">Liste des trajets de voyage</div>
                     <hr>
                     <?php include("trajet.php");
                     echo getTableauTrajets(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listeObjectifsVoyages'): ?>
-                    <div class="alert alert-primary">Liste des Objectifs de voyage</div>
+                    <div class="lt-page-title">Liste des Objectifs de voyage</div>
                     <hr>
                     <?php include("objectif.php");
                     echo getTableauObjectifs(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'evaluationVoyages'): ?>
-                    <div class="alert alert-primary">Evaluation des voyages</div>
+                    <div class="lt-page-title">Evaluation des voyages</div>
                     <hr>
                     <?php include("voyage.php");
                     echo getTableauEvaluationVoyages(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listeVoyagesVehicules'): ?>
-                    <div class="alert alert-primary">Liste des Voyages/Véhicules/Trajets</div>
+                    <div class="lt-page-title">Liste des Voyages/Véhicules/Trajets</div>
                     <hr>
                     <?php include("voyage.php");
                     echo getTableauVoyagesVehicules(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listeVoyagesPeriodes'): ?>
-                    <div class="alert alert-primary">Liste des Voyages/Périodes/Trajets</div>
+                    <div class="lt-page-title">Liste des Voyages/Périodes/Trajets</div>
                     <hr>
                     <?php include("voyage.php");
                     echo getTableauVoyagesPeriodes(); ?>
@@ -281,23 +227,23 @@ endif;
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'maintenances') :  ?>
                 <?php include("maintenance.php"); ?>
                 <?php if (!isset($_GET['subpage']) || $_GET['subpage'] == 'releveKms'): ?>
-                    <div class="alert alert-primary">Relevés de kilométrages</div>
+                    <div class="lt-page-title">Relevés de kilométrages</div>
                     <hr>
                     <?php echo getTableauReleveKMS(); ?>
                 <?php elseif ($_GET['subpage'] == 'suiviVidanges'):  ?>
-                    <div class="alert alert-primary">Suivi des vidanges</div>
+                    <div class="lt-page-title">Suivi des vidanges</div>
                     <hr>
                     <?php echo getTableauVidange(); ?>
                 <?php elseif ($_GET['subpage'] == 'prestataire'):  ?>
-                    <div class="alert alert-primary">Liste des prestataires</div>
+                    <div class="lt-page-title">Liste des prestataires</div>
                     <hr>
                     <?php echo getTableauPrestataire(); ?>
                 <?php elseif ($_GET['subpage'] == 'centreCouts'):  ?>
-                    <div class="alert alert-primary">Liste des Centres de coûts</div>
+                    <div class="lt-page-title">Liste des Centres de coûts</div>
                     <hr>
                     <?php echo getTableauCentreCout(); ?>
                 <?php elseif ($_GET['subpage'] == 'suiviBonsReparation'):  ?>
-                    <div class="alert alert-primary">Suivi des bons de réparation</div>
+                    <div class="lt-page-title">Suivi des bons de réparation</div>
                     <hr>
                     <?php echo getTableauBonsReparation(); ?>
                 <?php endif; ?>
@@ -306,7 +252,6 @@ endif;
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'reports') :  ?>
                 <?php include("reporting.php"); ?>
             <?php endif; ?>
-        </div>
     </div>
 </div>
 <script>
@@ -339,10 +284,8 @@ endif;
                     select.append('<option value="' + $("<div>" + d + "</div>").text() + '">' + $("<div>" + d + "</div>").text() + '</option>')
                 });
             });
-            //select2 init for .mymsel class
-            $(".mymsel").select2({
-
-            });
+            // Tom Select init for column filter selects
+            initTomSelect('.mymsel', { maxItems: null, placeholder: 'Filtrer...' });
 
         },
         <?php if (!isset($_GET['subpage'])) :
@@ -467,10 +410,17 @@ endif;
     }
     <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'evaluationVoyages'): ?>
     table.destroy()
-    $('.mymsel').select2('destroy')
+    destroyTomSelect('.mymsel')
     $('.mymsel').remove()
     $('<button class="btn btn-primary mb-3" onclick="exportTableToExcel(\'table-evaluation\')">Exporter</button>').insertBefore('#table-evaluation')
     <?php endif; ?>
+
+    // Tom Select: enhance all form-select in modals when modal opens
+    $(document).on('shown.bs.modal', '.modal', function() {
+        initTomSelect($(this).find('select.form-select:not(.no-tom-select)'), {
+            render: { no_results: function() { return '<div class="no-results">Aucun résultat</div>'; } }
+        });
+    });
 </script>
 <style>
     .cb-dropdown-wrap {
@@ -549,13 +499,12 @@ endif;
         background-position: 100% 10px;
     }
 
-    ul.select2-results__options li,
-    ul.select2-selection__rendered li {
+    .ts-wrapper .ts-dropdown .option {
         font-size: 0.8em;
     }
 
-    span.select2.select2-container {
-        max-width: 150px !important;
-        display: block
+    .ts-wrapper {
+        max-width: 150px;
+        display: block;
     }
 </style>

@@ -36,21 +36,35 @@ if (isset($_POST['name-user'])):
 endif;
 ?>
 <link rel="stylesheet" href="css/style.css">
-<div class="container">
-    <div class="screen">
-        <div class="screen__content">
-            <form class="login" action="#" method="post">
-                <div class="login__field">
-                    <i class="login__icon fas fa-user"></i>
-                    <input type="text" class="login__input" placeholder="User name / Email" id="name-user" name="name-user">
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-logo">
+            <div class="login-logo-icon">
+                <i class="fa fa-truck"></i>
+            </div>
+            <h2>LogiTrack</h2>
+            <p>Gestion de flotte — Groupe NJS</p>
+        </div>
+        <form action="#" method="post">
+            <div class="login-field">
+                <label for="name-user">Identifiant</label>
+                <div class="login-input-wrapper">
+                    <i class="icon fas fa-user"></i>
+                    <input type="text" class="login-input" placeholder="Nom d'utilisateur ou email" id="name-user" name="name-user">
                 </div>
-                <div class="login__field">
-                    <i class="login__icon fas fa-lock"></i>
-                    <input type="password" class="login__input" placeholder="Password" id="pass-user" name="pass-user">
+            </div>
+            <div class="login-field">
+                <label for="pass-user">Mot de passe</label>
+                <div class="login-input-wrapper">
+                    <i class="icon fas fa-lock"></i>
+                    <input type="password" class="login-input" placeholder="••••••••" id="pass-user" name="pass-user">
                 </div>
-                <div class="login__field">
-                    <label for="region-user">Région</label>
-                    <select class="login__select" placeholder="Region" id="region-user" name="region-user">
+            </div>
+            <div class="login-field">
+                <label for="region-user">Région</label>
+                <div class="login-input-wrapper">
+                    <i class="icon fas fa-map-marker-alt"></i>
+                    <select class="login-select" id="region-user" name="region-user">
                         <?php $q = db_select($con, "select * from region where 1", []);
                         while ($r = mysqli_fetch_array($q)):
                             echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
@@ -58,34 +72,23 @@ endif;
                         ?>
                     </select>
                 </div>
-                <button class="button login__submit" type="button" id="btn-connect">
-                    <span class="button__text">Se Connecter</span>
-                    <i class="button__icon fas fa-chevron-right"></i>
-                </button>
-            </form>
-            <div class="social-login" style="top:90%">
-                <h3 class="h6">Groupe NJS</h3>
-                <div class="social-icons">
-
-                </div>
             </div>
-        </div>
-        <div class="screen__background">
-            <span class="screen__background__shape screen__background__shape4"></span>
-            <span class="screen__background__shape screen__background__shape3"></span>
-            <span class="screen__background__shape screen__background__shape2"></span>
-            <span class="screen__background__shape screen__background__shape1"></span>
-        </div>
+            <button class="login-submit" type="button" id="btn-connect">
+                <span>Se connecter</span>
+                <i class="icon fas fa-arrow-right"></i>
+            </button>
+        </form>
+        <div class="login-footer">Groupe NJS</div>
     </div>
 </div>
 <script>
     $('#btn-connect').click((e) => {
         var valid = true
-        $('form.login input:not(.button__text)').each((e, el) => {
-            $(el).removeClass('is-invalid text-danger')
+        $('.login-input').each((e, el) => {
+            $(el).removeClass('is-invalid').css({borderColor: '', boxShadow: ''})
             if ($(el).val() == '') {
                 valid = false
-                $(el).addClass('is-invalid text-danger')
+                $(el).addClass('is-invalid').css({borderColor: '#ef4444', boxShadow: '0 0 0 3px rgba(239,68,68,.15)'})
             }
         })
         if (!valid) {
@@ -94,7 +97,7 @@ endif;
         }
         $.ajax({
             type: 'post',
-            data: $('form.login').serialize()
+            data: $('form').serialize()
         }).done((e) => {
             let v = e.split("%%%%%%")[1]
             if (v == '1') {

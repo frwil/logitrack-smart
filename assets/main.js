@@ -22,10 +22,12 @@ import './css/buttons.dataTables.css'
 import 'datatables.net-fixedcolumns'
 import './css/fixedColumns.dataTables.css'
 
-import 'select2/dist/css/select2.min.css'
-import 'select2'
+import 'tom-select/dist/css/tom-select.css'
+import './js/tom-select-setup.js'
 
 import '@fortawesome/fontawesome-free/css/all.min.css'
+
+import './css/theme.css'
 
 import 'jquery-ui/ui/version.js'
 import 'jquery-ui/ui/widget.js'

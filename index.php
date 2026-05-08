@@ -20,14 +20,14 @@ endif; ?>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width" />
-    <title>Gestion Logistique</title>
+    <title>LogiTrack — Groupe NJS</title>
     <link rel="stylesheet" href="public/build/css/main.css">
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script>window.CSRF_TOKEN = <?= j($_SESSION['csrf_token']) ?>;</script>
 
 </head>
 
-<body style="background:url('img/36d7f5_6fba6fa5d3ce4f74a889a303addc7274~mv2.png') no-repeat fixed <?php if(isset($_SESSION['usr-con'])) : ?>center<?php endif; ?>">
+<body>
     <script src="public/build/js/main.js"></script>
     <script>
         $.ajaxPrefilter(function(options, originalOptions) {
