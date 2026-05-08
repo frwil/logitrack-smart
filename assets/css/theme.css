@@ -483,6 +483,38 @@ th .ts-wrapper .ts-control {
   color: var(--lt-text-muted);
 }
 
+/* Tom Select inside .form-floating — match Bootstrap's floating-label layout */
+.form-floating > .ts-wrapper.form-select {
+  width: 100%;
+}
+
+.form-floating > .ts-wrapper.form-select .ts-control {
+  height: calc(3.5rem + 2px);
+  min-height: calc(3.5rem + 2px);
+  padding-top: 1.625rem;
+  padding-bottom: 0.625rem;
+  border-radius: var(--lt-radius-sm);
+  border-color: var(--lt-border);
+  font-size: var(--lt-font-base);
+  transition: border-color var(--lt-transition), box-shadow var(--lt-transition);
+}
+
+.form-floating > .ts-wrapper.form-select .ts-control input {
+  font-size: var(--lt-font-base);
+}
+
+/* Float label when focused or has value */
+.form-floating > .ts-wrapper.form-select.focus ~ label,
+.form-floating > .ts-wrapper.form-select.has-value ~ label {
+  opacity: 0.65;
+  transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+}
+
+.form-floating > .ts-wrapper.form-select .ts-control:focus-within {
+  border-color: var(--lt-primary);
+  box-shadow: 0 0 0 3px rgba(var(--lt-primary-rgb), 0.12);
+}
+
 .form-label {
   font-size: var(--lt-font-sm);
   font-weight: 600;
