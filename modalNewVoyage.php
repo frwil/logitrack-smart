@@ -158,7 +158,6 @@ endif;
 
     function rmTrajet(id) {
         for (i = 0; i < trajets.length; i++) {
-            console.log(trajets[i])
             if (trajets[i] == id) {
                 trajets.splice(i, 1)
                 totalkm -= parseInt($('input#' + id).attr('dest-km'))
@@ -271,7 +270,6 @@ endif;
     $('#typechargement-vg').change((e)=>{
         let min=$('#typechargement-vg option[value="'+$('#typechargement-vg').val()+'"]').attr('val-min')
         let max=$('#typechargement-vg option[value="'+$('#typechargement-vg').val()+'"]').attr('val-max')
-        console.log(min)
         $('#qtechargement-vg').attr('min',min).val(min)
         $('#qtechargement-vg').attr('max',max)
     })

@@ -126,12 +126,12 @@ endif;
                         dataType: 'json'
                     }).done((e) => {
                         if (e.success) {
-                            console.log('Import réussi');
+                            showSuccess('Import réussi');
                         } else {
-                            console.error('Erreur import:', e.error);
+                            showError(e.error || 'Erreur import');
                         }
                     }).fail((jqXHR) => {
-                        console.error('Erreur lors de l\'import', jqXHR.responseJSON?.error || 'Erreur serveur');
+                        showError(jqXHR.responseJSON?.error || 'Erreur serveur');
                     })
                 });
             };

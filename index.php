@@ -58,6 +58,7 @@ $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), g
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width" />
     <title>LogiTrack — Groupe NJS</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%235D54A4'/><text x='16' y='23' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='18' fill='white'>LT</text></svg>">
     <link rel="stylesheet" href="public/build/css/main.css">
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script>window.CSRF_TOKEN = <?= j($_SESSION['csrf_token']) ?>;</script>
