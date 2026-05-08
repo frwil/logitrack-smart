@@ -4,4 +4,5 @@ check_cmd_fact/
 logistique-app/
 logistique-apps/
 logitrack/
-box/
+box/*.xlsx
+box/backup_*
