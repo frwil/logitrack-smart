@@ -35,6 +35,12 @@ class BaseRepository
         return db_exec($this->con, $sql, $params);
     }
 
+    /** Run INSERT IGNORE — returns true regardless of whether row was inserted or already existed. */
+    protected function insertIgnore(string $sql, array $params = []): bool
+    {
+        return db_exec($this->con, $sql, $params);
+    }
+
     /** Run INSERT and return the new auto-increment ID. */
     protected function insertGetId(string $sql, array $params = []): int|string
     {

@@ -48,4 +48,12 @@ class MarqueRepository extends BaseRepository
             [$nom]
         );
     }
+
+    public function insertIgnore(string $nom): bool
+    {
+        return $this->insertIgnore(
+            "INSERT IGNORE INTO marque_vehicule (nom_marque) VALUES (?)",
+            [$nom]
+        );
+    }
 }

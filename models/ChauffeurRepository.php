@@ -25,6 +25,14 @@ class ChauffeurRepository extends BaseRepository
         );
     }
 
+    public function insertIgnore(string $nom): bool
+    {
+        return $this->insertIgnore(
+            "INSERT IGNORE INTO chauffeur (nom_chauffeur) VALUES (?)",
+            [$nom]
+        );
+    }
+
     public function updateById(int $id, string $nom): bool
     {
         return $this->exec(

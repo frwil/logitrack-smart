@@ -48,4 +48,12 @@ class ModeleRepository extends BaseRepository
             [$nom]
         );
     }
+
+    public function insertIgnore(string $nom): bool
+    {
+        return $this->insertIgnore(
+            "INSERT IGNORE INTO modele_vehicule (nom_modele_vehicule) VALUES (?)",
+            [$nom]
+        );
+    }
 }

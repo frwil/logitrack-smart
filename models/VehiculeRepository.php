@@ -71,6 +71,29 @@ class VehiculeRepository extends BaseRepository
         );
     }
 
+    /** INSERT IGNORE — used by import.php. Looks up marque/modele by name. */
+    public function insertIgnore(
+        int $puissance,
+        ?string $chassis,
+        ?string $dutil,
+        ?string $dexpir,
+        int $nbPlace,
+        string $tcarb,
+        string $marqueNom,
+        string $modeleNom,
+        string $immat,
+        int $capacite
+    ): bool {
+        return $this->insertIgnore(
+            "INSERT IGNORE INTO vehicule (puissance_vehicule, chassis_vehicule, premiere_utilisation, expiration_carte_grise, nb_place, type_carburant, id_marque, id_modele_vehicule, id_entite, immatriculation_vehicule, capacite_consommation_vehicule)
+             VALUES (?, ?, ?, ?, ?, ?,
+               (SELECT id_marque FROM marque_vehicule WHERE nom_marque = ?),
+               (SELECT id_modele_vehicule FROM modele_vehicule WHERE nom_modele_vehicule = ?),
+               NULL, ?, ?)",
+            [$puissance, $chassis, $dutil, $dexpir, $nbPlace, $tcarb, $marqueNom, $modeleNom, $immat, $capacite]
+        );
+    }
+
     public function insert(
         int $puissance,
         ?string $chassis,
