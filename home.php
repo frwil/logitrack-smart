@@ -3,42 +3,33 @@ if(!isset($user_rights)) $user_rights = [];
 ?>
 <script>
     function exportTableToExcel(tableId, filename = '') {
-        // Récupérer le tableau HTML
         const table = document.getElementById(tableId);
 
-        // Créer une feuille de calcul à partir du tableau
         const worksheet = XLSX.utils.table_to_sheet(table);
 
-        // Créer un nouveau classeur
         const workbook = XLSX.utils.book_new();
 
-        // Ajouter la feuille de calcul au classeur
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Feuille1');
 
-        // Générer le fichier Excel
         const excelBuffer = XLSX.write(workbook, {
             bookType: 'xlsx',
             type: 'array'
         });
 
-        // Créer un Blob et déclencher le téléchargement
         const blob = new Blob([excelBuffer], {
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         });
 
-        // Nom du fichier
         if (!filename) {
             const date = new Date();
             filename = `export_${date.toISOString().split('T')[0]}_${date.getHours()}${date.getMinutes()}.xlsx`;
         }
 
-        // Créer un lien et simuler le clic
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = filename;
         link.click();
 
-        // Nettoyer
         URL.revokeObjectURL(link.href);
     }
     
@@ -256,7 +247,6 @@ if(!isset($user_rights)) $user_rights = [];
                 var column = this;
                 // Skip # column — no filter, no sort
                 if (column.index() === 0 || $(column.header()).text().trim() === '#') return;
-                //added class "mymsel"
                 var select = $('<select class="mymsel" multiple="multiple"><option value=""></option></select>')
                     .appendTo($(column.header()))
                     .on('change', function() {
@@ -274,7 +264,6 @@ if(!isset($user_rights)) $user_rights = [];
                     select.append('<option value="' + $("<div>" + d + "</div>").text() + '">' + $("<div>" + d + "</div>").text() + '</option>')
                 });
             });
-            // Tom Select init for column filter selects
             initTomSelect('.mymsel', { maxItems: null, placeholder: 'Filtrer...' });
 
         },
@@ -333,19 +322,7 @@ if(!isset($user_rights)) $user_rights = [];
             extend: 'excelHtml5',
             className:'btn btn-primary',
             text:'Exporter'
-            //}
-            //,{
-//             text:'Export Image',
-//             action:function(e,dt,node,config){
-//             $('#table-evaluation').parent().parent().parent().parent().attr('id','table-evaluation-wrapper')
-//             html2canvas(document.querySelector('#table-evaluation-wrapper')).then(canvas => {
-//     const a = document.createElement('a');
-//       a.href = canvas.toDataURL('image/jpeg');
-//       a.download = 'evaluationlogistique.jpeg';
-//       a.click();
-// });
-   // }
-    }]
+            }]
     }},paging: false,
         scrollCollapse: true,
         scrollY: 300";
@@ -403,7 +380,6 @@ if(!isset($user_rights)) $user_rights = [];
     $('<button class="btn btn-primary mb-3" onclick="exportTableToExcel(\'table-evaluation\')">Exporter</button>').insertBefore('#table-evaluation')
     <?php endif; ?>
 
-    // Tom Select: enhance all selects in modals when modal opens
     $(document).on('shown.bs.modal', '.modal', function() {
         initTomSelect($(this).find('select:not(.no-tom-select)'), {
             render: { no_results: function() { return '<div class="no-results">Aucun résultat</div>'; } }
@@ -435,7 +411,6 @@ if(!isset($user_rights)) $user_rights = [];
         border: 1px solid #888;
     }
 
-    /* For selected filter. */
     .active .cb-dropdown {
         background: pink;
     }
@@ -447,7 +422,6 @@ if(!isset($user_rights)) $user_rights = [];
         z-index: 99999;
     }
 
-    /* For selected items. */
     .cb-dropdown li.active {
         background: #ff0;
     }
@@ -486,7 +460,6 @@ if(!isset($user_rights)) $user_rights = [];
     }
 
     .ts-wrapper {
-        /* max-width: 150px; */
         display: block;
     }
 </style>
