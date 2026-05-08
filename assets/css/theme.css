@@ -24,15 +24,45 @@
   --lt-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.04);
   --lt-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
   --lt-transition: 0.2s ease;
+
+  /* Font scale */
+  --lt-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --lt-font-xs: 0.6875rem;     /* 11px — badges, fine print */
+  --lt-font-sm: 0.75rem;       /* 12px — labels, table headers */
+  --lt-font-base: 0.8125rem;   /* 13px — body, inputs, sidebar, table cells */
+  --lt-font-md: 0.875rem;      /* 14px — emphasized body */
+  --lt-font-lg: 1rem;          /* 16px — card titles, modal titles */
+  --lt-font-xl: 1.25rem;       /* 20px — page titles */
 }
 
 /* ---- Reset & Base ---- */
 
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-font-base);
   color: var(--lt-text);
   background: var(--lt-bg);
-  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+/* Ensure all form elements inherit the font */
+input, select, textarea, button, .btn, .form-control, .form-select {
+  font-family: var(--lt-font-family);
+}
+
+.form-control, .form-select {
+  font-size: var(--lt-font-base);
+}
+
+/* Global table base size */
+table, .table {
+  font-size: var(--lt-font-base);
 }
 
 /* ---- Navbar ---- */
@@ -53,7 +83,7 @@ body {
 .lt-navbar .nav-link {
   color: rgba(255, 255, 255, 0.85);
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: var(--lt-font-md);
   padding: 0.75rem 1rem;
   border-radius: var(--lt-radius-sm);
   transition: all var(--lt-transition);
@@ -100,7 +130,7 @@ body {
 .lt-navbar .dropdown-toggle {
   color: rgba(255, 255, 255, 0.9);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--lt-font-base);
   padding: 0.375rem 0.75rem;
   border-radius: var(--lt-radius-sm);
   background: rgba(255, 255, 255, 0.08);
@@ -144,7 +174,7 @@ body {
 }
 
 .lt-sidebar-title {
-  font-size: 0.6875rem;
+  font-size: var(--lt-font-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -158,7 +188,7 @@ body {
   align-items: center;
   gap: 0.625rem;
   padding: 0.5rem 1.25rem;
-  font-size: 0.8125rem;
+  font-size: var(--lt-font-base);
   color: var(--lt-text);
   text-decoration: none;
   transition: all var(--lt-transition);
@@ -181,7 +211,7 @@ body {
 .lt-sidebar-link i {
   width: 18px;
   text-align: center;
-  font-size: 0.8125rem;
+  font-size: var(--lt-font-base);
   color: var(--lt-text-muted);
   flex-shrink: 0;
 }
@@ -223,14 +253,14 @@ body {
 }
 
 .lt-page-title {
-  font-size: 1.25rem;
+  font-size: var(--lt-font-xl);
   font-weight: 600;
   color: var(--lt-text);
   margin: 0;
 }
 
 .lt-page-subtitle {
-  font-size: 0.8125rem;
+  font-size: var(--lt-font-base);
   color: var(--lt-text-muted);
   margin-top: 0.125rem;
 }
@@ -261,7 +291,7 @@ body {
 }
 
 .lt-card-title {
-  font-size: 1rem;
+  font-size: var(--lt-font-lg);
   font-weight: 600;
   color: var(--lt-text);
   margin: 0;
@@ -290,7 +320,7 @@ body {
   background: var(--lt-bg);
   border-bottom: 2px solid var(--lt-border);
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: var(--lt-font-sm);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--lt-text-muted);
@@ -300,7 +330,7 @@ body {
 .lt-table-wrapper table.dataTable tbody td {
   padding: 0.625rem 1rem;
   border-bottom: 1px solid var(--lt-border);
-  font-size: 0.8125rem;
+  font-size: var(--lt-font-base);
   vertical-align: middle;
 }
 
@@ -315,7 +345,7 @@ body {
   align-items: center;
   gap: 0.375rem;
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--lt-font-base);
   padding: 0.5rem 1rem;
   border-radius: var(--lt-radius-sm);
   transition: all var(--lt-transition);
@@ -349,7 +379,8 @@ body {
 .ts-wrapper .ts-control {
   border-radius: var(--lt-radius-sm);
   border-color: var(--lt-border);
-  font-size: 0.8125rem;
+  font-size: var(--lt-font-base);
+  font-family: var(--lt-font-family);
   min-height: 38px;
   box-shadow: none;
   transition: border-color var(--lt-transition), box-shadow var(--lt-transition);
@@ -365,7 +396,7 @@ body {
   border: 1px solid rgba(var(--lt-primary-rgb), 0.15);
   border-radius: 3px;
   color: var(--lt-primary-dark);
-  font-size: 0.75rem;
+  font-size: var(--lt-font-sm);
   padding: 1px 6px;
 }
 
@@ -373,7 +404,12 @@ body {
   border-radius: var(--lt-radius-sm);
   border-color: var(--lt-border);
   box-shadow: var(--lt-shadow-md);
-  font-size: 0.8125rem;
+  font-size: var(--lt-font-base);
+  font-family: var(--lt-font-family);
+}
+
+.ts-wrapper .ts-dropdown .option {
+  font-size: var(--lt-font-base);
 }
 
 .ts-wrapper .ts-dropdown .option.active {
@@ -392,7 +428,7 @@ th .ts-wrapper {
 }
 
 th .ts-wrapper .ts-control {
-  font-size: 0.75rem;
+  font-size: var(--lt-font-sm);
   min-height: 32px;
   padding: 2px 8px;
 }
@@ -413,7 +449,7 @@ th .ts-wrapper .ts-control {
 }
 
 .modal-title {
-  font-size: 1rem;
+  font-size: var(--lt-font-lg);
   font-weight: 600;
 }
 
@@ -432,7 +468,7 @@ th .ts-wrapper .ts-control {
 .form-floating > .form-control {
   border-radius: var(--lt-radius-sm);
   border-color: var(--lt-border);
-  font-size: 0.8125rem;
+  font-size: var(--lt-font-base);
   transition: border-color var(--lt-transition), box-shadow var(--lt-transition);
 }
 
@@ -443,14 +479,20 @@ th .ts-wrapper .ts-control {
 }
 
 .form-floating > label {
-  font-size: 0.8125rem;
+  font-size: var(--lt-font-base);
   color: var(--lt-text-muted);
+}
+
+.form-label {
+  font-size: var(--lt-font-sm);
+  font-weight: 600;
+  color: var(--lt-text);
 }
 
 /* ---- DataTables overrides ---- */
 
 .dt-buttons .btn {
-  font-size: 0.8125rem;
+  font-size: var(--lt-font-base);
   font-weight: 500;
   border-radius: var(--lt-radius-sm);
   padding: 0.375rem 0.875rem;
@@ -460,14 +502,14 @@ th .ts-wrapper .ts-control {
   border-radius: var(--lt-radius-sm);
   border-color: var(--lt-border);
   padding: 0.25rem 0.5rem;
-  font-size: 0.8125rem;
+  font-size: var(--lt-font-base);
 }
 
 .dataTables_filter input {
   border-radius: var(--lt-radius-sm);
   border: 1px solid var(--lt-border);
   padding: 0.375rem 0.75rem;
-  font-size: 0.8125rem;
+  font-size: var(--lt-font-base);
 }
 
 .dataTables_filter input:focus {
@@ -476,13 +518,21 @@ th .ts-wrapper .ts-control {
   outline: none;
 }
 
+.dataTables_info {
+  font-size: var(--lt-font-base);
+}
+
+.dataTables_paginate .paginate_button {
+  font-size: var(--lt-font-base);
+}
+
 /* ---- Utility ---- */
 
 .lt-badge {
   display: inline-flex;
   align-items: center;
   padding: 0.125rem 0.5rem;
-  font-size: 0.6875rem;
+  font-size: var(--lt-font-xs);
   font-weight: 600;
   border-radius: 999px;
   letter-spacing: 0.02em;
@@ -544,7 +594,7 @@ th .ts-wrapper .ts-control {
   }
 
   .lt-navbar .nav-link {
-    font-size: 0.75rem;
+    font-size: var(--lt-font-sm);
     padding: 0.5rem 0.625rem;
   }
 }

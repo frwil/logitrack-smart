@@ -468,9 +468,7 @@ if(!isset($user_rights)) $user_rights = [];
         display: block;
         margin-left: 3px;
         margin-right: 20px;
-        /* At least, width of the checkbox. */
-        font-family: sans-serif;
-        font-size: 0.8em;
+        font-size: 0.75rem;
         font-weight: normal;
         text-align: left;
     }
@@ -482,10 +480,6 @@ if(!isset($user_rights)) $user_rights = [];
     table.dataTable thead .sorting_asc_disabled,
     table.dataTable thead .sorting_desc_disabled {
         background-position: 100% 10px;
-    }
-
-    .ts-wrapper .ts-dropdown .option {
-        font-size: 0.8em;
     }
 
     .ts-wrapper {

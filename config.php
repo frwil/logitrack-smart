@@ -42,7 +42,7 @@ function getTableauFolder()
     global $rights_config;
     $configRepo = new ConfigRepository($con);
     $folderRows = $configRepo->findAllFoldersByRegion((int)$_SESSION['usr-con']['region-sel']);
-    $tableau = "<table style='font-size:0.8rem' class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-folder' ><thead><tr><th>Chassis</th><th>Véhicule</th><th>Marque</th><th>1ère mise en circulation</th><th>Entité</th><th>Places assises</th><th>Source d'énergie</th>";
+    $tableau = "<table style='font-size:0.8125rem' class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-folder' ><thead><tr><th>Chassis</th><th>Véhicule</th><th>Marque</th><th>1ère mise en circulation</th><th>Entité</th><th>Places assises</th><th>Source d'énergie</th>";
     $docs = $configRepo->findAllDocuments();
     foreach ($docs as $doc):
         $tableau .= "<th class='text-center'>" . h($doc['nom_document']) . " (" . h($doc['validite_document']) . " mois)<br>Date Expiration : </th>";

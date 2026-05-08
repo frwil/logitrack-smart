@@ -1,14 +1,22 @@
 /* LogiTrack — Login Page */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+:root {
+  --lt-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+html {
+  font-size: 16px;
 }
 
 body {
+  font-family: var(--lt-font-family);
   background: linear-gradient(135deg, #3D3486 0%, #5D54A4 50%, #7C78B8 100%);
   min-height: 100vh;
 }
@@ -106,19 +114,20 @@ body {
   z-index: 2;
 }
 
-.login-input {
+.login-input, .login-select {
   width: 100%;
   padding: 0.625rem 0.875rem 0.625rem 2.5rem;
   border: 1.5px solid #e2e0f0;
   border-radius: 0.5rem;
   font-size: 0.875rem;
+  font-family: var(--lt-font-family);
   color: #2d2640;
   background: #faf9ff;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   outline: none;
 }
 
-.login-input:focus {
+.login-input:focus, .login-select:focus {
   border-color: #5D54A4;
   box-shadow: 0 0 0 3px rgba(93, 84, 164, 0.12);
   background: #fff;
@@ -129,23 +138,12 @@ body {
 }
 
 .login-select {
-  width: 100%;
-  padding: 0.625rem 0.875rem 0.625rem 2.5rem;
-  border: 1.5px solid #e2e0f0;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  color: #2d2640;
-  background: #faf9ff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%239e9ab8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") no-repeat right 0.75rem center/16px 12px;
   appearance: none;
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  outline: none;
-}
-
-.login-select:focus {
-  border-color: #5D54A4;
-  box-shadow: 0 0 0 3px rgba(93, 84, 164, 0.12);
-  background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%239e9ab8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") no-repeat right 0.75rem center/16px 12px;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%239e9ab8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
 }
 
 .login-submit {
