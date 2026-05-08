@@ -19,6 +19,22 @@ endif; ?>
 
 <body style="background:url('img/36d7f5_6fba6fa5d3ce4f74a889a303addc7274~mv2.png') no-repeat fixed <?php if(isset($_SESSION['usr-con'])) : ?>center<?php endif; ?>">
     <script src="public/build/js/main.js"></script>
+    <script>
+        $.ajaxPrefilter(function(options, originalOptions) {
+            if (options.type && options.type.toLowerCase() === 'post') {
+                options.data = options.data || '';
+                if (typeof options.data === 'string') {
+                    options.data += (options.data ? '&' : '') + 'csrf_token=' + encodeURIComponent(window.CSRF_TOKEN);
+                }
+            }
+        });
+        $(document).on('submit', 'form[method="post"]', function() {
+            var $form = $(this);
+            if (!$form.find('input[name="csrf_token"]').length) {
+                $form.append('<input type="hidden" name="csrf_token" value="' + window.CSRF_TOKEN + '">');
+            }
+        });
+    </script>
     <?php function isRightObjectAllowed($r_objet,$rights)
     {   
         //print_r($rights);    
@@ -35,6 +51,17 @@ error_reporting(E_ALL); */ ?>
     <?php require_once __DIR__ . '/env_loader.php'; ?>
     <?php require_once __DIR__ . '/db.php'; ?>
     <?php require_once __DIR__ . '/sanitize.php'; ?>
+<?php if ($_SERVER['REQUEST_METHOD'] === 'POST'):
+    $csrf_token = $_POST['csrf_token'] ?? null;
+    if ($csrf_token === null):
+        $json = json_decode(file_get_contents('php://input'), true);
+        $csrf_token = $json['csrf_token'] ?? null;
+    endif;
+    if (!hash_equals($_SESSION['csrf_token'], (string)$csrf_token)):
+        http_response_code(403);
+        die('CSRF validation failed');
+    endif;
+endif; ?>
     <?php $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME')); ?>
     <?php if (!isset($_SESSION['usr-con'])): include('login.php');
     else : ?>

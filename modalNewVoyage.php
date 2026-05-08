@@ -207,7 +207,7 @@ endif;
     }
 
     async function checkReleveKms(id,dvg,fvg){
-        let check=await fetch('',{method:'post',body: JSON.stringify({ chrelevekms: id,datevg:dvg,finvg:fvg }),headers: {
+        let check=await fetch('',{method:'post',body: JSON.stringify({ chrelevekms: id,datevg:dvg,finvg:fvg,csrf_token:window.CSRF_TOKEN }),headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
     }})
