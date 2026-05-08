@@ -1,42 +1,33 @@
 import './js/jquery-global.js'
 import './js/helpers.js'
-window.moment = require('moment')
-window.moment.updateLocale('en', { week: { dow: 1 } })
-window.XLSX = require('xlsx')
-
+import moment from 'moment'
+import * as XLSX from 'xlsx'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap'
-
 import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css'
 import 'datatables.net-bs5'
-
 import 'datatables.net-responsive'
 import './css/responsive.dataTables.css'
-
 import 'datatables.net-rowgroup'
 import './css/rowGroup.dataTables.css'
-
 import 'datatables.net-buttons'
 import 'datatables.net-buttons/js/buttons.html5.min.mjs'
 import './css/buttons.dataTables.css'
-
 import 'datatables.net-fixedcolumns'
 import './css/fixedColumns.dataTables.css'
-
 import 'tom-select/dist/css/tom-select.css'
 import './js/tom-select-setup.js'
-
 import '@fortawesome/fontawesome-free/css/all.min.css'
-
 import './css/theme.css'
-
 import 'jquery-ui/ui/version.js'
 import 'jquery-ui/ui/widget.js'
 import 'jquery-ui/ui/keycode.js'
 import 'jquery-ui/ui/widgets/button.js'
-
 import 'pivottable/dist/pivot.min.css'
 import 'pivottable'
-
 import html2canvas from 'html2canvas'
+
+window.moment = moment
+window.XLSX = XLSX
 window.html2canvas = html2canvas
+moment.updateLocale('en', { week: { dow: 1 } })
