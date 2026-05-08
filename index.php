@@ -2,7 +2,11 @@
 // === Bootstrap — runs for every request ===
 ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_samesite', 'Lax');
-ini_set('session.save_path', __DIR__ . '/tmp/sessions');
+// PHP built-in server has no session save path — use local tmp/ if it exists
+$localSessions = __DIR__ . '/tmp/sessions';
+if (!ini_get('session.save_path') && is_dir($localSessions)) {
+    ini_set('session.save_path', $localSessions);
+}
 if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
     ini_set('session.cookie_secure', 1);
 }
