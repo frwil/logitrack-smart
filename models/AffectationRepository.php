@@ -94,18 +94,19 @@ class AffectationRepository extends BaseRepository
         string $chauffeurNom,
         string $typeUtilisationLib,
         string $modeUtilisationNom,
-        string $entiteNom
+        string $entiteNom,
+        ?int $idRegion = null
     ): bool {
         return $this->execIgnore(
             "INSERT IGNORE INTO affectation_vehicule (id_vehicule, id_chauffeur, id_type_utilisation, id_mode_utilisation, id_entite, objet_affectation, date_debut_affectation, date_fin_affectation, id_region, date_affectation, is_ferme)
              VALUES (
                (SELECT id_vehicule FROM vehicule WHERE immatriculation_vehicule = ?),
-               (SELECT id_chauffeur FROM chauffeur WHERE nom_chauffeur = ?),
+               (SELECT id_chauffeur FROM chauffeur WHERE nom_chauffeur = ? LIMIT 1),
                (SELECT id_type_utilisation FROM type_utilisation_vehicule WHERE lib_type_utilisation = ?),
                (SELECT id_mode_utilisation FROM mode_utilisation_vehicule WHERE nom_mode_utilisation = ?),
                (SELECT id_entite FROM entite WHERE nom_entite = ?),
-               NULL, CURRENT_TIMESTAMP, NULL, NULL, CURRENT_TIMESTAMP, '0')",
-            [$immat, $chauffeurNom, $typeUtilisationLib, $modeUtilisationNom, $entiteNom]
+               NULL, CURRENT_TIMESTAMP, NULL, ?, CURRENT_TIMESTAMP, '0')",
+            [$immat, $chauffeurNom, $typeUtilisationLib, $modeUtilisationNom, $entiteNom, $idRegion]
         );
     }
 }
