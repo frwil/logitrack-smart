@@ -1,16 +1,4 @@
-<?php if(isset($_POST['nom-cc'])):
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-mysqli_begin_transaction($con);
-try {
-    $q=db_exec($con,"INSERT INTO `centre_couts` (`id_centre_cout`, `lib_centre_cout`) VALUES (NULL, ?)", [$_POST['nom-cc']]);
-    mysqli_commit($con);
-        die("NEWCC%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        if ($e->getCode() == '1062') die('NEWCC%%%%%%1062');
-        die("NEWCC%%%%%%0");
-    }
-endif; ?>
+<?php /* POST handled by CentreCoutController — see controllers/router.php */ ?>
 <div class="modal fade" id="modal-new-centrecout" tabindex="-1" aria-labelledby="modal-new-centrecoutLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -50,19 +38,21 @@ endif; ?>
         }
         $.ajax({
             type:'post',
-            data:$('#form-new-cc').serialize()
+            data:$('#form-new-cc').serialize(),
+            dataType:'json'
         }).done((e)=>{
-            let v=e.split('NEWCC%%%%%%')[1]
-            if(v=='1'){
+            if(e.success){
                 showSuccess('Enregistrement effectué')
                 setTimeout(()=>{$('#form-new-cc *').val(''); $('#modal-new-centrecout').modal('hide')},2000)
                 <?php if(isset($_GET['extpage'])) : ?> self.close() <?php endif; ?>
-            }else if(v=='1062'){
+            }else if(e.error=='1062'){
                 $('#modal-new-centrecout').notify("Ce centre de coût existe déjà",{position:'top'})
             }
             else{
-                $('#modal-new-centrecout').notify("Erreur lors de l'enregistrement",{position:'top'})
+                $('#modal-new-centrecout').notify(e.error || "Erreur lors de l'enregistrement",{position:'top'})
             }
+        }).fail((jqXHR)=>{
+            $('#modal-new-centrecout').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement",{position:'top'})
         })
     }
     function openModalCentreCout() {

@@ -24,11 +24,11 @@ if (isset($_POST['lignes'])):
             $q=db_exec($con,"INSERT ignore INTO `affectation_vehicule` (`id_affectation`, `id_vehicule`, `id_chauffeur`, `id_type_utilisation`, `id_mode_utilisation`, `id_entite`, `objet_affectation`, `date_debut_affectation`, `date_fin_affectation`, `id_region`, `date_affectation`, `is_ferme`) VALUES (NULL, (select id_vehicule from vehicule where immatriculation_vehicule=?), (select id_chauffeur from chauffeur where nom_chauffeur=?), (select id_type_utilisation from type_utilisation_vehicule where lib_type_utilisation=?), (select id_mode_utilisation from mode_utilisation_vehicule where nom_mode_utilisation=?), (select id_entite from entite where nom_entite=?), NULL, CURRENT_TIMESTAMP, NULL, NULL, CURRENT_TIMESTAMP, '0')", [$lignes[$i]->Immatriculation, $lignes[$i]->{"Nom chauffeur"}, $lignes[$i]->{"Type utilisation"}, $lignes[$i]->Utilisation, trim($lignes[$i]->{"Entité"})]);
         endfor;
         mysqli_commit($con);
-        die("UpdVoyage%%%%%%1");
+        die(json_encode(['success' => true]));
     } catch (mysqli_sql_exception $e) {
         mysqli_rollback($con);
         print_r($e);
-        die("UpdVoyage%%%%%%0");
+        die(json_encode(['success' => false, 'error' => 'Erreur lors de l\'import']));
     }
 
 endif;
@@ -88,7 +88,16 @@ endif;
 
                     $.ajax({
                         type: 'post',
-                        data: 'lignes=' + JSON.stringify(result)
+                        data: 'lignes=' + JSON.stringify(result),
+                        dataType: 'json'
+                    }).done((e) => {
+                        if (e.success) {
+                            console.log('Import réussi');
+                        } else {
+                            console.error('Erreur import:', e.error);
+                        }
+                    }).fail((jqXHR) => {
+                        console.error('Erreur lors de l\'import', jqXHR.responseJSON?.error || 'Erreur serveur');
                     })
                 });
             };

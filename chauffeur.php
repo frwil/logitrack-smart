@@ -1,44 +1,20 @@
 <?php function getTableauChauffeurs()
 {
     global $con;
-    $q = db_select($con, "SELECT * FROM `chauffeur` WHERE 1", []);
+    $repo = new ChauffeurRepository($con);
+    $rows = $repo->findAll();
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Nom Chauffeur</th><th></th></tr></thead><tbody>";
     $i = 1;
-    while ($r = mysqli_fetch_array($q)):
-        $tableau .= "<tr><td>$i</td><td>{$r['nom_chauffeur']}</td><td><div class='btn-group'><button class='btn btn-light' type='button' title='Modifier le chauffeur {$r[1]}' onclick='showModalUpdateChauffeur(\"".sha1($r[0].$r[1])."\")'><i class='fa fa-pencil-alt'></i></button><button class='btn btn-danger' title='Supprimer le chauffeur {$r[1]}' onclick='deleteChauffeur(\"".sha1($r[0].$r[1])."\")'><i class='fa fa-times'></i></button></div></td></tr>";
+    foreach ($rows as $r):
+        $tableau .= "<tr><td>$i</td><td>" . h($r['nom_chauffeur']) . "</td><td><div class='btn-group'><button class='btn btn-light' type='button' title='Modifier le chauffeur " . h($r['nom_chauffeur']) . "' onclick='showModalUpdateChauffeur(\"".sha1($r['id_chauffeur'].$r['nom_chauffeur'])."\")'><i class='fa fa-pencil-alt'></i></button><button class='btn btn-danger' title='Supprimer le chauffeur " . h($r['nom_chauffeur']) . "' onclick='deleteChauffeur(\"".sha1($r['id_chauffeur'].$r['nom_chauffeur'])."\")'><i class='fa fa-times'></i></button></div></td></tr>";
         $i++;
-    endwhile;
+    endforeach;
     $tableau .= "</tbody></table>";
     return $tableau;
 }
 ?>
 <?php include('modalNewChauffeur.php'); ?>
-<?php if (isset($_POST['id-chauffeur-forModal'])):
-    $q = db_select($con, "select * from chauffeur where sha1(concat(id_chauffeur,nom_chauffeur))=?", [$_POST['id-chauffeur-forModal']]);
-    while ($r = mysqli_fetch_array($q)):
-        $chauffeur = $r;
-    endwhile;
-    die("UpdChauffeur%%%%%%" . json_encode($chauffeur));
-endif;
-if (isset($_POST['id-chauffeur'])):
-    $_POST['nom-upd-chauffeur'] = trim(strtoupper($_POST['nom-upd-chauffeur']));
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "update chauffeur set nom_chauffeur=? where sha1(concat(id_chauffeur,nom_chauffeur))=?", [$_POST['nom-upd-chauffeur'], $_POST['id-chauffeur']]);
-        mysqli_commit($con);
-        die("UpdChauffeur%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("UpdChauffeur%%%%%%0");
-    }
-endif;
-if(isset($_POST['id-chauffeur-forDel'])):
-    $q=db_exec($con,"delete from chauffeur where sha1(concat(id_chauffeur,nom_chauffeur))=?", [$_POST['id-chauffeur-forDel']]);
-    if($q) die("UpdChauffeur%%%%%%1");
-    die("UpdChauffeur%%%%%%0");
-endif;
-?>
+<?php /* POST /chauffeur handled by ChauffeurController — see controllers/router.php */ ?>
 <?php if(isset($_GET['action']) && $_GET['action']=='new'): ?>
 <script>
     setTimeout(()=>{openModalChauffeur()},2000)
@@ -50,27 +26,35 @@ endif;
         $('#id-chauffeur').val(id)
         $.ajax({
             type: 'post',
-            data: 'id-chauffeur-forModal=' + id
+            data: 'id-chauffeur-forModal=' + id,
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('UpdChauffeur%%%%%%')[1]
-            v = JSON.parse(v);
-            $('#nom-chauffeur-display').html(v.nom_chauffeur);
-            $('#nom-upd-chauffeur').val(v.nom_chauffeur);
+            if (e.success) {
+                let v = e.data
+                $('#nom-chauffeur-display').html(v.nom_chauffeur);
+                $('#nom-upd-chauffeur').val(v.nom_chauffeur);
+            } else {
+                showError(e.error || "Erreur lors du chargement")
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
         })
     }
     function updateChauffeur($id){
         if(confirm("Etes-vous sûr de vouloir modifier ?")){
             $.ajax({
                 type:'post',
-                data:$('#form-upd-chauffeur').serialize()
+                data:$('#form-upd-chauffeur').serialize(),
+                dataType:'json'
             }).done((e)=>{
-                let v = e.split('UpdChauffeur%%%%%%')[1]
-                if (v == '1') {
+                if (e.success) {
                     showSuccess('Modification effectuée!!')
                     location="?page=affectationVehicules&subpage=listeChauffeurs"
                 } else {
-                    showError("Erreur lors de la modificaiton")
+                    showError(e.error || "Erreur lors de la modification")
                 }
+            }).fail((jqXHR)=>{
+                showError(jqXHR.responseJSON?.error || "Erreur lors de la modification")
             })
         }
     }
@@ -79,15 +63,17 @@ endif;
         if(confirm("Etes-vous sûr de vouloir supprimer?")){
             $.ajax({
                 type:'post',
-                data:'id-chauffeur-forDel='+id
+                data:'id-chauffeur-forDel='+id,
+                dataType:'json'
             }).done((e)=>{
-                let v=e.split('UpdChauffeur%%%%%%')[1]
-                if(v=='1'){
+                if(e.success){
                     showSuccess('Chauffeur supprimée!!')
                     location.reload()
                 }else{
-                    showError("Echec de l'opération")
+                    showError(e.error || "Echec de l'opération")
                 }
+            }).fail((jqXHR)=>{
+                showError(jqXHR.responseJSON?.error || "Echec de l'opération")
             })
         }
     }

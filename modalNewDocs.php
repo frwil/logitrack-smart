@@ -1,17 +1,4 @@
-<?php if(isset($_POST['nom-doc'])):
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-mysqli_begin_transaction($con);
-try {
-    $q=db_exec($con,"INSERT INTO `document_vehicule` (`id_document`, `nom_document`, `validite_document`) VALUES (NULL, ?, ?)", [$_POST['nom-doc'], $_POST['valid-doc']]);
-    mysqli_commit($con);
-    die("NEWDOC%%%%%%1");
-} catch (mysqli_sql_exception $e) {
-    mysqli_rollback($con);
-    if($e->getCode()==1062) die("NEWDOC%%%%%%1062");
-    die("NEWDOC%%%%%%0");
-}
-endif;
-?>
+<?php /* POST handled by DocumentController — see controllers/router.php */ ?>
 <div class="modal fade" id="modal-doc" tabindex="-1" aria-labelledby="modal-docLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -55,16 +42,19 @@ endif;
         }
         $.ajax({
             type:'post',
-            data:$('#form-new-doc').serialize()
+            data:$('#form-new-doc').serialize(),
+            dataType:'json'
         }).done((e)=>{
-            let v=e.split('NEWDOC%%%%%%')[1]
-            if(v=='1'){
+            if(e.success){
                 showSuccess('Enregistrement effectué!')
                 location.reload()
-            }else if(v=='1062'){
+            }else if(e.error=='1062'){
                 $('#modal-doc').notify('Ce document existe déjà!',{position:'top'})
+            } else {
+                $('#modal-doc').notify(e.error || "Erreur lors de l'enregistrement !",{position:'top'})
             }
-            $('#modal-doc').notify("Erreur lors de l'enregistrement !",{position:'top'})
+        }).fail((jqXHR)=>{
+            $('#modal-doc').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement !",{position:'top'})
         })
     }
 

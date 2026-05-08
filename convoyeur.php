@@ -1,13 +1,14 @@
 <?php function getTableauConvoyeurs()
 {
     global $con;
-    $q = db_select($con, "SELECT * FROM `convoyeur` WHERE 1", []);
+    $repo = new ConvoyeurRepository($con);
+    $rows = $repo->findAll();
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Nom Convoyeur</th><th></th></tr></thead><tbody>";
     $i = 1;
-    while ($r = mysqli_fetch_array($q)):
-        $tableau .= "<tr><td>$i</td><td>{$r['nom_convoyeur']}</td><td><div class='btn-group'><button class='btn btn-light' type='button' title='Modifier le convoyeur {$r[1]}' onclick='showModalUpdateConvoyeur(\"".sha1($r[0].$r[1])."\")'><i class='fa fa-pencil-alt'></i></button><button class='btn btn-danger' title='Supprimer le convoyeur {$r[1]}' onclick='deleteConvoyeur(\"".sha1($r[0].$r[1])."\")'><i class='fa fa-times'></i></button></div></td></tr>";
+    foreach ($rows as $r):
+        $tableau .= "<tr><td>$i</td><td>" . h($r['nom_convoyeur']) . "</td><td><div class='btn-group'><button class='btn btn-light' type='button' title='Modifier le convoyeur " . h($r['nom_convoyeur']) . "' onclick='showModalUpdateConvoyeur(\"".sha1($r['id_convoyeur'].$r['nom_convoyeur'])."\")'><i class='fa fa-pencil-alt'></i></button><button class='btn btn-danger' title='Supprimer le convoyeur " . h($r['nom_convoyeur']) . "' onclick='deleteConvoyeur(\"".sha1($r['id_convoyeur'].$r['nom_convoyeur'])."\")'><i class='fa fa-times'></i></button></div></td></tr>";
         $i++;
-    endwhile;
+    endforeach;
     $tableau .= "</tbody></table>";
     return $tableau;
 }
@@ -18,59 +19,42 @@
     setTimeout(()=>{openModalConvoyeur()},2000)
 </script>
 <?php endif; ?>
-<?php if (isset($_POST['id-convoyeur-forModal'])):
-    $q = db_select($con, "select * from convoyeur where sha1(concat(id_convoyeur,nom_convoyeur))=?", [$_POST['id-convoyeur-forModal']]);
-    while ($r = mysqli_fetch_array($q)):
-        $convoyeur = $r;
-    endwhile;
-    die("UpdConvoyeur%%%%%%" . json_encode($convoyeur));
-endif;
-if (isset($_POST['id-convoyeur'])):
-    $_POST['nom-upd-convoyeur'] = trim(strtoupper($_POST['nom-upd-convoyeur']));
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "update convoyeur set nom_convoyeur=? where sha1(concat(id_convoyeur,nom_convoyeur))=?", [$_POST['nom-upd-convoyeur'], $_POST['id-convoyeur']]);
-        mysqli_commit($con);
-        die("UpdConvoyeur%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("UpdConvoyeur%%%%%%0");
-    }
-endif;
-if(isset($_POST['id-convoyeur-forDel'])):
-    $q=db_exec($con,"delete from convoyeur where sha1(concat(id_convoyeur,nom_convoyeur))=?", [$_POST['id-convoyeur-forDel']]);
-    if($q) die("UpdConvoyeur%%%%%%1");
-    die("UpdConvoyeur%%%%%%0");
-endif;
-?>
+<?php /* POST /convoyeur handled by ConvoyeurController — see controllers/router.php */ ?>
 <script>
     function showModalUpdateConvoyeur(id) {
         $('#modal-upd-convoyeur').modal('show')
         $('#id-convoyeur').val(id)
         $.ajax({
             type: 'post',
-            data: 'id-convoyeur-forModal=' + id
+            data: 'id-convoyeur-forModal=' + id,
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('UpdConvoyeur%%%%%%')[1]
-            v = JSON.parse(v);
-            $('#nom-convoyeur-display').html(v.nom_convoyeur);
-            $('#nom-upd-convoyeur').val(v.nom_convoyeur);
+            if (e.success) {
+                let v = e.data
+                $('#nom-convoyeur-display').html(v.nom_convoyeur);
+                $('#nom-upd-convoyeur').val(v.nom_convoyeur);
+            } else {
+                showError(e.error || "Erreur lors du chargement")
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
         })
     }
     function updateConvoyeur($id){
         if(confirm("Etes-vous sûr de vouloir modifier ?")){
             $.ajax({
                 type:'post',
-                data:$('#form-upd-convoyeur').serialize()
+                data:$('#form-upd-convoyeur').serialize(),
+                dataType:'json'
             }).done((e)=>{
-                let v = e.split('UpdConvoyeur%%%%%%')[1]
-                if (v == '1') {
+                if (e.success) {
                     showSuccess('Modification effectuée!!')
                     location="?page=affectationVehicules&subpage=listeConvoyeurs"
                 } else {
-                    showError("Erreur lors de la modificaiton")
+                    showError(e.error || "Erreur lors de la modification")
                 }
+            }).fail((jqXHR)=>{
+                showError(jqXHR.responseJSON?.error || "Erreur lors de la modification")
             })
         }
     }
@@ -79,15 +63,17 @@ endif;
         if(confirm("Etes-vous sûr de vouloir supprimer?")){
             $.ajax({
                 type:'post',
-                data:'id-convoyeur-forDel='+id
+                data:'id-convoyeur-forDel='+id,
+                dataType:'json'
             }).done((e)=>{
-                let v=e.split('UpdConvoyeur%%%%%%')[1]
-                if(v=='1'){
+                if(e.success){
                     showSuccess('Convoyeur supprimée!!')
                     location.reload()
                 }else{
-                    showError("Echec de l'opération")
+                    showError(e.error || "Echec de l'opération")
                 }
+            }).fail((jqXHR)=>{
+                showError(jqXHR.responseJSON?.error || "Echec de l'opération")
             })
         }
     }

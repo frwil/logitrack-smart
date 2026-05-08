@@ -1,16 +1,4 @@
-<?php if(isset($_POST['nom-pt'])):
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-mysqli_begin_transaction($con);
-try {
-    $q=db_exec($con,"INSERT INTO `prestataire_intervention` (`id_prestataire`, `nom_prestataire`, `contact_prestataire`, `localisation_prestataire`) VALUES (NULL, ?, ?, ?)", [$_POST['nom-pt'], $_POST['contact-pt'] === '' ? null : $_POST['contact-pt'], $_POST['localisation-pt'] === '' ? null : $_POST['localisation-pt']]);
-    mysqli_commit($con);
-        die("NEWPT%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        if ($e->getCode() == '1062') die('NEWPT%%%%%%1062');
-        die("NEWPT%%%%%%0");
-    }
-endif; ?>
+<?php /* POST handled by PrestataireController — see controllers/router.php */ ?>
 <div class="modal fade" id="modal-new-prestataire" tabindex="-1" aria-labelledby="modal-new-prestataireLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -58,18 +46,20 @@ endif; ?>
         }
         $.ajax({
             type:'post',
-            data:$('#form-new-pt').serialize()
+            data:$('#form-new-pt').serialize(),
+            dataType:'json'
         }).done((e)=>{
-            let v=e.split('NEWPT%%%%%%')[1]
-            if(v=='1'){
+            if(e.success){
                 showSuccess('Enregistrement effectué')
                 setTimeout(()=>{$('#modal-new-prestataire *').val(''); $('#modal-new-prestataire').modal('hide')},2000)
-            }else if(v=='1062'){
+            }else if(e.error=='1062'){
                 $('#modal-new-prestataire').notify("Ce prestataire existe déjà",{position:'top'})
             }
             else{
-                $('#modal-new-prestataire').notify("Erreur lors de l'enregistrement",{position:'top'})
+                $('#modal-new-prestataire').notify(e.error || "Erreur lors de l'enregistrement",{position:'top'})
             }
+        }).fail((jqXHR)=>{
+            $('#modal-new-prestataire').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement",{position:'top'})
         })
     }
     function openModalPrestataire() {

@@ -1,25 +1,12 @@
 <?php
-if (isset($_POST['nom-destination'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $_POST['nom-destination'] = trim(strtoupper($_POST['nom-destination']));
-        $q = db_exec($con, "INSERT INTO `destination_voyage` (`id_destination`, `lib_destination`,`distance_destination`) VALUES (NULL, ?,?)", [$_POST['nom-destination'], $_POST['distance-destination']]);
-        mysqli_commit($con);
-        die("NewTrajet%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        if ($e->getCode() == '1062') die('NewTrajet%%%%%%1062');
-        die("NewTrajet%%%%%%0");
-    }
-endif;
+/* POST handled by TrajetController — see controllers/router.php */
 if (isset($_POST['refresh-destination'])):
-    $q = db_select($con, "select * from destination_voyage", []);
+    $trajetRepo = new TrajetRepository($con);
     $liste = "";
-    while ($r = mysqli_fetch_array($q)):
-        $liste .= "<option value='".sha1($r[0].$r[1])."'>{$r[1]}</option>";
-    endwhile;
-    die("NewTrajet%%%%%%$liste");
+    foreach ($trajetRepo->findAll() as $r):
+        $liste .= "<option value='" . sha1($r['id_destination'] . $r['lib_destination']) . "'>" . h($r['lib_destination']) . "</option>";
+    endforeach;
+    die(json_encode(['success' => true, 'html' => $liste]));
 endif;
 ?>
 <div class="modal fade" id="modal-new-destination" tabindex="-1" aria-labelledby="modal-new-marqeLabel" aria-hidden="true">
@@ -57,10 +44,16 @@ endif;
     function refreshTrajetOptions() {
         $.ajax({
             type: 'post',
-            data: 'refresh-destination=1'
+            data: 'refresh-destination=1',
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewTrajet%%%%%%')[1]
-            $('#destination-vh').html(v)
+            if (e.success) {
+                $('#destination-vh').html(e.html)
+            } else {
+                showError(e.error || "Erreur lors du chargement")
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
         })
     }
 
@@ -81,10 +74,10 @@ endif;
         }
         $.ajax({
             type: 'post',
-            data: $('#form-new-destination').serialize()
+            data: $('#form-new-destination').serialize(),
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewTrajet%%%%%%')[1]
-            if (v == '1') {
+            if (e.success) {
                 showSuccess("Nouveau trajet créé!!")
                 $('#modal-new-destination').modal('hide')
                 $('#form-new-destination *').val('')
@@ -92,11 +85,13 @@ endif;
                 <?php if (isset($_GET['subpage'])) : ?>
                     location.reload()
                 <?php endif; ?>
-            } else if (v == '1062') {
+            } else if (e.error == '1062') {
                 showError("Ce trajet de voyage existe déjà")
             } else {
-                showError("Erreur lors de l'enregistrement")
+                showError(e.error || "Erreur lors de l'enregistrement")
             }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement")
         })
     }
 </script>

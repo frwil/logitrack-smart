@@ -1,44 +1,20 @@
 <?php function getTableauTrajets()
 {
     global $con;
-    $q = db_select($con, "select * from destination_voyage where 1", []);
+    $repo = new TrajetRepository($con);
+    $rows = $repo->findAll();
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Libellé</th><th>Distance</th><th></th></tr></thead><tbody>";
     $i = 1;
-    while ($r = mysqli_fetch_array($q)):
-        $tableau .= "<tr><td>$i</td><td>{$r['lib_destination']}</td><td>{$r['distance_destination']}</td><td><div class='btn-group'><button class='btn btn-secondary' title='Modifier le trajet' onclick='showModalUpdateTrajet(\"".sha1($r[0].$r[1])."\")'><i class='fa fa-pencil-alt'></i></button><button class='btn btn-danger' title='Supprimer le trajet' onclick='delTrajet(\"".(sha1($r[0].$r[1]))."\")'><i class='fa fa-times'></i></button></div></td></tr>";
+    foreach ($rows as $r):
+        $tableau .= "<tr><td>$i</td><td>" . h($r['lib_destination']) . "</td><td>" . h($r['distance_destination']) . "</td><td><div class='btn-group'><button class='btn btn-secondary' title='Modifier le trajet' onclick='showModalUpdateTrajet(\"".sha1($r['id_destination'].$r['lib_destination'])."\")'><i class='fa fa-pencil-alt'></i></button><button class='btn btn-danger' title='Supprimer le trajet' onclick='delTrajet(\"".(sha1($r['id_destination'].$r['lib_destination']))."\")'><i class='fa fa-times'></i></button></div></td></tr>";
         $i++;
-    endwhile;
+    endforeach;
     $tableau .= "</tbody></table>";
     return $tableau;
 }
 ?>
 <?php include('modalNewTrajet.php'); ?>
-<?php if (isset($_POST['id-destination-forModal'])):
-    $q = db_select($con, "select * from destination_voyage where sha1(concat(id_destination,lib_destination))=?", [$_POST['id-destination-forModal']]);
-    while ($r = mysqli_fetch_array($q)):
-        $destination = $r;
-    endwhile;
-    die("UpdTrajet%%%%%%" . json_encode($destination));
-endif;
-if (isset($_POST['id-destination'])):
-    $_POST['nom-upd-destination'] = trim(strtoupper($_POST['nom-upd-destination']));
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-      $q = db_exec($con, "update destination_voyage set lib_destination=?, distance_destination=? where sha1(concat(id_destination,lib_destination))=?", [$_POST['nom-upd-destination'], $_POST['distance-destination-upd'], $_POST['id-destination']]);
-        mysqli_commit($con);
-        die("UpdTrajet%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("UpdTrajet%%%%%%0");
-    }
-endif;
-if (isset($_POST['id-destination-forDel'])):
-    $q = db_exec($con, "delete from destination_voyage where sha1(concat(id_destination,lib_destination))=?", [$_POST['id-destination-forDel']]);
-    if ($q) die("UpdTrajet%%%%%%1");
-    die("UpdTrajet%%%%%%0");
-endif;
-?>
+<?php /* POST handled by TrajetController — see controllers/router.php */ ?>
 <?php if (isset($_GET['action']) && $_GET['action'] == 'new'): ?>
     <script>
         setTimeout(() => {
@@ -52,13 +28,16 @@ endif;
         $('#id-destination').val(id)
         $.ajax({
             type: 'post',
-            data: 'id-destination-forModal=' + id
+            data: 'id-destination-forModal=' + id,
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('UpdTrajet%%%%%%')[1]
-            v = JSON.parse(v);
-            $('#nom-destination-display').html(v.lib_destination);
-            $('#nom-upd-destination').val(v.lib_destination);
-  $('#distance-destination-upd').val(v.distance_destination);
+            if (e.success) {
+                $('#nom-destination-display').html(e.data.lib_destination);
+                $('#nom-upd-destination').val(e.data.lib_destination);
+                $('#distance-destination-upd').val(e.data.distance_destination);
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement");
         })
     }
 
@@ -66,15 +45,17 @@ endif;
         if (confirm("Etes-vous sûr de vouloir modifier ?")) {
             $.ajax({
                 type: 'post',
-                data: $('#form-upd-destination').serialize()
+                data: $('#form-upd-destination').serialize(),
+                dataType: 'json'
             }).done((e) => {
-                let v = e.split('UpdTrajet%%%%%%')[1]
-                if (v == '1') {
+                if (e.success) {
                     showSuccess('Modification effectuée!!')
                     location = "?page=voyages&subpage=listeTrajets"
                 } else {
-                    showError("Erreur lors de la modificaiton")
+                    showError(e.error || "Erreur lors de la modification")
                 }
+            }).fail((jqXHR) => {
+                showError(jqXHR.responseJSON?.error || "Erreur lors de la modification")
             })
         }
     }
@@ -83,15 +64,17 @@ endif;
         if (confirm("Etes-vous sûr de vouloir supprimer?")) {
             $.ajax({
                 type: 'post',
-                data: 'id-destination-forDel=' + id
+                data: 'id-destination-forDel=' + id,
+                dataType: 'json'
             }).done((e) => {
-                let v = e.split('UpdTrajet%%%%%%')[1]
-                if (v == '1') {
-                    showSuccess('Trajet supprimée!!')
+                if (e.success) {
+                    showSuccess('Trajet supprimé!!')
                     location.reload()
                 } else {
-                    showError("Echec de l'opération")
+                    showError(e.error || "Echec de l'opération")
                 }
+            }).fail((jqXHR) => {
+                showError(jqXHR.responseJSON?.error || "Echec de l'opération")
             })
         }
     }

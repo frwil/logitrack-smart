@@ -1,19 +1,4 @@
-<?php
-if (isset($_POST['date-objectif'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "INSERT INTO `objectif_periode_region` (`id_objectif_periode`, `date_objectif_periode`, `id_region`, `objectif`) VALUES (NULL, ?, ?, ?)", [$_POST['date-objectif'], (int)$_SESSION['usr-con']['region-sel'], (int)$_POST['objectif']]);
-        mysqli_commit($con);
-        die("NewObjectif%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        if ($e->getCode() == '1062') die('NewObjectif%%%%%%1062');
-        die("NewObjectif%%%%%%0");
-    }
-endif;
-
-?>
+<?php /* POST handled by ObjectifController — see controllers/router.php */ ?>
 <div class="modal fade" id="modal-new-objectif" tabindex="-1" aria-labelledby="modal-new-objectifLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -51,19 +36,21 @@ endif;
         }
         $.ajax({
             type: 'post',
-            data: $('#form-new-objectif').serialize()
+            data: $('#form-new-objectif').serialize(),
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewObjectif%%%%%%')[1]
-            if (v == '1') {
+            if (e.success) {
                 showSuccess("Objectif enregisté pour la date du "+$('#date-objectif').val()+" !!")
                 $('#modal-new-objectif').modal('hide')
                 $('#form-new-objectif *').val('')
                 location="?page=voyages&subpage=listeObjectifsVoyages&action=new"
-            } else if (v == '1062') {
+            } else if (e.error == '1062') {
                 showError("Un objectif a déjà été défini pour cette journée.")
             } else {
-                showError("Erreur lors de l'enregistrement")
+                showError(e.error || "Erreur lors de l'enregistrement")
             }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement")
         })
     }
 </script>

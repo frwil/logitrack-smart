@@ -2,56 +2,35 @@
 {
     global $con;
     global $rights_vehicule;
-    $q = db_select($con, "SELECT * FROM `modele_vehicule` WHERE 1", []);
+    $repo = new ModeleRepository($con);
+    $rows = $repo->findAll();
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Nom modele</th><th></th></tr></thead><tbody>";
     $i = 1;
-    while ($r = mysqli_fetch_array($q)):
-        $tableau .= "<tr><td>$i</td><td>{$r['nom_modele_vehicule']}</td><td><div class='btn-group'>".(in_array("upd",$rights_vehicule) ? "<button class='btn btn-light' type='button' onclick='showModalUpdateModele({$r[0]})' title='Modifier la modele {$r[1]}'><i class='fa fa-pencil-alt'></i></button>" : "").(in_array("del",$rights_vehicule) ? "<button class='btn btn-danger' type='button' onclick='deleteModele({$r[0]})' title='Supprimer la modele {$r[1]}'><i class='fa fa-times'></i></button>" : "")."</div></td></tr>";
+    foreach ($rows as $r):
+        $tableau .= "<tr><td>$i</td><td>" . h($r['nom_modele_vehicule']) . "</td><td><div class='btn-group'>".(in_array("upd",$rights_vehicule) ? "<button class='btn btn-light' type='button' onclick='showModalUpdateModele(" . $r['id_modele_vehicule'] . ")' title='Modifier la modele " . h($r['nom_modele_vehicule']) . "'><i class='fa fa-pencil-alt'></i></button>" : "").(in_array("del",$rights_vehicule) ? "<button class='btn btn-danger' type='button' onclick='deleteModele(" . $r['id_modele_vehicule'] . ")' title='Supprimer la modele " . h($r['nom_modele_vehicule']) . "'><i class='fa fa-times'></i></button>" : "")."</div></td></tr>";
         $i++;
-    endwhile;
+    endforeach;
     $tableau .= "</tbody></table>";
     return $tableau;
 }
 include("modalNewModele.php");
 ?>
-<?php if (isset($_POST['id-modele-forModal'])):
-    $q = db_select($con, "select * from modele_vehicule where id_modele_vehicule=?", [(int)$_POST['id-modele-forModal']]);
-    while ($r = mysqli_fetch_array($q)):
-        $modele = $r;
-    endwhile;
-    die("UpdModele%%%%%%" . json_encode($modele));
-endif;
-if (isset($_POST['id-modele'])):
-    $_POST['nom-upd-modele'] = trim(strtoupper($_POST['nom-upd-modele']));
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "update modele_vehicule set nom_modele_vehicule=? where id_modele_vehicule=?", [$_POST['nom-upd-modele'], (int)$_POST['id-modele']]);
-        mysqli_commit($con);
-        die("UpdModele%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("UpdModele%%%%%%0");
-    }
-endif;
-if(isset($_POST['id-modele-forDel'])):
-    $q=db_exec($con,"delete from modele_vehicule where id_modele_vehicule=?", [(int)$_POST['id-modele-forDel']]);
-    if($q) die("UpdModele%%%%%%1");
-    die("UpdModele%%%%%%0");
-endif;
-?>
+<?php /* POST handled by ModeleController — see controllers/router.php */ ?>
 <script>
     function showModalUpdateModele(id) {
         $('#modal-upd-modele').modal('show')
         $('#id-modele').val(id)
         $.ajax({
             type: 'post',
-            data: 'id-modele-forModal=' + id
+            data: 'id-modele-forModal=' + id,
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('UpdModele%%%%%%')[1]
-            v = JSON.parse(v);
-            $('#nom-modele-display').html(v.nom_modele_vehicule);
-            $('#nom-upd-modele').val(v.nom_modele_vehicule);
+            if (e.success) {
+                $('#nom-modele-display').html(e.data.nom_modele_vehicule);
+                $('#nom-upd-modele').val(e.data.nom_modele_vehicule);
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement");
         })
     }
 
@@ -59,15 +38,17 @@ endif;
         if (confirm("Etes-vous sûr de vouloir modifier ?")) {
             $.ajax({
                 type: 'post',
-                data: $('#form-upd-modele').serialize()
+                data: $('#form-upd-modele').serialize(),
+                dataType: 'json'
             }).done((e) => {
-                let v = e.split('UpdModele%%%%%%')[1]
-                if (v == '1') {
+                if (e.success) {
                     showSuccess('Modification effectuée!!')
                     location.reload()
                 } else {
-                    showError("Erreur lors de la modificaiton")
+                    showError(e.error || "Erreur lors de la modification")
                 }
+            }).fail((jqXHR) => {
+                showError(jqXHR.responseJSON?.error || "Erreur lors de la modification")
             })
         }
     }
@@ -76,15 +57,17 @@ endif;
         if(confirm("Etes-vous sûr de vouloir supprimer?")){
             $.ajax({
                 type:'post',
-                data:'id-modele-forDel='+id
+                data:'id-modele-forDel='+id,
+                dataType:'json'
             }).done((e)=>{
-                let v=e.split('UpdModele%%%%%%')[1]
-                if(v=='1'){
-                    showSuccess('Modele supprimée!!')
+                if(e.success){
+                    showSuccess('Modele supprimé!!')
                     location.reload()
                 }else{
-                    showError("Echec de l'opération")
+                    showError(e.error || "Echec de l'opération")
                 }
+            }).fail((jqXHR)=>{
+                showError(jqXHR.responseJSON?.error || "Echec de l'opération")
             })
         }
     }

@@ -14,6 +14,8 @@ endif; ?>
 <?php require_once __DIR__ . '/env_loader.php'; ?>
 <?php require_once __DIR__ . '/db.php'; ?>
 <?php require_once __DIR__ . '/sanitize.php'; ?>
+<?php require_once __DIR__ . '/models/autoload.php'; ?>
+<?php require_once __DIR__ . '/controllers/autoload.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -67,24 +69,18 @@ endif; ?>
     endif;
 endif; ?>
     <?php $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME')); ?>
+    <?php require_once __DIR__ . '/controllers/router.php'; ?>
     <?php if (!isset($_SESSION['usr-con'])): include('login.php');
     else : ?>
         <?php
-        $q = db_select($con, "select * from users where id_user=?", [(int)$_SESSION['usr-con']['id_user']]);
-        while ($r = mysqli_fetch_array($q)):
-            $user = $r;
-        endwhile;
+        $userRepo = new UserRepository($con);
+        $user = $userRepo->findById((int)$_SESSION['usr-con']['id_user']);
         unset($user['pass_user']);
         $user['region-sel']=(isset($_SESSION['usr-con']['region-sel']) ? $_SESSION['usr-con']['region-sel'] : '');
         $user['region-sel-name']=(isset($_SESSION['usr-con']['region-sel-name']) ? $_SESSION['usr-con']['region-sel-name'] : '');
         $user['region-sel-admin']=(isset($_SESSION['usr-con']['region-sel-admin']) ? $_SESSION['usr-con']['region-sel-admin'] : '');
         $_SESSION['usr-con']=$user;
-        $q = db_select($con, "select * from users_rights where id_user=?", [(int)$_SESSION['usr-con']['id_user']]);
-        $rights = array();
-        while ($r = mysqli_fetch_array($q)):
-            array_push($rights, $r);
-        endwhile;
-        $_SESSION['usr-con']['users-rights'] = $rights;
+        $_SESSION['usr-con']['users-rights'] = $userRepo->findRights((int)$_SESSION['usr-con']['id_user']);
         ?>
         <?php $user_rights = $_SESSION['usr-con']['users-rights'];?>
         <?php  ?>

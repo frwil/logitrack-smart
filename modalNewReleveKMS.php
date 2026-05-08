@@ -1,36 +1,21 @@
 <?php
 if (isset($_POST['idvhlkms'])):
-    $q = db_select($con, "select max(km_releve) from releve_kms_vehicule where id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?) and date_fin_periode_releve<=? order by date_fin_periode_releve desc", [$_POST['idvhlkms'], $_POST['dtkms']]);
-    $km_releve = 0;
-    while ($r = mysqli_fetch_array($q)):
-        $km_releve = $r[0] != "" ? $r[0] : 0;
-    endwhile;
-    die("CHECKLASTKM%%%%%%$km_releve");
+    $maintenanceRepo = new MaintenanceRepository($con);
+    $row = $maintenanceRepo->findMaxKmByAffectationHash($_POST['idvhlkms'], $_POST['dtkms']);
+    $km_releve = ($row && $row['km'] !== null) ? (int)$row['km'] : 0;
+    die(json_encode(['success' => true, 'km' => $km_releve]));
 endif;
 if (isset($_POST['per-releve'])):
     $per = json_decode($_POST['per-releve']);
+    $maintenanceRepo = new MaintenanceRepository($con);
     $options = array();
     for ($i = 0; $i < count($per); $i++):
         $periodeLabel = 'Semaine ' . ($i + 1);
-        $q = db_select($con, "select * from releve_kms_vehicule where periode_releve=? and id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?) and date_debut_periode_releve=? and date_fin_periode_releve=?", [$periodeLabel, $_POST['id-vh'], $per[$i]->start, $per[$i]->end]);
-        $options[$i] = mysqli_num_rows($q);
+        $options[$i] = $maintenanceRepo->countReleveByPeriode($periodeLabel, $_POST['id-vh'], $per[$i]->start, $per[$i]->end);
     endfor;
-    die("PERRELEVE%%%%%%" . json_encode($options));
+    die(json_encode(['success' => true, 'data' => $options]));
 endif;
-if (isset($_POST['date-releve-kms'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-
-        $periodeLabel = 'Semaine '.date('W',strtotime($_POST['start-per']));
-        $q = db_exec($con, "INSERT INTO `releve_kms_vehicule` (`id_releve`, `date_releve`, `km_releve`, `id_affectation_vehicule`, `periode_releve`, `date_debut_periode_releve`, `date_fin_periode_releve`,semaine_annee) VALUES (NULL, CURRENT_TIMESTAMP, ?, (select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?), ?, ?, ?, weekofyear(?))", [$_POST['val-releve-kms'], $_POST['vh-releve-kms'], $periodeLabel, $_POST['start-per'], $_POST['end-per'], $_POST['start-per']]);
-        mysqli_commit($con);
-        die("NewReleveKMS%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("NewReleveKMS%%%%%%0");
-    }
-endif;
+/* POST handled by ReleveKmsController — see controllers/router.php */
 ?>
 <div class="modal fade" id="modal-new-relevekms" tabindex="-1" aria-labelledby="modal-new-relevekmsLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -43,13 +28,14 @@ endif;
                 <form method="post" action="#" id="form-new-relevekms">
                     <div class="form-floating mb-3">
                         <select required id="vh-releve-kms" name="vh-releve-kms" class="form-select" onchange="$('#date-releve-kms').change();">
-                            <?php $sqlRkms = "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0";
-                            $paramsRkms = [];
-                            if ($_SESSION['usr-con']['region-sel'] != '') { $sqlRkms .= " and affectation_vehicule.id_region=?"; $paramsRkms[] = (int)$_SESSION['usr-con']['region-sel']; }
-                            $q = db_select($con, $sqlRkms, $paramsRkms);
-                            while ($r = mysqli_fetch_array($q)):
-                                echo "<option value='" . sha1($r[0] . $r['id_vehicule']) . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == sha1($r[0] . $r['id_vehicule']) ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >{$r['immatriculation_vehicule']} ({$r['nom_chauffeur']})</option>";
-                            endwhile;
+                            <?php $affectationRepo = new AffectationRepository($con);
+                            $rows = $_SESSION['usr-con']['region-sel'] != ''
+                                ? $affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel'])
+                                : $affectationRepo->findAllActive();
+                            foreach ($rows as $r):
+                                $hash = sha1($r['id_affectation'] . $r['id_vehicule']);
+                                echo "<option value='" . $hash . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $hash ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                            endforeach;
                             ?>
                         </select>
                         <label for="vh-releve-kms">Véhicule</label>
@@ -128,10 +114,16 @@ endif;
     function getLastKms(id, dt) {
         $.ajax({
             type: 'post',
-            data: 'idvhlkms=' + id + '&dtkms=' + dt
+            data: 'idvhlkms=' + id + '&dtkms=' + dt,
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split("CHECKLASTKM%%%%%%")[1];
-            $('#val-releve-kms').val(v)
+            if (e.success) {
+                $('#val-releve-kms').val(e.km)
+            } else {
+                showError(e.error || "Erreur lors du chargement")
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
         })
     }
 
@@ -152,17 +144,19 @@ endif;
         }
         $.ajax({
             type: 'post',
-            data: $('#form-new-relevekms').serialize() + '&start-per=' + $('#per-releve-kms option[value="' + $('#per-releve-kms').val() + '"]').attr('wk-st') + '&end-per=' + $('#per-releve-kms option[value="' + $('#per-releve-kms').val() + '"]').attr('wk-ed')
+            data: $('#form-new-relevekms').serialize() + '&start-per=' + $('#per-releve-kms option[value="' + $('#per-releve-kms').val() + '"]').attr('wk-st') + '&end-per=' + $('#per-releve-kms option[value="' + $('#per-releve-kms').val() + '"]').attr('wk-ed'),
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewReleveKMS%%%%%%')[1]
-            if (v == '1') {
+            if (e.success) {
                 showSuccess("Nouveau relevé enregistré!!")
                 $('#modal-new-relevekms').modal('hide')
                 $('#form-new-relevekms *').val('')
                 location.reload()
             } else {
-                showError("Erreur lors de l'enregistrement")
+                showError(e.error || "Erreur lors de l'enregistrement")
             }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement")
         })
     }
 
@@ -172,19 +166,17 @@ endif;
         var options = "";
         $.ajax({
             type: 'post',
-            data: 'per-releve=' + JSON.stringify(weeks) + '&id-vh=' + vh
+            data: 'per-releve=' + JSON.stringify(weeks) + '&id-vh=' + vh,
+            dataType: 'json'
         }).done((e) => {
-            let v
-            try {
-                v = JSON.parse(e.split('PERRELEVE%%%%%%')[1])
-            } catch (err) {
-                v = null
-            }
+            let v = e.success ? e.data : null
             for (i = 0; i < weeks.length; i++) {
                 options += "<option " + (v != null ? (v[i] > 0 ? 'disabled' : '') : '') + " value='Semaine " + (i + 1) + "' wk-st='" + weeks[i].start + "' wk-ed='" + weeks[i].end + "' " + (dt != '' && moment(dt).isBetween(moment(weeks[i].start), moment(weeks[i].end)) ? 'selected' : (dt!='' ? 'disabled' : '')) + ">Semaine " + (i + 1) + " (" + moment(weeks[i].start).format('DD MMM YYYY') + " - " + moment(weeks[i].end).format('DD MMM YYYY') + ")</option>"
             }
             $('#per-releve-kms').html(options)
             getLastKms(vh, dt)
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement des semaines")
         })
 
     }

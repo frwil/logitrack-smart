@@ -1,25 +1,12 @@
 <?php
-if (isset($_POST['nom-chauffeur'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $_POST['nom-chauffeur'] = trim(strtoupper($_POST['nom-chauffeur']));
-        $q = db_exec($con, "INSERT INTO `chauffeur` (`id_chauffeur`, `nom_chauffeur`,id_type_permis) VALUES (NULL, ?,(select id_type_permis from type_permis_vehicule where sha1(concat(id_type_permis,lib_type_permis))=?))", [$_POST['nom-chauffeur'], $_POST['type-permis']]);
-        mysqli_commit($con);
-        die("NewChauffeur%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        if ($e->getCode() == '1062') die('NewChauffeur%%%%%%1062');
-        die("NewChauffeur%%%%%%0".$e->getCode());
-    }
-endif;
+/* POST handled by ChauffeurController — see controllers/router.php */
 if (isset($_POST['refresh-marque'])):
-    $q = db_select($con, "select * from marque_vehicule");
+    $marqueRepo = new MarqueRepository($con);
     $liste = "";
-    while ($r = mysqli_fetch_array($q)):
-        $liste .= "<option value='{$r[0]}'>{$r[1]}</option>";
-    endwhile;
-    die("NewChauffeur%%%%%%$liste");
+    foreach ($marqueRepo->findAll() as $r):
+        $liste .= "<option value='" . h($r['id_marque']) . "'>" . h($r['nom_marque']) . "</option>";
+    endforeach;
+    die(json_encode(['success' => true, 'html' => $liste]));
 endif;
 ?>
 <div class="modal fade" id="modal-new-chauffeur" tabindex="-1" aria-labelledby="modal-new-chauffeurLabel" aria-hidden="true">
@@ -37,10 +24,10 @@ endif;
                     </div>
                     <div class="form-floating mb-3">
                         <select id="type-permis" name="type-permis" required class="form-select">
-                            <?php $q = db_select($con, "select * from type_permis_vehicule");
-                            while ($r = mysqli_fetch_array($q)):
-                                echo "<option value='".sha1($r[0].$r[1])."'>{$r[1]}</option>";
-                            endwhile;
+                            <?php $configRepo = new ConfigRepository($con);
+                            foreach ($configRepo->findAllTypePermis() as $r):
+                                echo "<option value='" . sha1($r['id_type_permis'] . $r['lib_type_permis']) . "'>" . h($r['lib_type_permis']) . "</option>";
+                            endforeach;
                             ?>
                         </select>
                         <label for="type-permis">Cat. de permis (la plus élevée)</label>
@@ -62,10 +49,16 @@ endif;
     function refreshChauffeurOptions() {
         $.ajax({
             type: 'post',
-            data: 'refresh-chauffeur=1'
+            data: 'refresh-chauffeur=1',
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewChauffeur%%%%%%')[1]
-            $('#marque-vh').html(v)
+            if (e.success) {
+                $('#marque-vh').html(e.html)
+            } else {
+                showError(e.error || "Erreur lors du chargement")
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
         })
     }
 
@@ -76,20 +69,22 @@ endif;
         }
         $.ajax({
             type: 'post',
-            data: $('#form-new-chauffeur').serialize()
+            data: $('#form-new-chauffeur').serialize(),
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewChauffeur%%%%%%')[1]
-            if (v == '1') {
+            if (e.success) {
                 showSuccess("Nouveau chauffeur créee!!")
                 $('#modal-new-chauffeur').modal('hide')
                 $('#form-new-chauffeur *').val('')
                 refreshChauffeurOptions()
                 location = "?page=affectationVehicules&subpage=listeChauffeurs"
-            } else if (v == '1062') {
+            } else if (e.error == '1062') {
                 showError("Ce chauffeur existe déjà")
             } else {
-                showError("Erreur lors de l'enregistrement")
+                showError(e.error || "Erreur lors de l'enregistrement")
             }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement")
         })
     }
 </script>

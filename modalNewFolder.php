@@ -1,21 +1,4 @@
-<?php if (isset($_POST['vh-folder'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "INSERT INTO `dossier_vehicule` (`id_dossier_vehicule`, `ref_dossier`) VALUES (NULL, ?)", [$_POST['ref-folder']]);
-        for($i=0;$i<count($_POST['doc-list-name']);$i++):
-            $q=db_exec($con,"update dossier_vehicule_document set is_active=0 where id_document=(select id_document from document_vehicule where sha1(concat(id_document,nom_document))=?) and id_vehicule=(select id_vehicule from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?)", [$_POST['doc-list-id'][$i], $_POST['vh-folder']]);
-            $q=db_exec($con,"INSERT INTO `dossier_vehicule_document` (`id_dossier_vehicule_document`, `id_document`, `date_expiration_document`, `id_vehicule`, `id_dossier_vehicule`,ref_document,is_active) VALUES (NULL, (select id_document from document_vehicule where sha1(concat(id_document,nom_document))=?), ?, (select id_vehicule from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?), (select id_dossier_vehicule from dossier_vehicule where ref_dossier=?),?,1)", [$_POST['doc-list-id'][$i], $_POST['dt-list-name'][$i], $_POST['vh-folder'], $_POST['ref-folder'], $_POST['refd-list-name'][$i]]);
-        endfor;
-        mysqli_commit($con);
-        die("NEWFLD%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        if ($e->getCode() == 1062) die("NEWFLD%%%%%%1062");
-        die("NEWFLD%%%%%%0");
-    }
-endif;
-?>
+<?php /* POST handled by DossierController — see controllers/router.php */ ?>
 <div class="modal fade" id="modal-folder" tabindex="-1" aria-labelledby="modal-folderLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -31,13 +14,10 @@ endif;
                     </div>
                     <div class="form-floating mb-3">
                         <select id="vh-folder" name="vh-folder" class="form-select">
-                            <?php $sqlFld = "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0";
-                            $paramsFld = [];
-                            if ($_SESSION['usr-con']['region-sel'] != '') { $sqlFld .= " and affectation_vehicule.id_region=?"; $paramsFld[] = (int)$_SESSION['usr-con']['region-sel']; }
-                            $q = db_select($con, $sqlFld, $paramsFld);
-                            while ($r = mysqli_fetch_array($q)):
-                                echo "<option value='" . sha1($r[0] . $r['id_vehicule']) . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == sha1($r[0] . $r['id_vehicule']) ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >{$r['immatriculation_vehicule']} ({$r['nom_chauffeur']})</option>";
-                            endwhile;
+                            <?php $configRepo = new ConfigRepository($con);
+                            foreach ($configRepo->findAllFoldersByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
+                                echo "<option value='" . sha1($r['id_affectation'] . $r['id_vehicule']) . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == sha1($r['id_affectation'] . $r['id_vehicule']) ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                            endforeach;
                             ?>
                         </select>
                         <label for="vh-folder">Véhicule</label>
@@ -45,10 +25,9 @@ endif;
                     <div class="input-group mb-3">
                         <div class="form-floating">
                             <select class="form-select" id="folder-doc">
-                                <?php $q = db_select($con, "select * from document_vehicule");
-                                while ($r = mysqli_fetch_array($q)):
-                                    echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
-                                endwhile;
+                                <?php foreach ($configRepo->findAllDocuments() as $r):
+                                    echo "<option value='" . sha1($r['id_document'] . $r['nom_document']) . "'>" . h($r['nom_document']) . "</option>";
+                                endforeach;
                                 ?>
                             </select>
                             <label for="folder-doc">Document</label>
@@ -99,14 +78,23 @@ endif;
         }
         $.ajax({
             type: 'post',
-            data: $('#form-new-folder').serialize()
+            data: $('#form-new-folder').serialize(),
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NEWFLD%%%%%%')[1]
-            if (v == '1') {
+            if (e.success) {
                 showSuccess('Enregistrement effectué!')
                 location.reload()
+            } else if (e.error == '1062') {
+                $('#modal-folder').notify("Ce dossier existe déjà!", {
+                    position: 'top'
+                })
             } else {
-            $('#modal-folder').notify("Erreur lors de l'enregistrement !", {
+                $('#modal-folder').notify(e.error || "Erreur lors de l'enregistrement !", {
+                    position: 'top'
+                })
+            }
+        }).fail((jqXHR) => {
+            $('#modal-folder').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement !", {
                 position: 'top'
             })
         })

@@ -1,19 +1,4 @@
-<?php
-if (isset($_POST['immat-vh'])) {
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "INSERT INTO `vehicule` (`id_vehicule`, `puissance_vehicule`, `chassis_vehicule`, `premiere_utilisation`, `expiration_carte_grise`, `nb_place`, `type_carburant`, `id_marque`, `id_modele_vehicule`, `id_entite`, `immatriculation_vehicule`,capacite_consommation_vehicule) VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)", [(int)$_POST['puissance-vh'], $_POST['chassis-vh'] === '' ? null : $_POST['chassis-vh'], $_POST['dutil-vh'] === '' ? null : $_POST['dutil-vh'], $_POST['dexpir-vh'] === '' ? null : $_POST['dexpir-vh'], (int)$_POST['nbplace-vh'], $_POST['tcarb-vh'], (int)$_POST['marque-vh'], (int)$_POST['modele-vh'], $_POST['immat-vh'], (int)$_POST['capacite-vh']]);
-        $q=db_exec($con,"INSERT INTO `qualification_permis_vehicule` (`id_qualification_permis`, `id_vehicule`, `id_type_permis`) VALUES (NULL, (select id_vehicule from vehicule where immatriculation_vehicule=?), (select id_type_permis from type_permis_vehicule where sha1(concat(id_type_permis,lib_type_permis))=?))", [$_POST['immat-vh'], $_POST['qualif-permis']]);
-        mysqli_commit($con);
-        die("NewVehicule%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        if ($e->getCode() == '1062') die('NewVehicule%%%%%%1062');
-        die("NewVehicule%%%%%%0".$e->getCode());
-    }
-}
-?>
+<?php /* POST /vehicule/create handled by VehiculeController — see controllers/router.php */ ?>
 <div class="modal fade" id="modal-new-vehicule" tabindex="-1" aria-labelledby="modal-new-vehiculeLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -32,10 +17,10 @@ if (isset($_POST['immat-vh'])) {
                             <div class="input-group mb-3">
                                 <div class="form-floating">
                                     <select type="text" id="marque-vh" name="marque-vh" required class="form-select">
-                                        <?php $q = db_select($con, "select * from marque_vehicule where 1");
-                                        while ($r = mysqli_fetch_array($q)):
-                                            echo "<option value='{$r[0]}'>{$r[1]}</option>";
-                                        endwhile;
+                                        <?php $marqueRepo = new MarqueRepository($con);
+                                        foreach ($marqueRepo->findAll() as $r):
+                                            echo "<option value='" . h($r['id_marque']) . "'>" . h($r['nom_marque']) . "</option>";
+                                        endforeach;
                                         ?>
                                     </select>
                                     <label for="marque-vh">Marque</label>
@@ -47,10 +32,10 @@ if (isset($_POST['immat-vh'])) {
                             <div class="input-group mb-3">
                                 <div class="form-floating">
                                     <select type="text" id="modele-vh" name="modele-vh" required class="form-select">
-                                        <?php $q = db_select($con, "select * from modele_vehicule where 1");
-                                        while ($r = mysqli_fetch_array($q)):
-                                            echo "<option value='{$r[0]}'>{$r[1]}</option>";
-                                        endwhile;
+                                        <?php $modeleRepo = new ModeleRepository($con);
+                                        foreach ($modeleRepo->findAll() as $r):
+                                            echo "<option value='" . h($r['id_modele_vehicule']) . "'>" . h($r['nom_modele_vehicule']) . "</option>";
+                                        endforeach;
                                         ?>
                                     </select>
                                     <label for="modele-vh">Modele</label>
@@ -98,10 +83,10 @@ if (isset($_POST['immat-vh'])) {
                         <hr>
                         <div class="form-floating mb-3 col-6">
                             <select id="qualif-permis" name="qualif-permis" required class="form-select">
-                                    <?php $q=db_select($con,"select * from type_permis_vehicule");
-                                    while($r=mysqli_fetch_array($q)) :
-                                        echo "<option value='".sha1($r[0].$r[1])."'>{$r[1]}</option>";
-                                    endwhile;
+                                    <?php $configRepo = new ConfigRepository($con);
+                                    foreach ($configRepo->findAllTypePermis() as $r):
+                                        echo "<option value='" . sha1($r['id_type_permis'] . $r['lib_type_permis']) . "'>" . h($r['lib_type_permis']) . "</option>";
+                                    endforeach;
                                     ?>
                             </select>
                             <label for="qualif-permis">Qualification de permis</label>
@@ -132,16 +117,14 @@ if (isset($_POST['immat-vh'])) {
         }
         $.ajax({
             type: 'post',
-            data: $('#form-new-vehicule').serialize()
+            data: $('#form-new-vehicule').serialize(),
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewVehicule%%%%%%')[1]
-            if (v == '1') {
+            if (e.success) {
                 showSuccess("Enregistrement effectué!!!")
                 location.reload()
-            } else if (v == '1062') {
-                showError("Ce véhicule existe déjà!!")
             } else {
-                showError("Erreur lors de l'enregistrement")
+                showError(e.error||"Erreur lors de l'enregistrement")
             }
         })
     }

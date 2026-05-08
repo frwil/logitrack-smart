@@ -1,21 +1,29 @@
-<?php if(isset($_POST['name-user'])) : 
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-mysqli_begin_transaction($con);
-try{
-    $passHashed = password_hash($_POST['pass-user'], PASSWORD_DEFAULT);
-    $q=db_exec($con,"INSERT INTO `users` (`id_user`, `name_user`, `pass_user`, `fullname_user`, `email_user`) VALUES (NULL, ?, ?, ?, ?)", [$_POST['name-user'], $passHashed, $_POST['fullname-user'] === '' ? null : $_POST['fullname-user'], $_POST['email-user']]);
-    $q=db_exec($con,"INSERT INTO `users_region` (`id_user_region`, `id_user`, `id_region`, `is_active`) VALUES (NULL, (select id_user from users where name_user=?), ?, '1')", [$_POST['name-user'], (int)$_POST['region-user']]);
-    mysqli_commit($con);
-    die("%%%%%%1");
-}catch(mysqli_sql_exception $e){
-    mysqli_rollback($con);
-    error_log("User registration failed: " . $e->getMessage());
-	    die("%%%%%%0");
+<?php
+if (isset($_POST['name-user'])) {
+    try {
+        $userRepo = new UserRepository($con);
+        $userRepo->transactional(function () use ($userRepo) {
+            $passHashed = password_hash($_POST['pass-user'], PASSWORD_DEFAULT);
+            $userRepo->insertUser(
+                $_POST['name-user'],
+                $passHashed,
+                $_POST['fullname-user'] === '' ? null : $_POST['fullname-user'],
+                $_POST['email-user'] === '' ? null : $_POST['email-user']
+            );
+            $userRepo->insertUserRegion($_POST['name-user'], (int)$_POST['region-user']);
+        });
+        die(json_encode(['success' => true]));
+    } catch (\mysqli_sql_exception $e) {
+        error_log("User registration failed: " . $e->getMessage());
+        die(json_encode(['success' => false, 'error' => "Erreur lors de l'enregistrement"]));
+    } catch (\Throwable $e) {
+        error_log("User registration failed: " . $e->getMessage());
+        die(json_encode(['success' => false, 'error' => "Erreur lors de l'enregistrement"]));
+    }
 }
-endif;
 ?>
 <div class="container container-fluid" style="display: flex;justify-content: center;padding:80px">
-    <div class="main border row" style="width:50%;padding:80px"> 
+    <div class="main border row" style="width:50%;padding:80px">
         <form method="post" action="#" id="form-user-reg" class="col">
             <div class="form-floating mb-3">
                 <input type="text" id="name-user" name="name-user" class="form-control" required>
@@ -39,10 +47,10 @@ endif;
             </div>
             <div class="form-floating mb-3">
                 <select id="region-user" name="region-user" class="form-select" required>
-                    <?php $q=db_select($con,"select * from region where is_active=1", []);
-                    while($r=mysqli_fetch_array($q)):
-                        echo "<option value='{$r[0]}'>{$r[1]}</option>";
-                    endwhile;
+                    <?php $regionRepo = new RegionRepository($con);
+                    foreach ($regionRepo->findActive() as $r):
+                        echo "<option value='" . h($r['id_region']) . "'>" . h($r['nom_region']) . "</option>";
+                    endforeach;
                     ?>
                 </select>
                 <label for="region-user">Région</label>
@@ -83,15 +91,17 @@ endif;
         }
         $.ajax({
             type:'post',
-            data:$('#form-user-reg').serialize()
+            data:$('#form-user-reg').serialize(),
+            dataType:'json'
         }).done((e)=>{
-            let v=e.split('%%%%%%')[1]
-            if(v=='1'){
+            if(e.success){
                 showSuccess("Enregistrement effectué!")
                 location.reload()
             }else{
-                showError("Erreur lors de l'enregistrement !!!")
+                showError(e.error || "Erreur lors de l'enregistrement !!!")
             }
+        }).fail((jqXHR)=>{
+            showError(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement")
         })
     })
 </script>

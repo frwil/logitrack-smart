@@ -1,40 +1,4 @@
-<?php
-if (isset($_POST['name-user'])):
-    $q = db_select($con, "select * from users where name_user=?", [$_POST['name-user']]);
-    while ($r = mysqli_fetch_array($q)):
-        $user = $r;
-    endwhile;
-    if (mysqli_num_rows($q) > 0 && password_verify($_POST['pass-user'], $user['pass_user'])):
-        $regions = explode(',', $user['users_region']);
-        $q = db_select($con, "select * from region where sha1(concat(id_region,nom_region))=?", [$_POST['region-user']]);
-        while($r=mysqli_fetch_array($q)) $region=$r;
-        $trouve=false;
-        for($i=0;$i<count($regions);$i++){
-            if(sha1($regions[$i].$region[1])==$_POST['region-user']) $trouve=true;
-        }
-        if ($trouve):
-            $user['region-sel']=$region[0];
-            $user['region-sel-name']=$region[1];
-            $user['region-sel-admin']=$region['is_admin'];
-            $q = db_select($con, "select * from users_rights where id_user=?", [(int)$user['id_user']]);
-            $rights = array();
-            while ($r = mysqli_fetch_array($q)) :
-                array_push($rights, $r);
-            endwhile;
-            $user['users-rights'] = $rights;
-            unset($user['pass_user']);
-            $_SESSION['usr-con'] = $user;
-            session_regenerate_id(true);
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-            die("%%%%%%1");
-        else :
-            die("%%%%%%3");
-        endif;
-    else:
-        die("%%%%%%0");
-    endif;
-endif;
-?>
+<?php /* POST /login handled by AuthController — see controllers/router.php */ ?>
 <link rel="stylesheet" href="css/style.css">
 <div class="login-container">
     <div class="login-card">
@@ -65,10 +29,10 @@ endif;
                 <div class="login-input-wrapper">
                     <i class="icon fas fa-map-marker-alt"></i>
                     <select class="login-select" id="region-user" name="region-user">
-                        <?php $q = db_select($con, "select * from region where 1", []);
-                        while ($r = mysqli_fetch_array($q)):
-                            echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
-                        endwhile;
+                        <?php $regionRepo = new RegionRepository($con);
+                        foreach ($regionRepo->findAll() as $r):
+                            echo "<option value='" . sha1($r['id_region'] . $r['nom_region']) . "'>{$r['nom_region']}</option>";
+                        endforeach;
                         ?>
                     </select>
                 </div>
@@ -97,18 +61,16 @@ endif;
         }
         $.ajax({
             type: 'post',
-            data: $('form').serialize()
+            data: $('form').serialize(),
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split("%%%%%%")[1]
-            if (v == '1') {
+            if (e.success) {
                 location = 'index.php'
-            } else if (v == '0') {
-                showError("Nom d'utilisateur ou mot de passe incorrect")
-            } else if (v == '3') {
-                showError("Vous n'avez pas le droit de vous connecter à cette région")
             } else {
-                showError("Le mot de passe est incorrect!!")
+                showError(e.error||"Erreur d'authentification")
             }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error||"Erreur de connexion")
         })
     })
 </script>

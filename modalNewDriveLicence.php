@@ -1,17 +1,4 @@
-<?php if(isset($_POST['lib-type'])):
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-mysqli_begin_transaction($con);
-try {
-    $q=db_exec($con,"INSERT INTO `type_permis_vehicule` (`id_type_permis`, `lib_type_permis`, `desc_type_permis`) VALUES (NULL, ?, ?)", [$_POST['lib-type'], $_POST['desc-type'] === '' ? null : $_POST['desc-type']]);
-    mysqli_commit($con);
-    die("NEWDL%%%%%%1");
-} catch (mysqli_sql_exception $e) {
-    mysqli_rollback($con);
-    if($e->getCode()==1062) die("NEWDL%%%%%%1062");
-    die("NEWDL%%%%%%0");
-}
-endif;
-?>
+<?php /* POST handled by DriveLicenceController — see controllers/router.php */ ?>
 <div class="modal fade" id="modal-driveLicence" tabindex="-1" aria-labelledby="modal-driveLicenceLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -55,16 +42,19 @@ endif;
         }
         $.ajax({
             type:'post',
-            data:$('#form-new-drivelicence').serialize()
+            data:$('#form-new-drivelicence').serialize(),
+            dataType:'json'
         }).done((e)=>{
-            let v=e.split('NEWDL%%%%%%')[1]
-            if(v=='1'){
+            if(e.success){
                 showSuccess('Enregistrement effectué!')
                 location.reload()
-            }else if(v=='1062'){
+            }else if(e.error=='1062'){
                 $('#modal-driveLicence').notify('Cette catégorie de permis existe déjà!',{position:'top'})
+            } else {
+                $('#modal-driveLicence').notify(e.error || "Erreur lors de l'enregistrement !",{position:'top'})
             }
-            $('#modal-driveLicence').notify("Erreur lors de l'enregistrement !",{position:'top'})
+        }).fail((jqXHR)=>{
+            $('#modal-driveLicence').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement !",{position:'top'})
         })
     }
 

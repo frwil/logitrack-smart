@@ -1,25 +1,12 @@
 <?php
-if (isset($_POST['nom-convoyeur'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $_POST['nom-convoyeur'] = trim(strtoupper($_POST['nom-convoyeur']));
-        $q = db_exec($con, "INSERT INTO `convoyeur` (`id_convoyeur`, `nom_convoyeur`) VALUES (NULL, ?)", [$_POST['nom-convoyeur']]);
-        mysqli_commit($con);
-        die("NewConvoyeur%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        if ($e->getCode() == '1062') die('NewConvoyeur%%%%%%1062');
-        die("NewConvoyeur%%%%%%0");
-    }
-endif;
+/* POST handled by ConvoyeurController — see controllers/router.php */
 if (isset($_POST['refresh-marque'])):
-    $q = db_select($con, "select * from marque_vehicule", []);
+    $marqueRepo = new MarqueRepository($con);
     $liste = "";
-    while ($r = mysqli_fetch_array($q)):
-        $liste .= "<option value='{$r[0]}'>{$r[1]}</option>";
-    endwhile;
-    die("NewConvoyeur%%%%%%$liste");
+    foreach ($marqueRepo->findAll() as $r):
+        $liste .= "<option value='" . h($r['id_marque']) . "'>" . h($r['nom_marque']) . "</option>";
+    endforeach;
+    die(json_encode(['success' => true, 'html' => $liste]));
 endif;
 ?>
 <div class="modal fade" id="modal-new-convoyeur" tabindex="-1" aria-labelledby="modal-new-convoyeurLabel" aria-hidden="true">
@@ -52,10 +39,16 @@ endif;
     function refreshConvoyeurOptions() {
         $.ajax({
             type: 'post',
-            data: 'refresh-convoyeur=1'
+            data: 'refresh-convoyeur=1',
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewConvoyeur%%%%%%')[1]
-            $('#marque-vh').html(v)
+            if (e.success) {
+                $('#marque-vh').html(e.html)
+            } else {
+                showError(e.error || "Erreur lors du chargement")
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
         })
     }
 
@@ -66,20 +59,22 @@ endif;
         }
         $.ajax({
             type: 'post',
-            data: $('#form-new-convoyeur').serialize()
+            data: $('#form-new-convoyeur').serialize(),
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewConvoyeur%%%%%%')[1]
-            if (v == '1') {
+            if (e.success) {
                 showSuccess("Nouveau convoyeur créee!!")
                 $('#modal-new-convoyeur').modal('hide')
                 $('#form-new-convoyeur *').val('')
                 refreshConvoyeurOptions()
                 location="?page=affectationVehicules&subpage=listeConvoyeurs"
-            } else if (v == '1062') {
+            } else if (e.error == '1062') {
                 showError("Ce convoyeur existe déjà")
             } else {
-                showError("Erreur lors de l'enregistrement")
+                showError(e.error || "Erreur lors de l'enregistrement")
             }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement")
         })
     }
 </script>

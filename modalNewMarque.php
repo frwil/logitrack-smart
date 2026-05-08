@@ -1,25 +1,12 @@
 <?php
-if (isset($_POST['nom-marque'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $_POST['nom-marque'] = trim(strtoupper($_POST['nom-marque']));
-        $q = db_exec($con, "INSERT INTO `marque_vehicule` (`id_marque`, `nom_marque`) VALUES (NULL, ?)", [$_POST['nom-marque']]);
-        mysqli_commit($con);
-        die("NewMarque%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        if ($e->getCode() == '1062') die('NewMarque%%%%%%1062');
-        die("NewMarque%%%%%%0");
-    }
-endif;
+/* POST handled by MarqueController — see controllers/router.php */
 if (isset($_POST['refresh-marque'])):
-    $q = db_select($con, "select * from marque_vehicule", []);
+    $marqueRepo = new MarqueRepository($con);
     $liste = "";
-    while ($r = mysqli_fetch_array($q)):
-        $liste .= "<option value='{$r[0]}'>{$r[1]}</option>";
-    endwhile;
-    die("NewMarque%%%%%%$liste");
+    foreach ($marqueRepo->findAll() as $r):
+        $liste .= "<option value='" . h($r['id_marque']) . "'>" . h($r['nom_marque']) . "</option>";
+    endforeach;
+    die(json_encode(['success' => true, 'html' => $liste]));
 endif;
 ?>
 <div class="modal fade" id="modal-new-marque" tabindex="-1" aria-labelledby="modal-new-marqeLabel" aria-hidden="true">
@@ -52,10 +39,16 @@ endif;
     function refreshMarqueOptions() {
         $.ajax({
             type: 'post',
-            data: 'refresh-marque=1'
+            data: 'refresh-marque=1',
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewMarque%%%%%%')[1]
-            $('#marque-vh').html(v)
+            if (e.success) {
+                $('#marque-vh').html(e.html)
+            } else {
+                showError(e.error || "Erreur lors du chargement")
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
         })
     }
 
@@ -66,10 +59,10 @@ endif;
         }
         $.ajax({
             type: 'post',
-            data: $('#form-new-marque').serialize()
+            data: $('#form-new-marque').serialize(),
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewMarque%%%%%%')[1]
-            if (v == '1') {
+            if (e.success) {
                 showSuccess("Nouvelle marque créee!!")
                 $('#modal-new-marque').modal('hide')
                 $('#form-new-marque *').val('')
@@ -77,11 +70,13 @@ endif;
                 <?php if (isset($_GET['subpage'])) : ?>
                     location.reload()
                 <?php endif; ?>
-            } else if (v == '1062') {
+            } else if (e.error == '1062') {
                 showError("Cette marque de véhicule existe déjà")
             } else {
-                showError("Erreur lors de l'enregistrement")
+                showError(e.error || "Erreur lors de l'enregistrement")
             }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement")
         })
     }
 </script>

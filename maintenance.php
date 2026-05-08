@@ -6,24 +6,16 @@ function getTableauReleveKMS()
     global $con;
     global $rights_maintenance;
     if (in_array('viewReleveKms', $rights_maintenance)):
-        $sqlRel = "select * from releve_kms_vehicule,affectation_vehicule,vehicule,chauffeur,region where affectation_vehicule.id_vehicule=vehicule.id_vehicule and affectation_vehicule.id_affectation=releve_kms_vehicule.id_affectation_vehicule and chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur and affectation_vehicule.id_region=region.id_region ";
-        $paramsRel = [];
+        $repo = new MaintenanceRepository($con);
         if (isset($_POST['date-f'])) {
-            $sqlRel .= "and semaine_annee >= weekofyear(?) and semaine_annee <=weekofyear(?) and date_releve>=?";
-            $paramsRel[] = date('Y-m-01', strtotime($_POST['date-f']));
-            $paramsRel[] = date('Y-m-t', strtotime($_POST['date-t']));
-            $paramsRel[] = date('Y-m-d', strtotime($_POST['date-f']));
+            $rows = $repo->findReleveKms($_POST['date-f'], $_POST['date-t']);
         } else {
-            $sqlRel .= "and semaine_annee >= weekofyear(?) and date_releve>=?";
-            $paramsRel[] = date('Y-m-01');
-            $paramsRel[] = date('Y-m-01');
+            $rows = $repo->findReleveKms();
         }
-        $sqlRel .= " order by vehicule.id_vehicule,date_releve,semaine_annee";
-        $q = db_select($con, $sqlRel, $paramsRel);
         $table = "<table id='table-releve-kms' class='no-datatable' style='display:none'><thead><tr><th>Véhicule</th><th>Région</th><th>Date Relevé</th><th>Kms</th></tr></thead><tbody>";
-        while ($r = mysqli_fetch_array($q)):
-            $table .= "<tr><td>{$r['immatriculation_vehicule']} - {$r['nom_chauffeur']}</td><td>{$r['nom_region']}</td><td>{$r['periode_releve']} (" . date('d M Y', strtotime($r['date_debut_periode_releve'])) . "-" . date('d M Y', strtotime($r['date_fin_periode_releve'])) . ")</td><td>{$r['km_releve']}</td></tr>";
-        endwhile;
+        foreach ($rows as $r):
+            $table .= "<tr><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . h($r['nom_region']) . "</td><td>" . h($r['periode_releve']) . " (" . date('d M Y', strtotime($r['date_debut_periode_releve'])) . "-" . date('d M Y', strtotime($r['date_fin_periode_releve'])) . ")</td><td>" . h($r['km_releve']) . "</td></tr>";
+        endforeach;
         $table .= "</tbody></table><div id='output' style='margin: 30px;'></div>";
         include("modalNewReleveKMS.php");
         return "<a class='btn btn-primary' href='?page=maintenances&subpage=releveKms&action=new'>Nouveau Relevé</a>&nbsp;<button class='btn btn-primary' data-bs-toggle='modal' data-bs-target='#modal-upd-relevekms'>Modifier Relevé</button>&nbsp;<div style='display:inline-block;padding:15px'><form class='row' style='width:700px' method='post' action='#'><div class='col-5 form-floating' style='padding-left:5px'><input type='month' id='date-f' name='date-f' value='" . (isset($_POST['date-f']) ? h($_POST['date-f']) : date('Y-m')) . "' class='form-control'><label for='date-f'>Date début</label></div><div class='col-5 form-floating' style='padding-left:5px'><input type='month' id='date-t' name='date-t' value='" . (isset($_POST['date-t']) ? h($_POST['date-t']) : date('Y-m')) . "' class='form-control'><label for='date-t'>Date fin</label></div><div class='col-2' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form></div><hr>$table";
@@ -36,18 +28,19 @@ function getTableauVidange()
     global $con;
     global $rights_maintenance;
     if (in_array('viewVidange', $rights_maintenance)):
-        $q = db_select($con, "select *,(select km_releve from releve_kms_vehicule where id_affectation_vehicule=vidange_vehicule.id_affectation_vehicule and date_fin_periode_releve=(select max(date_fin_periode_releve) from releve_kms_vehicule where id_affectation_vehicule=vidange_vehicule.id_affectation_vehicule)) as kms_actuel from vidange_vehicule,affectation_vehicule,vehicule,chauffeur,region where affectation_vehicule.id_vehicule=vehicule.id_vehicule and affectation_vehicule.id_affectation=vidange_vehicule.id_affectation_vehicule and chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur and affectation_vehicule.id_region=region.id_region and date_vidange=(select max(date_vidange) from vidange_vehicule v where v.id_affectation_vehicule=affectation_vehicule.id_affectation) and region.id_region=? order by vehicule.id_vehicule", [(int)$_SESSION['usr-con']['region-sel']]);
+        $repo = new MaintenanceRepository($con);
+        $rows = $repo->findVidangesByRegion((int)$_SESSION['usr-con']['region-sel']);
         $table = "<table id='table-suivi-vidanges' class='table table-striped'><thead><tr><th>Véhicule</th><th>Date dernière vidange</th><th>Kms (avant vidange)</th><th>Kms (prochaine vidange)</th><th>Kms actuel (dernier relevé)</th><th>Statut</th><th></th></tr></thead><tbody>";
         $danger = 0;
         $success = 0;
-        while ($r = mysqli_fetch_array($q)):
+        foreach ($rows as $r):
             if ($r['kms_actuel'] > $r['km_prochaine_vidange'] - 1500):
                 $danger++;
             else :
                 $success++;
             endif;
-            $table .= "<tr><td class='text-bg-" . ($r['kms_actuel'] > $r['km_prochaine_vidange'] - 1500 ? "danger" : "success") . "'>{$r['immatriculation_vehicule']} - {$r['nom_chauffeur']}</td><td>" . date('d M Y', strtotime($r['date_vidange'])) . "</td><td>{$r['km_vidange']}</td><td>{$r['km_prochaine_vidange']}</td><td>{$r['kms_actuel']}</td><td>" . ($r['kms_actuel'] > $r['km_prochaine_vidange'] - 1500 ? "<i class='fa fa-times text-danger'></i>&nbsp;Alerte" : "<i class='fa fa-check text-success'></i>&nbsp;Ok") . "</td><td><div class='btn-group'>" . (in_array("updVidange", $rights_maintenance) ? "<button class='btn btn-light btn-sm' data-bs-toggle='modal' data-bs-target='#modal-upd-vidange' data-bs-id-vd='{$r['code_vidange']}'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("historyVidange", $rights_maintenance) ? "<button class='btn btn-light btn-sm' title='historique des vidanges' onclick='showHistory(\"{$r['code_vidange']}\")'><i class='fa fa-file'></i></button>" : "") . (in_array("delVidange", $rights_maintenance) ? "<button class='btn btn-danger btn-sm' onclick='delVidange(\"".sha1($r[0].$r[1])."\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
-        endwhile;
+            $table .= "<tr><td class='text-bg-" . ($r['kms_actuel'] > $r['km_prochaine_vidange'] - 1500 ? "danger" : "success") . "'>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . date('d M Y', strtotime($r['date_vidange'])) . "</td><td>" . h($r['km_vidange']) . "</td><td>" . h($r['km_prochaine_vidange']) . "</td><td>" . h($r['kms_actuel']) . "</td><td>" . ($r['kms_actuel'] > $r['km_prochaine_vidange'] - 1500 ? "<i class='fa fa-times text-danger'></i>&nbsp;Alerte" : "<i class='fa fa-check text-success'></i>&nbsp;Ok") . "</td><td><div class='btn-group'>" . (in_array("updVidange", $rights_maintenance) ? "<button class='btn btn-light btn-sm' data-bs-toggle='modal' data-bs-target='#modal-upd-vidange' data-bs-id-vd='" . h($r['code_vidange']) . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("historyVidange", $rights_maintenance) ? "<button class='btn btn-light btn-sm' title='historique des vidanges' onclick='showHistory(\"" . h($r['code_vidange']) . "\")'><i class='fa fa-file'></i></button>" : "") . (in_array("delVidange", $rights_maintenance) ? "<button class='btn btn-danger btn-sm' onclick='delVidange(\"" . sha1($r['id_vidange_vehicule'] . $r['code_vidange']) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+        endforeach;
         $table .= "</tbody></table><div id='output' style='margin: 30px;'></div>";
         $stats = "<table class='no-datatable'><tbody><tr><td><span class='badge text-bg-danger' style='width:100px'><i class='fa fa-times'></i>Alerte</span></td><td>$danger</td></tr><tr><td><span class='badge text-bg-success' style='width:100px'><i class='fa fa-check'></i>Ok</span></td><td>$success</td></tr></tbody></table>";
         return "<a class='btn btn-primary' href='?page=maintenances&subpage=prestataire&action=new'>Nouveau Prestataire</a>&nbsp;<a class='btn btn-primary' href='?page=maintenances&subpage=suiviVidanges&action=new'>Nouvelle vidange</a><hr>$table<hr>$stats";
@@ -60,11 +53,13 @@ function getTableauPrestataire()
     global $con;
     global $rights_maintenance;
     if (in_array("viewPrestataire", $rights_maintenance)):
-        $q = db_select($con, "select * from prestataire_intervention", []);
+        $repo = new MaintenanceRepository($con);
+        $rows = $repo->findAllPrestataires();
         $table = "<table id='table-prestataire' class='table table-striped'><thead><tr><th>Prestataire</th><th>Contact</th><th>Localisation</th><th></th></tr></thead><tbody>";
-        while ($r = mysqli_fetch_array($q)):
-            $table .= "<tr><td>{$r['nom_prestataire']}</td><td>{$r['contact_prestataire']}</td><td>{$r['localisation_prestataire']}</td><td><div class='btn-group'>" . (in_array("updPrestataire", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le prestataire' data-bs-toggle='modal' data-bs-target='#modal-upd-prestataire' data-bs-id-pt='" . sha1($r[0] . $r[1]) . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delPrestataire", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delPrestataire(\"" . sha1($r[0] . $r[1]) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
-        endwhile;
+        foreach ($rows as $r):
+            $hash = sha1($r['id_prestataire'] . $r['nom_prestataire']);
+            $table .= "<tr><td>" . h($r['nom_prestataire']) . "</td><td>" . h($r['contact_prestataire']) . "</td><td>" . h($r['localisation_prestataire']) . "</td><td><div class='btn-group'>" . (in_array("updPrestataire", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le prestataire' data-bs-toggle='modal' data-bs-target='#modal-upd-prestataire' data-bs-id-pt='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delPrestataire", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delPrestataire(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+        endforeach;
         return $table . "</tbody></table>";
     else :
         return "<div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>";
@@ -75,11 +70,13 @@ function getTableauCentreCout()
     global $con;
     global $rights_maintenance;
     if (in_array("viewCentreCout", $rights_maintenance)):
-        $q = db_select($con, "select * from centre_couts", []);
+        $repo = new MaintenanceRepository($con);
+        $rows = $repo->findAllCentresCouts();
         $table = "<table id='table-centrecouts' class='table table-striped'><thead><tr><th>Centre de coûts</th><th></th></tr></thead><tbody>";
-        while ($r = mysqli_fetch_array($q)):
-            $table .= "<tr><td>{$r['lib_centre_cout']}</td><td><div class='btn-group'>" . (in_array("updCentreCout", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le centre de coûts' data-bs-toggle='modal' data-bs-target='#modal-upd-centrecout' data-bs-id-cc='" . sha1($r[0] . $r[1]) . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delCentreCout", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delCentreCout(\"" . sha1($r[0] . $r[1]) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div>";
-        endwhile;
+        foreach ($rows as $r):
+            $hash = sha1($r['id_centre_cout'] . $r['lib_centre_cout']);
+            $table .= "<tr><td>" . h($r['lib_centre_cout']) . "</td><td><div class='btn-group'>" . (in_array("updCentreCout", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le centre de coûts' data-bs-toggle='modal' data-bs-target='#modal-upd-centrecout' data-bs-id-cc='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delCentreCout", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delCentreCout(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div>";
+        endforeach;
         return "<a class='btn btn-primary' href='?page=maintenances&subpage=centreCouts&action=new'>Nouveau Centre de coûts</a><hr>" . $table . "</tbody></table>";
     else :
         return "<div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>";
@@ -90,107 +87,20 @@ function getTableauBonsReparation()
     global $con;
     global $rights_maintenance;
     if (in_array("viewBonsReparation", $rights_maintenance)):
-        $q = db_select($con, "select * from bons_reparation left join affectation_vehicule on id_affectation_vehicule=id_affectation left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join prestataire_intervention on prestataire_intervention.id_prestataire=bons_reparation.id_prestataire left join plus_ou_moins_value on plus_ou_moins_value.id_plus_ou_moins_value=bons_reparation.id_plus_ou_moins_value left join centre_couts on centre_couts.id_centre_cout=bons_reparation.id_centre_cout", []);
+        $repo = new MaintenanceRepository($con);
+        $rows = $repo->findAllBonsReparation();
         $table = "<table id='table-centrecouts' class='table table-striped responsive'><thead><tr><th>N°</th><th>Véhicule</th><th>Date d'entrée</th><th>Diagnostic</th><th>Type d'exécution</th><th>Prestataire</th><th>Montant</th><th>Opération additionnelle</th><th>Montant opération</th><th>Montant réel</th><th>Destination</th><th>Durée réparation</th><th>Date de justification</th><th>Centre de coûts</th><th>Date prévue de sortie</th><th>Date effective de fin des travaux</th><th>Observations</th><th></th></tr></thead><tbody>";
-        while ($r = mysqli_fetch_array($q)):
-            $table .= "<tr><td>{$r['num_bon_reparation']}</td><td>{$r['immatriculation_vehicule']} - {$r['nom_chauffeur']}</td><td>" . date('d-m-Y', strtotime($r['date_entree'])) . "</td><td>{$r['diagnostic']}</td><td>" . ($r['type_execution'] == '0' ? "Interne" : "Externe") . "</td><td>{$r['nom_prestataire']}</td><td>{$r['montant_reparation']}</td><td>{$r['lib_plus_ou_moins_value']}</td><td>{$r['plus_ou_moins_value_valeur']}</td><td>" . ($r['montant_reparation'] + $r['plus_ou_moins_value_valeur'] * ($r['type_plus_ou_moins_value'] == 0 ? 1 : -1)) . "</td><td>{$r['destination_bon']}</td><td>{$r['duree_reparation']}</td><td>" . ($r['date_justification'] == '' ? "" : date('d-m-Y', strtotime($r['date_justification']))) . "</td><td>{$r['lib_centre_cout']}</td><td>" . ($r['date_prevue_sortie'] == "" ? "" : date('d-m-Y', strtotime($r['date_prevue_sortie']))) . "</td><td>" . ($r['date_fin_reparation'] == "" ? "" : date('d-m-Y', strtotime($r['date_fin_reparation']))) . "</td><td>{$r['observations']}</td><td><div class='btn-group'>" . (in_array("updBonsReparation", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-bonsReparation' data-bs-id-cc='" . sha1($r[0] . $r[1]) . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delBonsReparation", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delBonsReparation(\"" . sha1($r[0] . $r[1]) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
-        endwhile;
+        foreach ($rows as $r):
+            $hash = sha1($r['id_bon_reparation'] . $r['num_bon_reparation']);
+            $table .= "<tr><td>" . h($r['num_bon_reparation']) . "</td><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . date('d-m-Y', strtotime($r['date_entree'])) . "</td><td>" . h($r['diagnostic']) . "</td><td>" . ($r['type_execution'] == '0' ? "Interne" : "Externe") . "</td><td>" . h($r['nom_prestataire']) . "</td><td>" . h($r['montant_reparation']) . "</td><td>" . h($r['lib_plus_ou_moins_value']) . "</td><td>" . h($r['plus_ou_moins_value_valeur']) . "</td><td>" . ($r['montant_reparation'] + $r['plus_ou_moins_value_valeur'] * ($r['type_plus_ou_moins_value'] == 0 ? 1 : -1)) . "</td><td>" . h($r['destination_bon']) . "</td><td>" . h($r['duree_reparation']) . "</td><td>" . ($r['date_justification'] == '' ? "" : date('d-m-Y', strtotime($r['date_justification']))) . "</td><td>" . h($r['lib_centre_cout']) . "</td><td>" . ($r['date_prevue_sortie'] == "" ? "" : date('d-m-Y', strtotime($r['date_prevue_sortie']))) . "</td><td>" . ($r['date_fin_reparation'] == "" ? "" : date('d-m-Y', strtotime($r['date_fin_reparation']))) . "</td><td>" . h($r['observations']) . "</td><td><div class='btn-group'>" . (in_array("updBonsReparation", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-bonsReparation' data-bs-id-cc='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delBonsReparation", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delBonsReparation(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+        endforeach;
         return "<a class='btn btn-primary' href='?page=maintenances&subpage=suiviBonsReparation&action=new'>Nouveau Bon de réparation</a><hr>" . $table . "<tfoot></tfoot></tbody></table>";
     else :
         return "<div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>";
     endif;
 }
 
-if (isset($_POST['c-vd-s'])):
-    $q = db_select($con, "select * from vidange_vehicule where code_vidange=?", [$_POST['c-vd-s']]);
-    $liste = array();
-    while ($r = mysqli_fetch_array($q)):
-        $liste = $r;
-    endwhile;
-    unset($liste[0]);
-    unset($liste['id_vidange']);
-    die("LISTEVD%%%%%%" . json_encode($liste));
-endif;
-if (isset($_POST['c-pt-s'])):
-    $q = db_select($con, "select *,sha1(concat(id_prestataire,nom_prestataire)) as id_pt from prestataire_intervention where sha1(concat(id_prestataire,nom_prestataire))=?", [$_POST['c-pt-s']]);
-    $liste = array();
-    while ($r = mysqli_fetch_array($q)):
-        $liste = $r;
-    endwhile;
-    unset($liste[0]);
-    unset($liste['id_prestataire']);
-    die("LISTEPT%%%%%%" . json_encode($liste));
-endif;
-if (isset($_POST['c-upd-vd'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "update vidange_vehicule set id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?),date_vidange=?,km_vidange=?,km_prochaine_vidange=?,id_prestataire=(select id_prestataire from prestataire_intervention where sha1(concat(id_prestataire,nom_prestataire))=?),commentaire_vidange=? where code_vidange=?", [$_POST['vh-upd-vd'], $_POST['date-upd-vd'], $_POST['km-upd-av-vd'], $_POST['km-upd-next-vd'], $_POST['id-upd-pt-vd'], $_POST['comment-upd-vd'] === '' ? null : $_POST['comment-upd-vd'], $_POST['c-upd-vd']]);
-        mysqli_commit($con);
-        die("VIDANGEMOD%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("VIDANGEMOD%%%%%%0");
-    }
-endif;
-if (isset($_POST['id-upd-pt'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "update prestataire_intervention set nom_prestataire=?, contact_prestataire=?, localisation_prestataire=? where sha1(concat(id_prestataire,nom_prestataire))=?", [$_POST['nom-upd-pt'], $_POST['contact-upd-pt'] === '' ? null : $_POST['contact-upd-pt'], $_POST['localisation-upd-pt'] === '' ? null : $_POST['localisation-upd-pt'], $_POST['id-upd-pt']]);
-        mysqli_commit($con);
-        die("PTMOD%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("PTMOD%%%%%%0");
-    }
-endif;
-if (isset($_POST['cd-vd-hist'])):
-    $q = db_select($con, "select *,(select km_releve from releve_kms_vehicule where id_affectation_vehicule=vidange_vehicule.id_affectation_vehicule and date_fin_periode_releve=(select max(date_fin_periode_releve) from releve_kms_vehicule where id_affectation_vehicule=vidange_vehicule.id_affectation_vehicule)) as kms_actuel from vidange_vehicule,affectation_vehicule,vehicule,chauffeur,region,prestataire_intervention where prestataire_intervention.id_prestataire=vidange_vehicule.id_prestataire and affectation_vehicule.id_vehicule=vehicule.id_vehicule and affectation_vehicule.id_affectation=vidange_vehicule.id_affectation_vehicule and chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur and affectation_vehicule.id_region=region.id_region and id_affectation_vehicule=(select id_affectation_vehicule from vidange_vehicule vv where vv.code_vidange=?) and region.id_region=? order by vehicule.id_vehicule", [$_POST['cd-vd-hist'], (int)$_SESSION['usr-con']['region-sel']]);
-    $table_content = "";
-    $i = 0;
-    while ($r = mysqli_fetch_array($q)):
-        if ($i == 0) :
-            $table_content .= "<tr><td colspan='6' class='text-center'>HISTORIQUE VIDANGE VEHICULE</td></tr>";
-            $table_content .= "<tr><td>Véhicule</td><td colspan='3'>{$r['immatriculation_vehicule']} - {$r['nom_chauffeur']}</td><td>Km Actuel</td><td>{$r['kms_actuel']}</td></tr>";
-            $table_content .= "<tr><td colspan='6'></td></tr>";
-            $table_content .= "<tr><td>Date vidange</td><td>Date</td><td>KM (avant vidange)</td><td>KM (prochaine vidange)</td><td>Prestataire</td><td>Commentaire</td></tr>";
-        endif;
-        $table_content .= "<tr><td>" . date('d M Y', strtotime($r['date_vidange'])) . "</td><td>{$r['date_vidange']}</td><td>{$r['km_vidange']}</td><td>{$r['km_prochaine_vidange']}</td><td>{$r['nom_prestataire']}</td><td>{$r['commentaire_vidange']}</td></tr>";
-        $i++;
-    endwhile;
-    die("HISTVD%%%%%%$table_content");
-endif;
-if (isset($_POST['semPer'])):
-    $_POST['semPer'] = date('Y-m-01', strtotime($_POST['semPer']));
-    $psem = getPremiereSemaineDuMois($_POST['semPer']);
-    $q = db_select($con, "select distinct periode_releve from releve_kms_vehicule where date_debut_periode_releve>=? and date_fin_periode_releve<=? order by periode_releve", [$psem[0], date('Y-m-t', strtotime($_POST['semPer']))]);
-    $options = "";
-    while ($r = mysqli_fetch_array($q)):
-        $options .= "<option value='" . sha1($r[0]) . "'>{$r[0]}</option>";
-    endwhile;
-    die("SEMPER%%%%%%$options");
-endif;
-if (isset($_POST['vhPer'])):
-    $q = db_select($con, "select km_releve from releve_kms_vehicule where sha1(periode_releve)=? and id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation, id_vehicule))=?)", [$_POST['perSem'], $_POST['vhPer']]);
-    $kms = 0;
-    while ($r = mysqli_fetch_array($q)):
-        $kms = $r[0];
-    endwhile;
-    die("VHPER%%%%%%$kms");
-endif;
-if (isset($_POST['updRel'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "update releve_kms_vehicule set km_releve=? where sha1(periode_releve)=? and id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?)", [$_POST['kmsRel'], $_POST['updRel'], $_POST['vhRel']]);
-        mysqli_commit($con);
-        die("UPDREL%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("UPDREL%%%%%%0");
-    }
-endif;
+/* POST handled by MaintenanceController — see controllers/router.php */
 function getPremiereSemaineDuMois($date)
 {
     $premierJourDuMois = date('Y-m-01', strtotime($date));
@@ -216,50 +126,7 @@ function getPremiereSemaineDuMois($date)
     return $premiereSemaine;
 }
 
-if (isset($_POST['del-pt-id'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "delete from prestataire_intervention where sha1(concat(id_prestataire,nom_prestataire))=?", [$_POST['del-pt-id']]);
-        mysqli_commit($con);
-        die("DELPT%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("DELPT%%%%%%0");
-    }
-endif;
-if (isset($_POST['c-cc-s'])):
-    $q = db_select($con, "select *,sha1(concat(id_centre_cout,lib_centre_cout)) as id_cc from centre_couts where sha1(concat(id_centre_cout,lib_centre_cout))=?", [$_POST['c-cc-s']]);
-    $liste = array();
-    while ($r = mysqli_fetch_array($q)):
-        $liste = $r;
-    endwhile;
-    die("LISTECC%%%%%%" . json_encode($liste));
-endif;
-if (isset($_POST['del-cc-id'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "delete from centre_couts where sha1(concat(id_centre_cout,lib_centre_cout))=?", [$_POST['del-cc-id']]);
-        mysqli_commit($con);
-        die("DELCC%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("DELCC%%%%%%0");
-    }
-endif;
-if(isset($_POST['del-vd-id'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "delete from vidange_vehicule where sha1(concat(id_vidange_vehicule,code_vidange))=?", [$_POST['del-vd-id']]);
-        mysqli_commit($con);
-        die("DELVD%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("DELVD%%%%%%0");
-    }
-endif;
+/* POST handled by MaintenanceController — see controllers/router.php */
 ?>
 <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'releveKms' || !isset($_GET['subpage'])) : ?>
     <?php if (isset($_GET['action']) && $_GET['action'] == 'new' && in_array("saveReleveKms", $rights_maintenance)): ?>
@@ -291,10 +158,11 @@ endif;
                         </div>
                         <div class="form-floating mb-3">
                             <select required id="vh-upd-releve-kms" name="vh-upd-releve-kms" class="form-select" onchange="getKmsPeriode(this.value,$('#per-upd-releve-kms').val())">
-                                <?php $q = db_select($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and affectation_vehicule.id_region=?", [(int)$_SESSION['usr-con']['region-sel']]);
-                                while ($r = mysqli_fetch_array($q)):
-                                    echo "<option value='" . sha1($r[0] . $r['id_vehicule']) . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == sha1($r[0] . $r['id_vehicule']) ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >{$r['immatriculation_vehicule']} ({$r['nom_chauffeur']})</option>";
-                                endwhile;
+                                <?php $affRepo = new AffectationRepository($con);
+                                foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
+                                    $affHash = sha1($r['id_affectation'] . $r['id_vehicule']);
+                                    echo "<option value='" . $affHash . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $affHash ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                                endforeach;
                                 ?>
                             </select>
                             <label for="vh-upd-releve-kms">Véhicule</label>
@@ -347,20 +215,32 @@ endif;
         function getSemainesToUpd(p) {
             $.ajax({
                 type: 'post',
-                data: 'semPer=' + p + '-01'
+                data: 'semPer=' + p + '-01',
+                dataType: 'json'
             }).done((e) => {
-                let v = e.split('SEMPER%%%%%%')[1]
-                $('#per-upd-releve-kms').html(v)
+                if (e.success) {
+                    $('#per-upd-releve-kms').html(e.html)
+                } else {
+                    showError(e.error || "Erreur lors du chargement des semaines")
+                }
+            }).fail((jqXHR) => {
+                showError(jqXHR.responseJSON?.error || "Erreur lors du chargement des semaines")
             })
         }
 
         function getKmsPeriode(v, p) {
             $.ajax({
                 type: 'post',
-                data: 'vhPer=' + v + '&perSem=' + p
+                data: 'vhPer=' + v + '&perSem=' + p,
+                dataType: 'json'
             }).done((e) => {
-                let v = e.split('VHPER%%%%%%')[1]
-                $('#val-upd-releve-kms').val(v)
+                if (e.success) {
+                    $('#val-upd-releve-kms').val(e.kms)
+                } else {
+                    showError(e.error || "Erreur lors du chargement du kilométrage")
+                }
+            }).fail((jqXHR) => {
+                showError(jqXHR.responseJSON?.error || "Erreur lors du chargement du kilométrage")
             })
         }
 
@@ -381,14 +261,19 @@ endif;
             }
             $.ajax({
                 type: 'post',
-                data: 'updRel=' + $('#per-upd-releve-kms').val() + '&vhRel=' + $('#vh-upd-releve-kms').val() + '&kmsRel=' + $('#val-upd-releve-kms').val()
+                data: 'updRel=' + $('#per-upd-releve-kms').val() + '&vhRel=' + $('#vh-upd-releve-kms').val() + '&kmsRel=' + $('#val-upd-releve-kms').val(),
+                dataType: 'json'
             }).done((e) => {
-                let v = e.split('UPDREL%%%%%%')[1]
-                if (v == '1') {
+                if (e.success) {
                     showSuccess('Enregistrement effectué!')
                     location.reload()
                 } else {
-                $('#form-upd-relevekms').notify("Erreur lors de l'enregistrement", {
+                    $('#form-upd-relevekms').notify(e.error || "Erreur lors de l'enregistrement", {
+                        position: 'top'
+                    })
+                }
+            }).fail((jqXHR) => {
+                $('#form-upd-relevekms').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement", {
                     position: 'top'
                 })
             })
@@ -443,14 +328,21 @@ endif;
                 const id = event.relatedTarget.getAttribute('data-bs-id-pt')
                 $.ajax({
                     type: 'post',
-                    data: 'c-pt-s=' + id
+                    data: 'c-pt-s=' + id,
+                    dataType: 'json'
                 }).done((e) => {
-                    let v = JSON.parse(e.split('LISTEPT%%%%%%')[1])
-                    $('#nom-upd-pt').val(v.nom_prestataire)
-                    $('#contact-upd-pt').val(v.contact_prestataire)
-                    $('#localisation-upd-pt').val(v.localisation_prestataire)
-                    $('#id-prestataire').html(v.nom_prestataire)
-                    $('#id-upd-pt').val(v.id_pt)
+                    if (e.success) {
+                        let v = e.data
+                        $('#nom-upd-pt').val(v.nom_prestataire)
+                        $('#contact-upd-pt').val(v.contact_prestataire)
+                        $('#localisation-upd-pt').val(v.localisation_prestataire)
+                        $('#id-prestataire').html(v.nom_prestataire)
+                        $('#id-upd-pt').val(v.id_pt)
+                    } else {
+                        showError(e.error || "Erreur lors du chargement")
+                    }
+                }).fail((jqXHR) => {
+                    showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
                 })
             })
         }
@@ -472,17 +364,21 @@ endif;
             }
             $.ajax({
                 type: 'post',
-                data: $('#form-upd-pt').serialize()
+                data: $('#form-upd-pt').serialize(),
+                dataType: 'json'
             }).done((e) => {
-                let v = e.split('PTMOD%%%%%%')[1]
-                if (v == '1') {
+                if (e.success) {
                     showSuccess('Enregistrement effectué')
                     location.reload()
                 } else {
-                    $('#modal-upd-prestataire .modal-body').notify("Erreur lors de l'enregistrement!", {
+                    $('#modal-upd-prestataire .modal-body').notify(e.error || "Erreur lors de l'enregistrement!", {
                         position: 'top'
                     })
                 }
+            }).fail((jqXHR) => {
+                $('#modal-upd-prestataire .modal-body').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement!", {
+                    position: 'top'
+                })
             })
         }
 
@@ -490,14 +386,17 @@ endif;
             if (confirm("Etes-vous sûr de vouloir supprimer ?")) {
                 $.ajax({
                     type: 'post',
-                    data: 'del-pt-id=' + id
+                    data: 'del-pt-id=' + id,
+                    dataType: 'json'
                 }).done((e) => {
-                    let v = e.split('DELPT%%%%%%')[1]
-                    if (v == '1') {
+                    if (e.success) {
                         showSuccess('Suppression effectuée!')
                         location.reload()
                     } else {
-                    showError("Erreur lors de la suppression!") }
+                        showError(e.error || "Erreur lors de la suppression!")
+                    }
+                }).fail((jqXHR) => {
+                    showError(jqXHR.responseJSON?.error || "Erreur lors de la suppression!")
                 })
             }
         }
@@ -539,10 +438,11 @@ endif;
                         </div>
                         <div class="form-floating mb-3">
                             <select id="vh-upd-vd" name="vh-upd-vd" class="form-select">
-                                <?php $q = db_select($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and affectation_vehicule.id_region=?", [(int)$_SESSION['usr-con']['region-sel']]);
-                                while ($r = mysqli_fetch_array($q)):
-                                    echo "<option value='" . sha1($r[0] . $r['id_vehicule']) . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == sha1($r[0] . $r['id_vehicule']) ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >{$r['immatriculation_vehicule']} ({$r['nom_chauffeur']})</option>";
-                                endwhile;
+                                <?php $affRepo = new AffectationRepository($con);
+                                foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
+                                    $affHash = sha1($r['id_affectation'] . $r['id_vehicule']);
+                                    echo "<option value='" . $affHash . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $affHash ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                                endforeach;
                                 ?>
                             </select>
                             <label for="vh-upd-vd">Véhicule</label>
@@ -557,10 +457,10 @@ endif;
                         </div>
                         <div class="form-floating mb-3">
                             <select class="form-select" id="id-upd-pt-vd" name="id-upd-pt-vd">
-                                <?php $q = db_select($con, "select * from prestataire_intervention", []);
-                                while ($r = mysqli_fetch_array($q)):
-                                    echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
-                                endwhile;
+                                <?php $ptRepo = new MaintenanceRepository($con);
+                                foreach ($ptRepo->findAllPrestataires() as $r):
+                                    echo "<option value='" . sha1($r['id_prestataire'] . $r['nom_prestataire']) . "'>" . h($r['nom_prestataire']) . "</option>";
+                                endforeach;
                                 ?>
                             </select>
                             <label for="id-upd-pt-vd">Prestataire</label>
@@ -588,15 +488,22 @@ endif;
                 $('#code-vidange').html(id)
                 $.ajax({
                     type: 'post',
-                    data: 'c-vd-s=' + id
+                    data: 'c-vd-s=' + id,
+                    dataType: 'json'
                 }).done((e) => {
-                    let v = JSON.parse(e.split('LISTEVD%%%%%%')[1])
-                    $('#date-upd-vd').val(v.date_vidange)
-                    $('#vh-upd-vd option[value="' + v.id_affectation_vehicule + '"]').prop('selected', true)
-                    $('#km-upd-av-vd').val(v.km_vidange)
-                    $('#km-upd-next-vd').val(v.km_prochaine_vidange)
-                    $('#id-upd-pt-vd option[value="' + v.id_prestataire + '"]').prop('selected', true)
-                    $('#comment-upd-vd').html(v.commentaire_vidange)
+                    if (e.success) {
+                        let v = e.data
+                        $('#date-upd-vd').val(v.date_vidange)
+                        $('#vh-upd-vd option[value="' + v.id_affectation_vehicule + '"]').prop('selected', true)
+                        $('#km-upd-av-vd').val(v.km_vidange)
+                        $('#km-upd-next-vd').val(v.km_prochaine_vidange)
+                        $('#id-upd-pt-vd option[value="' + v.id_prestataire + '"]').prop('selected', true)
+                        $('#comment-upd-vd').html(v.commentaire_vidange)
+                    } else {
+                        showError(e.error || "Erreur lors du chargement")
+                    }
+                }).fail((jqXHR) => {
+                    showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
                 })
 
             })
@@ -625,43 +532,55 @@ endif;
             }
             $.ajax({
                 type: 'post',
-                data: $('#form-upd-vidange').serialize() + '&c-upd-vd=' + $('#code-vidange').html()
+                data: $('#form-upd-vidange').serialize() + '&c-upd-vd=' + $('#code-vidange').html(),
+                dataType: 'json'
             }).done((e) => {
-                let v = e.split('VIDANGEMOD%%%%%%')[1]
-                if (v == '1') {
+                if (e.success) {
                     showSuccess('Enregistrement effectué')
                     location.reload()
                 } else {
-                    $('#modal-upd-vidange').notify("Erreur lors de l'enregistrement!", {
+                    $('#modal-upd-vidange').notify(e.error || "Erreur lors de l'enregistrement!", {
                         position: 'top'
                     })
                 }
+            }).fail((jqXHR) => {
+                $('#modal-upd-vidange').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement!", {
+                    position: 'top'
+                })
             })
         }
 
         function showHistory(code) {
             $.ajax({
                 type: 'post',
-                data: 'cd-vd-hist=' + code
+                data: 'cd-vd-hist=' + code,
+                dataType: 'json'
             }).done((e) => {
-                let v = e.split('HISTVD%%%%%%')[1]
-                $('#table-history tbody').html(v)
-                exportToExcel('table-history', 'historique_vidange_' + code.replace(/-/g, '_'))
-                //exportToExcel()
+                if (e.success) {
+                    $('#table-history tbody').html(e.html)
+                    exportToExcel('table-history', 'historique_vidange_' + code.replace(/-/g, '_'))
+                } else {
+                    showError(e.error || "Erreur lors du chargement de l'historique")
+                }
+            }).fail((jqXHR) => {
+                showError(jqXHR.responseJSON?.error || "Erreur lors du chargement de l'historique")
             })
         }
         function delVidange(id){
             if(confirm("Etes-vous sûr de vouloir supprimer ?")) {
                 $.ajax({
                     type: 'post',
-                    data: 'del-vd-id=' + id
+                    data: 'del-vd-id=' + id,
+                    dataType: 'json'
                 }).done((e) => {
-                    let v = e.split('DELVD%%%%%%')[1]
-                    if (v == '1') {
+                    if (e.success) {
                         showSuccess('Suppression effectuée!')
                         location.reload()
                     } else {
-                    showError("Erreur lors de la suppression!") }
+                        showError(e.error || "Erreur lors de la suppression!")
+                    }
+                }).fail((jqXHR) => {
+                    showError(jqXHR.responseJSON?.error || "Erreur lors de la suppression!")
                 })
             }
         }
@@ -763,17 +682,21 @@ endif;
             }
             $.ajax({
                 type: 'post',
-                data: $('#form-upd-cc').serialize()
+                data: $('#form-upd-cc').serialize(),
+                dataType: 'json'
             }).done((e) => {
-                let v = e.split('CCMOD%%%%%%')[1]
-                if (v == '1') {
+                if (e.success) {
                     showSuccess('Enregistrement effectué')
                     location.reload()
                 } else {
-                    $('#modal-upd-centrecout .modal-body').notify("Erreur lors de l'enregistrement!", {
+                    $('#modal-upd-centrecout .modal-body').notify(e.error || "Erreur lors de l'enregistrement!", {
                         position: 'top'
                     })
                 }
+            }).fail((jqXHR) => {
+                $('#modal-upd-centrecout .modal-body').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement!", {
+                    position: 'top'
+                })
             })
         }
         const modalUpdCC = document.getElementById('modal-upd-centrecout')
@@ -783,12 +706,19 @@ endif;
                 const id = event.relatedTarget.getAttribute('data-bs-id-cc')
                 $.ajax({
                     type: 'post',
-                    data: 'c-cc-s=' + id
+                    data: 'c-cc-s=' + id,
+                    dataType: 'json'
                 }).done((e) => {
-                    let v = JSON.parse(e.split('LISTECC%%%%%%')[1])
-                    $('#nom-upd-cc').val(v.lib_centre_cout)
-                    $('#id-prestataire').html(v.lib_centre_cout)
-                    $('#id-upd-cc').val(v.id_cc)
+                    if (e.success) {
+                        let v = e.data
+                        $('#nom-upd-cc').val(v.lib_centre_cout)
+                        $('#id-prestataire').html(v.lib_centre_cout)
+                        $('#id-upd-cc').val(v.id_cc)
+                    } else {
+                        showError(e.error || "Erreur lors du chargement")
+                    }
+                }).fail((jqXHR) => {
+                    showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
                 })
             })
         }
@@ -797,14 +727,17 @@ endif;
             if (confirm("Etes-vous sûr de vouloir supprimer ?")) {
                 $.ajax({
                     type: 'post',
-                    data: 'del-cc-id=' + id
+                    data: 'del-cc-id=' + id,
+                    dataType: 'json'
                 }).done((e) => {
-                    let v = e.split('DELCC%%%%%%')[1]
-                    if (v == '1') {
+                    if (e.success) {
                         showSuccess('Suppression effectuée!')
                         location.reload()
                     } else {
-                    showError("Erreur lors de la suppression!") }
+                        showError(e.error || "Erreur lors de la suppression!")
+                    }
+                }).fail((jqXHR) => {
+                    showError(jqXHR.responseJSON?.error || "Erreur lors de la suppression!")
                 })
             }
         }

@@ -1,19 +1,5 @@
-<?php if (isset($_POST['nSess'])):
-    $q = db_select($con, "select * from region where sha1(concat(id_region,nom_region))=?", [$_POST['nSess']]);
-    $region = explode(',', $_SESSION['usr-con']['users_region']);
-    while ($r = mysqli_fetch_array($q)) $reg = $r;
-    if (isset($reg)):
-        if (in_array($reg[0], $region)):
-            $_SESSION['usr-con']['region-sel'] = $reg[0];
-            $_SESSION['usr-con']['region-sel-name'] = $reg[1];
-            die("changeRegion%%%%%%1");
-        else :
-            die("changeRegion%%%%%%2");
-        endif;
-    else :
-        die("changeRegion%%%%%%0");
-    endif;
-endif;
+<?php /* POST /switchRegion handled by AuthController — see controllers/router.php */ ?>
+if(!isset($user_rights)) $user_rights = [];
 ?>
 <script>
     function exportTableToExcel(tableId, filename = '') {
@@ -96,13 +82,14 @@ endif;
         </span>
         <a class="dropdown-toggle" style="text-decoration:none" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false"><?php echo h($_SESSION['usr-con']['region-sel-name']); ?></a>
         <ul class="dropdown-menu">
-            <?php $uright = explode(',', $_SESSION['usr-con']['users_region']);
+            <?php $regionRepo = new RegionRepository($con);
+            $uright = explode(',', $_SESSION['usr-con']['users_region']);
             for ($i = 0; $i < count($uright); $i++):
                 if ($uright[$i] != $_SESSION['usr-con']['region-sel']): ?>
-                    <?php $q = db_select($con, "select * from region where id_region=?", [(int)$uright[$i]]);
-                    while ($r = mysqli_fetch_array($q)): ?>
-                        <li><a class="dropdown-item" href="#" onclick="changeSessionRegion('<?php echo sha1($r[0] . $r[1]); ?>')"><?php echo $r[1]; ?></a></li>
-                    <?php endwhile; ?>
+                    <?php $r = $regionRepo->findById((int)$uright[$i]); ?>
+                    <?php if ($r): ?>
+                        <li><a class="dropdown-item" href="#" onclick="changeSessionRegion('<?php echo sha1($r['id_region'] . $r['nom_region']); ?>')"><?php echo $r['nom_region']; ?></a></li>
+                    <?php endif; ?>
             <?php endif;
             endfor; ?>
         </ul>
@@ -395,15 +382,13 @@ endif;
         if (confirm("Etes-vous sûr de vouloir changer de région ?")) {
             $.ajax({
                 type: 'post',
-                data: 'nSess=' + id
+                data: 'nSess=' + id,
+                dataType: 'json'
             }).done((e) => {
-                let v = e.split('changeRegion%%%%%%')[1]
-                if (v == '1') {
+                if (e.success) {
                     location.reload();
-                } else if (v == '2') {
-                    showWarning("Vous n'avez pas les droits pour passer à cette région")
                 } else {
-                    showError("Erreur lors du changement de région")
+                    showWarning(e.error||"Erreur lors du changement de région")
                 }
             })
         }

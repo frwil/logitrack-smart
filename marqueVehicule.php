@@ -2,56 +2,35 @@
 {
     global $con;
     global $rights_vehicule;
-    $q = db_select($con, "SELECT * FROM `marque_vehicule` WHERE 1", []);
+    $repo = new MarqueRepository($con);
+    $rows = $repo->findAll();
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Nom marque</th><th></th></tr></thead><tbody>";
     $i = 1;
-    while ($r = mysqli_fetch_array($q)):
-        $tableau .= "<tr><td>$i</td><td>{$r['nom_marque']}</td><td><div class='btn-group'>".(in_array('upd',$rights_vehicule) ? "<button class='btn btn-light' type='button' onclick='showModalUpdateMarque({$r[0]})' title='Modifier la marque {$r[1]}'><i class='fa fa-pencil-alt'></i></button>" : "").(in_array("del",$rights_vehicule) ? "<button class='btn btn-danger' type='button' onclick='deleteMarque({$r[0]})' title='Supprimer la marque {$r[1]}'><i class='fa fa-times'></i></button>" : "")."</div></td></tr>";
+    foreach ($rows as $r):
+        $tableau .= "<tr><td>$i</td><td>" . h($r['nom_marque']) . "</td><td><div class='btn-group'>".(in_array('upd',$rights_vehicule) ? "<button class='btn btn-light' type='button' onclick='showModalUpdateMarque(" . $r['id_marque'] . ")' title='Modifier la marque " . h($r['nom_marque']) . "'><i class='fa fa-pencil-alt'></i></button>" : "").(in_array("del",$rights_vehicule) ? "<button class='btn btn-danger' type='button' onclick='deleteMarque(" . $r['id_marque'] . ")' title='Supprimer la marque " . h($r['nom_marque']) . "'><i class='fa fa-times'></i></button>" : "")."</div></td></tr>";
         $i++;
-    endwhile;
+    endforeach;
     $tableau .= "</tbody></table>";
     return $tableau;
 }
 include("modalNewMarque.php");
 ?>
-<?php if (isset($_POST['id-marque-forModal'])):
-    $q = db_select($con, "select * from marque_vehicule where id_marque=?", [(int)$_POST['id-marque-forModal']]);
-    while ($r = mysqli_fetch_array($q)):
-        $marque = $r;
-    endwhile;
-    die("UpdMarque%%%%%%" . json_encode($marque));
-endif;
-if (isset($_POST['id-marque'])):
-    $_POST['nom-upd-marque'] = trim(strtoupper($_POST['nom-upd-marque']));
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "update marque_vehicule set nom_marque=? where id_marque=?", [$_POST['nom-upd-marque'], (int)$_POST['id-marque']]);
-        mysqli_commit($con);
-        die("UpdMarque%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("UpdMarque%%%%%%0");
-    }
-endif;
-if(isset($_POST['id-marque-forDel'])):
-    $q=db_exec($con,"delete from marque_vehicule where id_marque=?", [(int)$_POST['id-marque-forDel']]);
-    if($q) die("UpdMarque%%%%%%1");
-    die("UpdMarque%%%%%%0");
-endif;
-?>
+<?php /* POST handled by MarqueController — see controllers/router.php */ ?>
 <script>
     function showModalUpdateMarque(id) {
         $('#modal-upd-marque').modal('show')
         $('#id-marque').val(id)
         $.ajax({
             type: 'post',
-            data: 'id-marque-forModal=' + id
+            data: 'id-marque-forModal=' + id,
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('UpdMarque%%%%%%')[1]
-            v = JSON.parse(v);
-            $('#nom-marque-display').html(v.nom_marque);
-            $('#nom-upd-marque').val(v.nom_marque);
+            if (e.success) {
+                $('#nom-marque-display').html(e.data.nom_marque);
+                $('#nom-upd-marque').val(e.data.nom_marque);
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement");
         })
     }
 
@@ -59,15 +38,17 @@ endif;
         if (confirm("Etes-vous sûr de vouloir modifier ?")) {
             $.ajax({
                 type: 'post',
-                data: $('#form-upd-marque').serialize()
+                data: $('#form-upd-marque').serialize(),
+                dataType: 'json'
             }).done((e) => {
-                let v = e.split('UpdMarque%%%%%%')[1]
-                if (v == '1') {
+                if (e.success) {
                     showSuccess('Modification effectuée!!')
                     location.reload()
                 } else {
-                    showError("Erreur lors de la modificaiton")
+                    showError(e.error || "Erreur lors de la modification")
                 }
+            }).fail((jqXHR) => {
+                showError(jqXHR.responseJSON?.error || "Erreur lors de la modification")
             })
         }
     }
@@ -76,15 +57,17 @@ endif;
         if(confirm("Etes-vous sûr de vouloir supprimer?")){
             $.ajax({
                 type:'post',
-                data:'id-marque-forDel='+id
+                data:'id-marque-forDel='+id,
+                dataType:'json'
             }).done((e)=>{
-                let v=e.split('UpdMarque%%%%%%')[1]
-                if(v=='1'){
+                if(e.success){
                     showSuccess('Marque supprimée!!')
                     location.reload()
                 }else{
-                    showError("Echec de l'opération")
+                    showError(e.error || "Echec de l'opération")
                 }
+            }).fail((jqXHR)=>{
+                showError(jqXHR.responseJSON?.error || "Echec de l'opération")
             })
         }
     }

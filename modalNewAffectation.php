@@ -1,28 +1,12 @@
 <?php
-if (isset($_POST['id-vehicule-aff'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q=db_select($con,"select id_vehicule from affectation_vehicule where id_vehicule in(select id_vehicule from vehicule where sha1(concat(id_vehicule,immatriculation_vehicule))=?) and is_ferme=0", [$_POST['id-vehicule-aff']]);
-        if(mysqli_num_rows($q)==0):
-        $q = db_exec($con, "INSERT INTO `affectation_vehicule` (`id_affectation`, `id_vehicule`, `id_chauffeur`, `id_type_utilisation`, `id_mode_utilisation`, `id_entite`, `objet_affectation`, `date_debut_affectation`, `date_fin_affectation`, `id_region`, `date_affectation`, `is_ferme`) VALUES (NULL, (select id_vehicule from vehicule where sha1(concat(id_vehicule,immatriculation_vehicule))=?), (select id_chauffeur from chauffeur where sha1(concat(id_chauffeur,nom_chauffeur))=?), (select id_type_utilisation from type_utilisation_vehicule where sha1(concat(id_type_utilisation,lib_type_utilisation))=?), (select id_mode_utilisation from mode_utilisation_vehicule where sha1(concat(id_mode_utilisation,nom_mode_utilisation))=?), (select id_entite from entite where sha1(concat(id_entite,nom_entite))=?), ?, ?, ?, (select id_region from region where sha1(concat(id_region,nom_region))=?), CURRENT_TIMESTAMP, '0')", [$_POST['id-vehicule-aff'], $_POST['id-chauffeur-aff'], $_POST['id-typeutilisation-aff'], $_POST['id-modeutilisation-aff'], $_POST['id-entite-aff'], $_POST['objet-aff'] === '' ? null : $_POST['objet-aff'], $_POST['date-debut-aff'], $_POST['date-fin-aff'] === '' ? null : $_POST['date-fin-aff'], $_POST['id-region-aff']]);
-        mysqli_commit($con);
-        die("NewAffectation%%%%%%1");
-        else:
-            die("NewAffectation%%%%%%1062");
-        endif;
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("NewAffectation%%%%%%0");
-    }
-endif;
+/* POST handled by AffectationController — see controllers/router.php */
 if (isset($_POST['refresh-vehicule'])):
-    $q = db_select($con, "select * from vehicule");
+    $vhRepo = new VehiculeRepository($con);
     $liste = "";
-    while ($r = mysqli_fetch_array($q)):
-        $liste .= "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
-    endwhile;
-    die("NewAffectation%%%%%%$liste");
+    foreach ($vhRepo->findAllWithDetails() as $r):
+        $liste .= "<option value='" . sha1($r['id_vehicule'] . $r['immatriculation_vehicule']) . "'>" . h($r['immatriculation_vehicule']) . "</option>";
+    endforeach;
+    die(json_encode(['success' => true, 'html' => $liste]));
 endif;
 ?>
 <div class="modal fade" id="modal-new-affectation" tabindex="-1" aria-labelledby="modal-new-affectationLabel" aria-hidden="true">
@@ -36,20 +20,20 @@ endif;
                 <form method="post" action="#" id="form-new-affectation">
                     <div class="form-floating mb-3">
                         <select class="form-select" id="id-vehicule-aff" name="id-vehicule-aff" required>
-                            <?php $q = db_select($con, "select * from vehicule left join marque_vehicule on vehicule.id_marque=marque_vehicule.id_marque");
-                            while ($r = mysqli_fetch_array($q)):
-                                echo "<option value='" . sha1($r[0] . $r['immatriculation_vehicule']) . "'>{$r['immatriculation_vehicule']} - {$r['nom_marque']}</option>";
-                            endwhile;
+                            <?php $vehiculeRepo = new VehiculeRepository($con);
+                            foreach ($vehiculeRepo->findAllWithDetails() as $r):
+                                echo "<option value='" . sha1($r['id_vehicule'] . $r['immatriculation_vehicule']) . "'>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_marque']) . "</option>";
+                            endforeach;
                             ?>
                         </select>
                         <label for="id-vehicule-aff">Véhicule</label>
                     </div>
                     <div class="form-floating mb-3">
                         <select class="form-select" id="id-chauffeur-aff" name="id-chauffeur-aff" required>
-                            <?php $q = db_select($con, "select * from chauffeur where 1");
-                            while ($r = mysqli_fetch_array($q)):
-                                echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
-                            endwhile;
+                            <?php $chauffeurRepo = new ChauffeurRepository($con);
+                            foreach ($chauffeurRepo->findAll() as $r):
+                                echo "<option value='" . sha1($r['id_chauffeur'] . $r['nom_chauffeur']) . "'>" . h($r['nom_chauffeur']) . "</option>";
+                            endforeach;
                             ?>
                         </select>
                         <label for="id-chauffeur-aff">Chauffeur</label>
@@ -58,10 +42,10 @@ endif;
                         <div class="col-6">
                             <div class="form-floating mb-3">
                                 <select class="form-select" id="id-typeutilisation-aff" name="id-typeutilisation-aff" required>
-                                    <?php $q = db_select($con, "select * from type_utilisation_vehicule where 1");
-                                    while ($r = mysqli_fetch_array($q)):
-                                        echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
-                                    endwhile;
+                                    <?php $typeUtilRepo = new TypeUtilisationRepository($con);
+                                    foreach ($typeUtilRepo->findAll() as $r):
+                                        echo "<option value='" . sha1($r['id_type_utilisation'] . $r['lib_type_utilisation']) . "'>" . h($r['lib_type_utilisation']) . "</option>";
+                                    endforeach;
                                     ?>
                                 </select>
                                 <label for="id-typeutilisation-aff">Type utilisation</label>
@@ -70,10 +54,10 @@ endif;
                         <div class="col-6">
                             <div class="form-floating mb-3">
                                 <select class="form-select" id="id-modeutilisation-aff" name="id-modeutilisation-aff" required>
-                                    <?php $q = db_select($con, "select * from mode_utilisation_vehicule where 1");
-                                    while ($r = mysqli_fetch_array($q)):
-                                        echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
-                                    endwhile;
+                                    <?php $modeUtilRepo = new ModeUtilisationRepository($con);
+                                    foreach ($modeUtilRepo->findAll() as $r):
+                                        echo "<option value='" . sha1($r['id_mode_utilisation'] . $r['lib_mode_utilisation']) . "'>" . h($r['lib_mode_utilisation']) . "</option>";
+                                    endforeach;
                                     ?>
                                 </select>
                                 <label for="id-modeutilisation-aff">Mode utilisation</label>
@@ -82,10 +66,10 @@ endif;
                         <div class="col-6">
                             <div class="form-floating mb-3">
                                 <select class="form-select" id="id-entite-aff" name="id-entite-aff" required>
-                                    <?php $q = db_select($con, "select * from entite where 1");
-                                    while ($r = mysqli_fetch_array($q)):
-                                        echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
-                                    endwhile;
+                                    <?php $entiteRepo = new EntiteRepository($con);
+                                    foreach ($entiteRepo->findAll() as $r):
+                                        echo "<option value='" . sha1($r['id_entite'] . $r['nom_entite']) . "'>" . h($r['nom_entite']) . "</option>";
+                                    endforeach;
                                     ?>
                                 </select>
                                 <label for="id-entite-aff">Entité</label>
@@ -94,10 +78,10 @@ endif;
                         <div class="col-6">
                             <div class="form-floating mb-3">
                                 <select class="form-select" id="id-region-aff" name="id-region-aff" required>
-                                    <?php $q = db_select($con, "select * from region where 1");
-                                    while ($r = mysqli_fetch_array($q)):
-                                        echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
-                                    endwhile;
+                                    <?php $regionRepo = new RegionRepository($con);
+                                    foreach ($regionRepo->findAll() as $r):
+                                        echo "<option value='" . sha1($r['id_region'] . $r['nom_region']) . "'>" . h($r['nom_region']) . "</option>";
+                                    endforeach;
                                     ?>
                                 </select>
                                 <label for="id-region-aff">Région</label>
@@ -141,10 +125,16 @@ endif;
     function refreshMarqueOptions() {
         $.ajax({
             type: 'post',
-            data: 'refresh-marque=1'
+            data: 'refresh-marque=1',
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewMarque%%%%%%')[1]
-            $('#marque-vh').html(v)
+            if (e.success) {
+                $('#marque-vh').html(e.html)
+            } else {
+                showError(e.error || "Erreur lors du chargement")
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
         })
     }
 
@@ -163,21 +153,23 @@ endif;
         }
         $.ajax({
             type: 'post',
-            data: $('#form-new-affectation').serialize()
+            data: $('#form-new-affectation').serialize(),
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewAffectation%%%%%%')[1]
-            if (v == '1') {
+            if (e.success) {
                 showSuccess("Nouvelle affectation créee!!")
                 $('#modal-new-affectation').modal('hide')
                 $('#form-new-affectation *').val('')
                 location="?page=affectationVehicules"
-            } else if (v == '1062') {
+            } else if (e.error == '1062') {
                 $('#form-new-affectation').notify("Vous devez clôturer l'affectation actuelle de ce véhicule avant de le réaffecter",{
                     position:'top'
                 })
             } else {
-                showError("Erreur lors de l'enregistrement")
+                showError(e.error || "Erreur lors de l'enregistrement")
             }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement")
         })
     }
 </script>

@@ -1,46 +1,28 @@
 <?php $entityBody = json_decode(file_get_contents('php://input'),true);
 if(isset($entityBody['chrelevekms'])):
     $_POST=$entityBody;
-    $q=db_select($con,"select * from releve_kms_vehicule where id_affectation_vehicule=(select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?) and date_debut_periode_releve>=? and date_fin_periode_releve<=?", [$_POST['chrelevekms'], $_POST['datevg'], $_POST['finvg']]);
-    die("CHECKRELEVE%%%%%%".mysqli_num_rows($q));
+    $maintenanceRepo = new MaintenanceRepository($con);
+    $count = $maintenanceRepo->countRelevesByAffectationAndDateRange($_POST['chrelevekms'], $_POST['datevg'], $_POST['finvg']);
+    die(json_encode(['success' => true, 'count' => $count]));
 endif;
 if(isset($_POST['dateV'])):
-    $sqlObjVg = "select * from objectif_periode_region where date_objectif_periode=?";
-    $paramsObjVg = [$_POST['dateV']];
-    if ($_SESSION['usr-con']['region-sel'] != '') { $sqlObjVg .= " and id_region=?"; $paramsObjVg[] = (int)$_SESSION['usr-con']['region-sel']; }
-    $q=db_select($con, $sqlObjVg, $paramsObjVg);
-    die("checkVoyage%%%%%%".mysqli_num_rows($q));
+    $objectifRepo = new ObjectifRepository($con);
+    $regionId = $_SESSION['usr-con']['region-sel'] != '' ? (int)$_SESSION['usr-con']['region-sel'] : null;
+    $count = $objectifRepo->countByDate($regionId, $_POST['dateV']);
+    die(json_encode(['success' => true, 'count' => $count]));
 endif;
 if (isset($_POST['trajets'])):
     $trajets = json_decode($_POST['trajets']);
-    if (empty($trajets)) $trajets = [''];
-    list($placeholders, $trajetParams) = db_in($trajets);
-    $q = db_select($con, "select * from destination_voyage where sha1(concat(id_destination,lib_destination)) not in($placeholders) order by lib_destination", $trajetParams);
+    if (empty($trajets)) $trajets = [];
+    $trajetRepo = new TrajetRepository($con);
+    $rows = $trajetRepo->findAllExcept($trajets);
     $liste = "";
-    while ($r = mysqli_fetch_array($q)):
-        $liste .= "<option value='" . sha1($r[0] . $r[1]) . "' dest-km='{$r['distance_destination']}'>{$r[1]} ({$r['distance_destination']} km)</option>";
-    endwhile;
-    die("ListeTrajets%%%%%%$liste");
+    foreach ($rows as $r):
+        $liste .= "<option value='" . sha1($r['id_destination'] . $r['lib_destination']) . "' dest-km='" . h($r['distance_destination']) . "'>" . h($r['lib_destination']) . " (" . h($r['distance_destination']) . " km)</option>";
+    endforeach;
+    die(json_encode(['success' => true, 'html' => $liste]));
 endif;
-if (isset($_POST['id-vehicule-vg'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $nbTrajets = count($_POST['listeTrajets']);
-        $q = db_exec($con, "INSERT INTO `voyage` (`id_voyage`, `date_voyage`, `id_affectation`, `qte_carburant`, `convoyeur`, `titre_voyage`, `id_type_chargement`, `qte_chargement`, `commentaire_voyage`) VALUES (NULL, ?, (select id_affectation from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?), ?, ?, ?, (select id_type_chargement from type_chargement_voyage where sha1(concat(id_type_chargement,lib_type_chargement))=?), ?, NULL)", [$_POST['date-vg'], $_POST['id-vehicule-vg'], (int)$_POST['qtecarburant-vg'], $_POST['id-convoyeur-vg'] === '' ? null : $_POST['id-convoyeur-vg'], $_POST['titre-vg'], $_POST['typechargement-vg'], (int)$_POST['qtechargement-vg']]);
-        $id_voyage = mysqli_insert_id($con);
-        $trajets = $_POST['listeTrajets'];
-        for ($i = 0; $i < $nbTrajets; $i++):
-            $q = db_exec($con, "INSERT INTO `voyage_vehicule` (`id_voyage_vehicule`, `id_voyage`, `id_destination`, `commentaire_voyage_vehicule`) VALUES (NULL, ?, (select id_destination from destination_voyage where sha1(concat(id_destination,lib_destination))=?), NULL)", [(int)$id_voyage, $trajets[$i]]);
-        endfor;
-        mysqli_commit($con);
-        die("NewVoyage%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        if ($e->getCode() == '1062') die('NewVoyage%%%%%%1062');
-        die("NewVoyage%%%%%%0");
-    }
-endif;
+/* POST handled by VoyageController — see controllers/router.php */
 ?>
 <div class="modal fade" id="modal-new-voyage" tabindex="-1" aria-labelledby="modal-new-voyageLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
@@ -66,13 +48,10 @@ endif;
                         <div class="col-6">
                             <div class="form-floating mb-3">
                                 <select class="form-select" id="id-vehicule-vg" name="id-vehicule-vg">
-                                    <?php $sqlVg = "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0";
-                                    $paramsVg = [];
-                                    if ($_SESSION['usr-con']['region-sel'] != '') { $sqlVg .= " and affectation_vehicule.id_region=?"; $paramsVg[] = (int)$_SESSION['usr-con']['region-sel']; }
-                                    $q = db_select($con, $sqlVg, $paramsVg);
-                                    while ($r = mysqli_fetch_array($q)):
-                                        echo "<option value='" . sha1($r[0] . $r['id_vehicule']) . "'>{$r['immatriculation_vehicule']} ({$r['nom_chauffeur']})</option>";
-                                    endwhile;
+                                    <?php $affectationRepo = new AffectationRepository($con);
+                                    foreach ($affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
+                                        echo "<option value='" . sha1($r['id_affectation'] . $r['id_vehicule']) . "'>" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                                    endforeach;
                                     ?>
                                 </select>
                                 <label for="id-vehicule-vg">Véhicule</label>
@@ -93,10 +72,10 @@ endif;
                         <div class="col-6">
                             <div class="form-floating">
                                 <select class="form-select" id="typechargement-vg" name="typechargement-vg">
-                                    <?php $q = db_select($con, "select * from type_chargement_voyage where 1");
-                                    while ($r = mysqli_fetch_array($q)):
-                                        echo "<option value='" . sha1($r[0] . $r[1]) . "' val-min='{$r['valeur_min']}' val-max='{$r['valeur_max']}'>{$r[1]}</option>";
-                                    endwhile;
+                                    <?php $voyageRepo = new VoyageRepository($con);
+                                    foreach ($voyageRepo->findAllTypesChargement() as $r):
+                                        echo "<option value='" . sha1($r['id_type_chargement'] . $r['lib_type_chargement']) . "' val-min='" . h($r['valeur_min']) . "' val-max='" . h($r['valeur_max']) . "'>" . h($r['lib_type_chargement']) . "</option>";
+                                    endforeach;
                                     ?>
                                 </select>
                                 <label for="typechargement-vg">Type de chargement</label>
@@ -116,10 +95,10 @@ endif;
                             <div class="input-group mb-3">
                                 <div class="form-floating">
                                     <select class="form-select" id="trajet-list-vg" role="trajet">
-                                        <?php $q = db_select($con, "select * from destination_voyage where 1 order by lib_destination");
-                                        while ($r = mysqli_fetch_array($q)):
-                                            echo "<option value='" . sha1($r[0] . $r[1]) . "' dest-km='{$r['distance_destination']}'>{$r[1]} ({$r['distance_destination']} km)</option>";
-                                        endwhile;
+                                        <?php $trajetRepo = new TrajetRepository($con);
+                                        foreach ($trajetRepo->findAll() as $r):
+                                            echo "<option value='" . sha1($r['id_destination'] . $r['lib_destination']) . "' dest-km='" . h($r['distance_destination']) . "'>" . h($r['lib_destination']) . " (" . h($r['distance_destination']) . " km)</option>";
+                                        endforeach;
                                         ?>
                                     </select>
                                     <label for="trajet-list-vg">Trajet</label>
@@ -169,10 +148,16 @@ endif;
     function refreshTrajetsOptions() {
         $.ajax({
             type: 'post',
-            data: 'trajets=' + JSON.stringify(trajets)
+            data: 'trajets=' + JSON.stringify(trajets),
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('ListeTrajets%%%%%%')[1]
-            $('#trajet-list-vg').html(v)
+            if (e.success) {
+                $('#trajet-list-vg').html(e.html)
+            } else {
+                showError(e.error || "Erreur lors du chargement")
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
         })
     }
 
@@ -211,9 +196,8 @@ endif;
         Accept: 'application/json',
         'Content-Type': 'application/json',
     }})
-        check=await check.text()
-        check=check.split('CHECKRELEVE%%%%%%')[1]
-        return check==1;
+        check=await check.json()
+        return check.success && check.count==1;
     }
 
    async function saveVoyage() {
@@ -259,29 +243,33 @@ endif;
         }
         $.ajax({
             type: 'post',
-            data: $('#form-new-voyage').serialize() + '&trajets-voyage=' + JSON.stringify(trajets)
+            data: $('#form-new-voyage').serialize() + '&trajets-voyage=' + JSON.stringify(trajets),
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewVoyage%%%%%%')[1]
-            if (v == '1') {
+            if (e.success) {
                 showSuccess("Nouveau voyage créee!!")
                 $('#modal-new-voyage').modal('hide')
                 $('#form-new-voyage *').val('')
                 trajets = []
                 location.reload()
             } else {
-                showError("Erreur lors de l'enregistrement")
+                showError(e.error || "Erreur lors de l'enregistrement")
             }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement")
         })
     }
     $('#date-vg').change((e)=>{
         $.ajax({
             type:'post',
-            data:'dateV='+$(e.currentTarget).val()
+            data:'dateV='+$(e.currentTarget).val(),
+            dataType:'json'
         }).done((e)=>{
-            var v=e.split('checkVoyage%%%%%%')[1]
-            if(v=='0'){
+            if(e.count=='0'){
                 $('#date-check').val(1)
             }
+        }).fail((jqXHR)=>{
+            showError(jqXHR.responseJSON?.error || "Erreur lors de la vérification")
         })
     })
 

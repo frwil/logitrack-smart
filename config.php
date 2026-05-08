@@ -6,13 +6,15 @@
 {
     global $con;
     global $rights_config;
-    $q = db_select($con, "select * from type_permis_vehicule", []);
+    $repo = new ConfigRepository($con);
+    $rows = $repo->findAllTypePermis();
     $tableau = "<table class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-drivelicence'><thead><tr><th>#</th><th>Catégorie</th><th>Description</th><th></th></tr></thead><tbody>";
     $i = 1;
-    while ($r = mysqli_fetch_array($q)):
-        $tableau .= "<tr><td>$i</td><td>{$r[1]}</td><td>{$r[2]}</td><td><div class='btn-group'>" . (in_array('upd', $rights_config) ? "<button class='btn btn-primary' data-bs-toggle='modal' data-bs-target='#modal-driveLicence-upd' data-bs-idtype='" . sha1($r[0] . $r[1]) . "' title='Modifier'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array('del', $rights_config) ? "<button class='btn btn-danger' title='Supprimer' onclick='delDriveLicence(\"" . sha1($r[0] . $r[1]) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+    foreach ($rows as $r):
+        $hash = sha1($r['id_type_permis'] . $r['lib_type_permis']);
+        $tableau .= "<tr><td>$i</td><td>" . h($r['lib_type_permis']) . "</td><td>" . h($r['desc_type_permis']) . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_config) ? "<button class='btn btn-primary' data-bs-toggle='modal' data-bs-target='#modal-driveLicence-upd' data-bs-idtype='$hash' title='Modifier'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array('del', $rights_config) ? "<button class='btn btn-danger' title='Supprimer' onclick='delDriveLicence(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         $i++;
-    endwhile;
+    endforeach;
     $tableau .= "</tbody></table>";
     return $tableau;
 }
@@ -21,13 +23,15 @@ function getTableauDocs()
 {
     global $con;
     global $rights_config;
-    $q = db_select($con, "select * from document_vehicule", []);
+    $repo = new ConfigRepository($con);
+    $rows = $repo->findAllDocuments();
     $tableau = "<table class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-docs'><thead><tr><th>#</th><th>Désignation</th><th>Validité (en mois)</th><th></th></tr></thead><tbody>";
     $i = 1;
-    while ($r = mysqli_fetch_array($q)):
-        $tableau .= "<tr><td>$i</td><td>{$r[1]}</td><td>{$r[2]}</td><td><div class='btn-group'>" . (in_array('upd', $rights_config) ? "<a class='btn btn-primary' href='?page=configuration&subpage=documentslist&action=upd&id=" . sha1($r[0] . $r[1]) . "' title='Modifier'><i class='fa fa-pencil-alt'></i></a>" : "") . (in_array('del', $rights_config) ? "<button class='btn btn-danger' title='Supprimer' onclick='delDoc(\"" . sha1($r[0] . $r[1]) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+    foreach ($rows as $r):
+        $hash = sha1($r['id_document'] . $r['nom_document']);
+        $tableau .= "<tr><td>$i</td><td>" . h($r['nom_document']) . "</td><td>" . h($r['validite_document']) . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_config) ? "<a class='btn btn-primary' href='?page=configuration&subpage=documentslist&action=upd&id=$hash' title='Modifier'><i class='fa fa-pencil-alt'></i></a>" : "") . (in_array('del', $rights_config) ? "<button class='btn btn-danger' title='Supprimer' onclick='delDoc(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         $i++;
-    endwhile;
+    endforeach;
     $tableau .= "</tbody></table>";
     return $tableau;
 }
@@ -36,105 +40,35 @@ function getTableauFolder()
 {
     global $con;
     global $rights_config;
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    $q = db_select($con, "select *,(select id_dossier_vehicule_document from dossier_vehicule_document where dossier_vehicule_document.id_vehicule=vehicule.id_vehicule limit 1) as id_v from vehicule left join affectation_vehicule on affectation_vehicule.id_vehicule=vehicule.id_vehicule left join chauffeur c on c.id_chauffeur=affectation_vehicule.id_chauffeur left join marque_vehicule on marque_vehicule.id_marque=vehicule.id_marque left join entite on entite.id_entite=vehicule.id_entite where is_ferme=0 and affectation_vehicule.id_region=? order by immatriculation_vehicule", [(int)$_SESSION['usr-con']['region-sel']]);
+    $configRepo = new ConfigRepository($con);
+    $folderRows = $configRepo->findAllFoldersByRegion((int)$_SESSION['usr-con']['region-sel']);
     $tableau = "<table style='font-size:0.8rem' class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-folder' ><thead><tr><th>Chassis</th><th>Véhicule</th><th>Marque</th><th>1ère mise en circulation</th><th>Entité</th><th>Places assises</th><th>Source d'énergie</th>";
-    $q1 = db_select($con, "select * from document_vehicule", []);
-    $docs = array();
-    while ($r1 = mysqli_fetch_array($q1)):
-        $tableau .= "<th class='text-center'>{$r1['nom_document']} ({$r1['validite_document']} mois)<br>Date Expiration : </th>";
-        array_push($docs, $r1);
-    endwhile;
+    $docs = $configRepo->findAllDocuments();
+    foreach ($docs as $doc):
+        $tableau .= "<th class='text-center'>" . h($doc['nom_document']) . " (" . h($doc['validite_document']) . " mois)<br>Date Expiration : </th>";
+    endforeach;
     $tableau .= "<th>Chauffeur</th><th>Qualification de permis</th><th></th></tr></thead><tbody>";
-    $imm = "";
-    while ($r = mysqli_fetch_array($q)):
-        $tableau .= "<tr ".($r['id_v']!="" ? "style='font-weight:bold' class='doc-saved'" : "")."><td>{$r['chassis_vehicule']}</td><td>{$r['immatriculation_vehicule']}</td><td>{$r['nom_marque']}</td><td>{$r['premiere_utilisation']}</td><td>{$r['nom_entite']}</td><td>{$r['nb_place']}</td><td>{$r['type_carburant']}</td>";
+    foreach ($folderRows as $r):
+        $tableau .= "<tr ".($r['id_v']!="" ? "style='font-weight:bold' class='doc-saved'" : "")."><td>" . h($r['chassis_vehicule']) . "</td><td>" . h($r['immatriculation_vehicule']) . "</td><td>" . h($r['nom_marque']) . "</td><td>" . h($r['premiere_utilisation']) . "</td><td>" . h($r['nom_entite']) . "</td><td>" . h($r['nb_place']) . "</td><td>" . h($r['type_carburant']) . "</td>";
         $ref_dossier = "";
-        for ($i = 0; $i < count($docs); $i++):
-            $q1 = db_select($con, "select * from dossier_vehicule_document left join dossier_vehicule on dossier_vehicule.id_dossier_vehicule=dossier_vehicule_document.id_dossier_vehicule where id_vehicule=? and id_document=? and is_active=1 limit 1", [(int)$r[0], (int)$docs[$i]['id_document']]);
-            while ($r1 = mysqli_fetch_array($q1)):
-                $tableau .= "<td title='Réf : {$r1['ref_document']}'>{$r1['date_expiration_document']}</td>";
-                $ref_dossier = $r1['ref_dossier'];
-            endwhile;
-            if (mysqli_num_rows($q1) == 0) $tableau .= "<td></td>";
-        endfor;
-        $q1=db_select($con,"select * from type_permis_vehicule inner join qualification_permis_vehicule on qualification_permis_vehicule.id_type_permis=type_permis_vehicule.id_type_permis and id_vehicule=?", [(int)$r[0]]);
-        $permis="";
-        $i=0;
-        while($r1=mysqli_fetch_array($q1)):
-            if($i>0) $permis.=",";
-            $permis.=$r1['lib_type_permis'];
-            $i++;
-        endwhile;
-        $tableau .= "<td>{$r['nom_chauffeur']}</td><td>$permis</td><td><div class='btn-group'>" . (in_array('upd', $rights_config) && $ref_dossier != "" ? "<a class='btn btn-primary' title='Modifier' href='?page=configuration&subpage=folderdetails&action=upd&id=$ref_dossier'><i class='fa fa-pencil-alt'></i></a>" : "") . "</div></td></tr>";
-    endwhile;
+        foreach ($docs as $doc):
+            $fd = $configRepo->findFolderDocument((int)$r['id_vehicule'], (int)$doc['id_document']);
+            if ($fd !== null):
+                $tableau .= "<td title='Réf : " . h($fd['ref_document']) . "'>" . h($fd['date_expiration_document']) . "</td>";
+                $ref_dossier = $fd['ref_dossier'];
+            else:
+                $tableau .= "<td></td>";
+            endif;
+        endforeach;
+        $permisRows = $configRepo->findPermisByVehiculeId((int)$r['id_vehicule']);
+        $permis = implode(',', array_column($permisRows, 'lib_type_permis'));
+        $tableau .= "<td>" . h($r['nom_chauffeur']) . "</td><td>" . h($permis) . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_config) && $ref_dossier != "" ? "<a class='btn btn-primary' title='Modifier' href='?page=configuration&subpage=folderdetails&action=upd&id=" . h($ref_dossier) . "'><i class='fa fa-pencil-alt'></i></a>" : "") . "</div></td></tr>";
+    endforeach;
     $tableau .= "</tbody></table><div id='output'></div>";
     return $tableau;
 }
 
-if (isset($_POST['dl-id'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "delete from `type_permis_vehicule` where sha1(concat(id_type_permis,lib_type_permis))=?", [$_POST['dl-id']]);
-        mysqli_commit($con);
-        die("DELDL%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("DELDL%%%%%%0");
-    }
-endif;
-if (isset($_POST['lib-type-upd'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "update type_permis_vehicule set lib_type_permis=?, desc_type_permis=? where sha1(concat(id_type_permis,lib_type_permis))=?", [$_POST['lib-type-upd'], $_POST['desc-type-upd'] === '' ? null : $_POST['desc-type-upd'], $_POST['id-type-permis']]);
-        mysqli_commit($con);
-        die("UPDDL%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("UPDDL%%%%%%0");
-    }
-endif;
-if (isset($_POST['c-dl-s'])):
-    $q = db_select($con, "select *,(sha1(concat(id_type_permis,lib_type_permis))) as id_dl from type_permis_vehicule where sha1(concat(id_type_permis,lib_type_permis))=?", [$_POST['c-dl-s']]);
-    $liste = array();
-    while ($r = mysqli_fetch_array($q)):
-        $liste = $r;
-    endwhile;
-    unset($liste[0]);
-    unset($liste['id_type_permis']);
-    die("LISTEDL%%%%%%" . json_encode($liste));
-endif;
-if (isset($_POST['nom-doc-upd'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "update document_vehicule set nom_document=?,validite_document=? where sha1(concat(id_document,nom_document))=?", [$_POST['nom-doc-upd'], $_POST['valid-doc-upd'], $_POST['id-doc']]);
-        mysqli_commit($con);
-        die("UPDDOC%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("UPDDOC%%%%%%0");
-    }
-endif;
-if (isset($_POST['vh-folder-upd'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $q = db_exec($con, "delete from `dossier_vehicule_document` where id_dossier_vehicule=(select id_dossier_vehicule from dossier_vehicule where ref_dossier=?)", [$_POST['ref-folder']]);
-        for ($i = 0; $i < count($_POST['doc-list-name']); $i++):
-            $q = db_exec($con, "INSERT INTO `dossier_vehicule_document` (`id_dossier_vehicule_document`, `id_document`, `date_expiration_document`, `id_vehicule`, `id_dossier_vehicule`,ref_document) VALUES (NULL, (select id_document from document_vehicule where sha1(concat(id_document,nom_document))=?), ?, (select id_vehicule from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?), (select id_dossier_vehicule from dossier_vehicule where ref_dossier=?),?)", [$_POST['doc-list-id'][$i], $_POST['dt-list-name'][$i], $_POST['vh-folder-upd'], $_POST['ref-folder'], $_POST['refd-list-name'][$i]]);
-        endfor;
-        mysqli_commit($con);
-        die("UPDFLD%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        die("UPDFLD%%%%%%0");
-    }
-endif;
-?>
+/* POST handled by ConfigController — see controllers/router.php */ ?>
 <?php if (!isset($_GET['subpage'])): ?>
     <div class="row">
         <div class="card col-3 m-3" style="width: 18rem;">
@@ -171,14 +105,17 @@ endif;
                 if (confirm("Etes-vous sûr de vouloir supprimer ?")) {
                     $.ajax({
                         type: 'post',
-                        data: 'dl-id=' + id
+                        data: 'dl-id=' + id,
+                        dataType: 'json'
                     }).done((e) => {
-                        let v = e.split('DELDL%%%%%%')[1]
-                        if (v == '1') {
+                        if (e.success) {
                             showSuccess('Opération effectuée!')
                             location.reload()
                         } else {
-                        showError("Echec de l'opération!") }
+                            showError(e.error || "Echec de l'opération!")
+                        }
+                    }).fail((jqXHR) => {
+                        showError(jqXHR.responseJSON?.error || "Echec de l'opération!")
                     })
                 }
             }
@@ -225,13 +162,20 @@ endif;
                     const id = event.relatedTarget.getAttribute('data-bs-idtype')
                     $.ajax({
                         type: 'post',
-                        data: 'c-dl-s=' + id
+                        data: 'c-dl-s=' + id,
+                        dataType: 'json'
                     }).done((e) => {
-                        let v = JSON.parse(e.split('LISTEDL%%%%%%')[1])
-                        $('#lib-type-upd').val(v.lib_type_permis)
-                        $('#desc-type-upd').val(v.desc_type_permis)
-                        $('#lib-type-id').html(v.lib_type_permis)
-                        $('#id-type-permis').val(v.id_dl)
+                        if (e.success) {
+                            let v = e.data
+                            $('#lib-type-upd').val(v.lib_type_permis)
+                            $('#desc-type-upd').val(v.desc_type_permis)
+                            $('#lib-type-id').html(v.lib_type_permis)
+                            $('#id-type-permis').val(v.id_dl)
+                        } else {
+                            showError(e.error || "Erreur lors du chargement")
+                        }
+                    }).fail((jqXHR) => {
+                        showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
                     })
                 })
             }
@@ -253,14 +197,19 @@ endif;
                 }
                 $.ajax({
                     type: 'post',
-                    data: $('#form-upd-drivelicence').serialize()
+                    data: $('#form-upd-drivelicence').serialize(),
+                    dataType: 'json'
                 }).done((e) => {
-                    let v = e.split('UPDDL%%%%%%')[1]
-                    if (v == '1') {
+                    if (e.success) {
                         showSuccess('Enregistrement effectué!')
                         location.reload()
                     } else {
-                    $('#modal-driveLicence-upd').notify("Erreur lors de l'enregistrement !", {
+                        $('#modal-driveLicence-upd').notify(e.error || "Erreur lors de l'enregistrement !", {
+                            position: 'top'
+                        })
+                    }
+                }).fail((jqXHR) => {
+                    $('#modal-driveLicence-upd').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement !", {
                         position: 'top'
                     })
                 })
@@ -272,12 +221,9 @@ endif;
         <a href="?page=configuration&subpage=documentslist&action=new" class="btn btn-primary">Nouveau document de véhicules</a>&nbsp;<a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-docs" class="btn btn-primary">Exporter</a>
         <hr>
         <?php echo getTableauDocs(); ?>
-        <?php if (isset($_GET['action']) && $_GET['action'] == 'upd' && isset($_GET['id']) && $_GET['id'] != ""): ?>
-            <?php $q = db_select($con, "select * from document_vehicule where sha1(concat(id_document,nom_document))=?", [$_GET['id']]);
-            $doc = array();
-            while ($r = mysqli_fetch_array($q)):
-                $doc = $r;
-            endwhile;
+        <?php if (isset($_GET['action']) && $_GET['action'] == 'upd' && isset($_GET['id']) && $_GET['id'] != "" && isset($con)): ?>
+            <?php $configRepo = new ConfigRepository($con);
+            $doc = $configRepo->findDocumentByHash($_GET['id']) ?? [];
             ?>
             <div class="modal fade" id="modal-doc-upd" tabindex="-1" aria-labelledby="modal-docupdLabel" aria-hidden="true">
                 <div class="modal-dialog">
@@ -328,14 +274,19 @@ endif;
                     }
                     $.ajax({
                         type: 'post',
-                        data: $('#form-upd-doc').serialize()
+                        data: $('#form-upd-doc').serialize(),
+                        dataType: 'json'
                     }).done((e) => {
-                        let v = e.split('UPDDOC%%%%%%')[1]
-                        if (v == '1') {
+                        if (e.success) {
                             showSuccess('Enregistrement effectué!')
                             location = '?page=configuration&subpage=documentslist'
                         } else {
-                        $('#modal-doc-upd').notify("Erreur lors de l'enregistrement !", {
+                            $('#modal-doc-upd').notify(e.error || "Erreur lors de l'enregistrement !", {
+                                position: 'top'
+                            })
+                        }
+                    }).fail((jqXHR) => {
+                        $('#modal-doc-upd').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement !", {
                             position: 'top'
                         })
                     })
@@ -364,11 +315,10 @@ endif;
                     openModalFolders()
                 }, 5000)
             </script>
-        <?php elseif (isset($_GET['action']) && $_GET['action'] == 'upd' && (isset($_GET['id']) && $_GET['id'] != "")): ?>
+        <?php elseif (isset($_GET['action']) && $_GET['action'] == 'upd' && (isset($_GET['id']) && $_GET['id'] != "") && isset($con)): ?>
             <?php
-            $q = db_select($con, "select *,(select sha1(concat(id_document,nom_document)) from document_vehicule dv where dv.id_document=dossier_vehicule_document.id_document) as iddoc from dossier_vehicule_document left join dossier_vehicule on dossier_vehicule.id_dossier_vehicule=dossier_vehicule_document.id_dossier_vehicule left join document_vehicule on document_vehicule.id_document=dossier_vehicule_document.id_document where ref_dossier=?", [$_GET['id']]);
-            $folder = array();
-            while ($r = mysqli_fetch_array($q)) array_push($folder, $r); ?>
+            $configRepo = new ConfigRepository($con);
+            $folder = $configRepo->findFolderByRef($_GET['id']); ?>
             <div class="modal fade" id="modal-folder" tabindex="-1" aria-labelledby="modal-folderLabel" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
@@ -384,11 +334,12 @@ endif;
                                 </div>
                                 <div class="form-floating mb-3">
                                     <select id="vh-folder" name="vh-folder-upd" class="form-select">
-                                        <?php 
-                                        $q = db_select($con, "select * from affectation_vehicule left join vehicule on vehicule.id_vehicule=affectation_vehicule.id_vehicule left join chauffeur on chauffeur.id_chauffeur=affectation_vehicule.id_chauffeur left join region on affectation_vehicule.id_region=region.id_region where is_ferme=0 and vehicule.id_vehicule=? and affectation_vehicule.id_region=?", [(int)$folder[0]['id_vehicule'], (int)$_SESSION['usr-con']['region-sel']]);
-                                        while ($r = mysqli_fetch_array($q)):
-                                            echo "<option value='" . sha1($r[0] . $r['id_vehicule']) . "' " . ($folder[0]['id_vehicule'] == $r['id_vehicule'] ? 'selected' : '') . " >{$r['immatriculation_vehicule']} ({$r['nom_chauffeur']})</option>";
-                                        endwhile;
+                                        <?php
+                                        $affRepo = new AffectationRepository($con);
+                                        $affRows = $affRepo->findActiveByVehiculeAndRegion((int)$folder[0]['id_vehicule'], (int)$_SESSION['usr-con']['region-sel']);
+                                        foreach ($affRows as $r):
+                                            echo "<option value='" . sha1($r['id_affectation'] . $r['id_vehicule']) . "' " . ($folder[0]['id_vehicule'] == $r['id_vehicule'] ? 'selected' : '') . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                                        endforeach;
                                         ?>
                                     </select>
                                     <label for="vh-folder">Véhicule</label>
@@ -396,10 +347,9 @@ endif;
                                 <div class="input-group mb-3">
                                     <div class="form-floating">
                                         <select class="form-select" id="folder-doc">
-                                            <?php $q = db_select($con, "select * from document_vehicule", []);
-                                            while ($r = mysqli_fetch_array($q)):
-                                                echo "<option value='" . sha1($r[0] . $r[1]) . "'>{$r[1]}</option>";
-                                            endwhile;
+                                            <?php foreach ($configRepo->findAllDocuments() as $r):
+                                                echo "<option value='" . sha1($r['id_document'] . $r['nom_document']) . "'>" . h($r['nom_document']) . "</option>";
+                                            endforeach;
                                             ?>
                                         </select>
                                         <label for="folder-doc">Document</label>
@@ -513,14 +463,19 @@ endif;
                     }
                     $.ajax({
                         type: 'post',
-                        data: $('#form-new-folder').serialize()
+                        data: $('#form-new-folder').serialize(),
+                        dataType: 'json'
                     }).done((e) => {
-                        let v = e.split('UPDFLD%%%%%%')[1]
-                        if (v == '1') {
+                        if (e.success) {
                             showSuccess('Enregistrement effectué!')
                             location = "?page=configuration&subpage=folderdetails"
                         } else {
-                        $('#modal-folder').notify("Erreur lors de l'enregistrement !", {
+                            $('#modal-folder').notify(e.error || "Erreur lors de l'enregistrement !", {
+                                position: 'top'
+                            })
+                        }
+                    }).fail((jqXHR) => {
+                        $('#modal-folder').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement !", {
                             position: 'top'
                         })
                     })

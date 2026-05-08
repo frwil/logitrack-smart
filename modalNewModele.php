@@ -1,26 +1,13 @@
 <?php
-if (isset($_POST['nom-modele'])):
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    mysqli_begin_transaction($con);
-    try {
-        $_POST['nom-modele'] = trim(strtoupper($_POST['nom-modele']));
-        $q = db_exec($con, "INSERT INTO `modele_vehicule` (`id_modele_vehicule`, `nom_modele_vehicule`) VALUES (NULL, ?)", [$_POST['nom-modele']]);
-        mysqli_commit($con);
-        die("NewModele%%%%%%1");
-    } catch (mysqli_sql_exception $e) {
-        mysqli_rollback($con);
-        if ($e->getCode() == '1062') die('NewModele%%%%%%1062');
-        die("NewModele%%%%%%0");
-    }
-endif;
+/* POST handled by ModeleController — see controllers/router.php */
 
 if (isset($_POST['refresh-modele'])):
-    $q = db_select($con, "select * from modele_vehicule", []);
+    $modeleRepo = new ModeleRepository($con);
     $liste = "";
-    while ($r = mysqli_fetch_array($q)):
-        $liste .= "<option value='{$r[0]}'>{$r[1]}</option>";
-    endwhile;
-    die("NewModele%%%%%%$liste");
+    foreach ($modeleRepo->findAll() as $r):
+        $liste .= "<option value='" . h($r['id_modele_vehicule']) . "'>" . h($r['nom_modele_vehicule']) . "</option>";
+    endforeach;
+    die(json_encode(['success' => true, 'html' => $liste]));
 endif;
 ?>
 <div class="modal fade" id="modal-new-modele" tabindex="-1" aria-labelledby="modal-new-modeleLabel" aria-hidden="true">
@@ -54,10 +41,16 @@ endif;
     function refreshModeleOptions() {
         $.ajax({
             type: 'post',
-            data: 'refresh-modele=1'
+            data: 'refresh-modele=1',
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewModele%%%%%%')[1]
-            $('#modele-vh').html(v)
+            if (e.success) {
+                $('#modele-vh').html(e.html)
+            } else {
+                showError(e.error || "Erreur lors du chargement")
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
         })
     }
 
@@ -68,10 +61,10 @@ endif;
         }
         $.ajax({
             type: 'post',
-            data: $('#form-new-modele').serialize()
+            data: $('#form-new-modele').serialize(),
+            dataType: 'json'
         }).done((e) => {
-            let v = e.split('NewModele%%%%%%')[1]
-            if (v == '1') {
+            if (e.success) {
                 showSuccess("Nouveau modèle de véhicule créé!!")
                 $('#modal-new-modele').modal('hide')
                 $('#form-new-modele *').val('')
@@ -79,11 +72,13 @@ endif;
                 <?php if (isset($_GET['subpage'])) : ?>
                     location.reload()
                 <?php endif; ?>
-            } else if (v == '1062') {
+            } else if (e.error == '1062') {
                 showError("Ce modèle de véhicule existe déjà")
             } else {
-                showError("Erreur lors de l'enregistrement")
+                showError(e.error || "Erreur lors de l'enregistrement")
             }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement")
         })
     }
 </script>
