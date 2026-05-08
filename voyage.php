@@ -410,7 +410,7 @@ endif;
                         className: 'success'
                     })
                     <?php if(isset($_POST['date-f'])): 
-                    echo "$('body').append('<form method=\"post\" action=\"#\" id=\"form-reload-after-upd\"><input type=\"hidden\" name=\"date-f\" value=\"{$_POST['date-f']}\"><input type=\"hidden\" name=\"date-t\" value=\"{$_POST['date-t']}\"></form>');$('#form-reload-after-upd').submit();";
+                    echo "$('body').append('<form method=\"post\" action=\"#\" id=\"form-reload-after-upd\"><input type=\"hidden\" name=\"date-f\" value=" . j($_POST['date-f']) . "><input type=\"hidden\" name=\"date-t\" value=" . j($_POST['date-t']) . "></form>');$('#form-reload-after-upd').submit();";
                     else : ?>
                     location = "?page=voyages"
                     <?php endif; ?>

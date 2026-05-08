@@ -339,7 +339,7 @@ endif;
                 renderers: renderers,
                 rendererName: "Table Barchart",
                 filter: (e) => {
-                    return e["Région"].toLowerCase() == ("<?php echo $_SESSION['usr-con']['region-sel-name']; ?>").toLowerCase()
+                    return e["Région"].toLowerCase() == (<?php echo j($_SESSION['usr-con']['region-sel-name']); ?>).toLowerCase()
                 }
             });
         });

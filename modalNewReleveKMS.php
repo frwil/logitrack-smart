@@ -56,8 +56,7 @@ endif;
                     </div>
                     <div class="form-floating mb-3">
                         <input type="month" required id="date-releve-kms" name="date-releve-kms" value="<?php if (isset($_GET['dch'])) echo date('Y-m', strtotime($_GET['dch']));
-                                                                                                        else echo date('Y-m'); ?>" class="form-control" onchange="getSemaines($('#vh-releve-kms').val(),this.value,'<?php if (isset($_GET['dch'])) echo $_GET['dch'];
-                                                                                                                                                                                                                                                                                            else echo ''; ?>')" <?php if (isset($_GET['dch'])) echo "readonly"; ?>>
+                                                                                                        else echo date('Y-m'); ?>" class="form-control" onchange="getSemaines($('#vh-releve-kms').val(),this.value,<?php echo isset($_GET['dch']) ? j($_GET['dch']) : "''"; ?>)" <?php if (isset($_GET['dch'])) echo "readonly"; ?>>
                         <label for="date-releve-kms">Période</label>
                     </div>
                     <div class="form-floating mb-3">

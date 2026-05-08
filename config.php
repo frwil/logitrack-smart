@@ -549,9 +549,9 @@ endif;
                 
             </table> -->
         <script>
-            exportTableToExcel('<?php echo $_GET['id']; ?>')
+            exportTableToExcel(<?php echo j($_GET['id']); ?>)
             setTimeout(() => {
-                location = "?page=configuration&subpage=<?php echo $_GET['subpage']; ?>"
+                location = "?page=configuration&subpage=" + <?php echo j($_GET['subpage']); ?>
             }, 2000)
         </script>
     <?php endif; ?>
