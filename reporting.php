@@ -100,6 +100,7 @@
   mainDiv.find('.col-2').remove()
   mainDiv.find('.col-10').removeClass('col-10').addClass('col-12')
   $('#table_report').DataTable({
+    "columnDefs": [{ "targets": 0, "searchable": false }],
     "language": {
       "lengthMenu": "Afficher _MENU_ enregistrements par page",
       "zeroRecords": "Aucun enregistrement trouvé",

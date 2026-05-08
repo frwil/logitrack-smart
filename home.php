@@ -250,6 +250,7 @@ if(!isset($user_rights)) $user_rights = [];
         }).appendTo(column));
     }
     table = $('table:not(".no-datatable")').DataTable({
+        columnDefs: [{ targets: 0, searchable: false }],
         initComplete: function() {
             this.api().columns().every(function() {
                 var column = this;
