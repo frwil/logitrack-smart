@@ -1,5 +1,4 @@
 <?php
-// === Bootstrap — runs for every request ===
 ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_samesite', 'Lax');
 // PHP built-in server has no session save path — use local tmp/ if it exists
@@ -20,7 +19,6 @@ require_once __DIR__ . '/sanitize.php';
 require_once __DIR__ . '/models/autoload.php';
 require_once __DIR__ . '/controllers/autoload.php';
 
-// === POST handling — must run BEFORE any HTML output ===
 if ($_SERVER['REQUEST_METHOD'] === 'POST'):
     // CSRF check
     $csrf_token = $_POST['csrf_token'] ?? null;
@@ -48,7 +46,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'):
     }
 endif;
 
-// === GET request: render the page ===
 $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME'));
 ?>
 <!DOCTYPE html>

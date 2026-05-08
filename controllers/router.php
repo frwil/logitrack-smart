@@ -12,7 +12,6 @@
 // Only route if $con is available (i.e., authenticated or on login page).
 if (!isset($con)) return;
 
-// Build repositories (shared by controllers).
 $userRepo = new UserRepository($con);
 $regionRepo = new RegionRepository($con);
 $vehiculeRepo = new VehiculeRepository($con);
@@ -27,7 +26,6 @@ $configRepo = new ConfigRepository($con);
 $trajetRepo = new TrajetRepository($con);
 $objectifRepo = new ObjectifRepository($con);
 
-// Build controllers.
 $authCtrl = new AuthController($userRepo, $regionRepo);
 $vehiculeCtrl = new VehiculeController($vehiculeRepo);
 $chauffeurCtrl = new ChauffeurController($chauffeurRepo);
@@ -41,7 +39,6 @@ $modeleCtrl = new ModeleController($modeleRepo);
 $trajetCtrl = new TrajetController($trajetRepo);
 $objectifCtrl = new ObjectifController($objectifRepo);
 
-// Route map: POST key => [controller, method]
 $routes = [
     // Auth
     'name-user'           => [$authCtrl, 'login'],

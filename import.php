@@ -88,24 +88,19 @@ endif;
     <script>
         let selectedFile;
 
-        // Get the selected file when input changes
         document.getElementById("myFile").addEventListener("change", (event) => {
             selectedFile = event.target.files[0];
         });
 
-        // Handle upload button click
         document.getElementById("upload-btn").addEventListener("click", (e) => {
             e.preventDefault();
             let fileReader = new FileReader();
 
-            // Read the selected file as binary string
             fileReader.readAsBinaryString(selectedFile);
 
-            // Process the file data when it's loaded
             fileReader.onload = (event) => {
                 let fileData = event.target.result;
 
-                // Read the Excel workbook
                 let workbook = XLSX.read(
                     fileData, {
                         type: "binary"

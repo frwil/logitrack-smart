@@ -1,6 +1,3 @@
-/* LogiTrack Theme — Modern Design System */
-/* ======================================== */
-
 :root {
   --lt-primary: #5D54A4;
   --lt-primary-rgb: 93, 84, 164;
@@ -25,17 +22,14 @@
   --lt-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
   --lt-transition: 0.2s ease;
 
-  /* Font scale */
   --lt-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --lt-font-xs: 0.6875rem;     /* 11px — badges, fine print */
-  --lt-font-sm: 0.75rem;       /* 12px — labels, table headers */
-  --lt-font-base: 0.8125rem;   /* 13px — body, inputs, sidebar, table cells */
-  --lt-font-md: 0.875rem;      /* 14px — emphasized body */
-  --lt-font-lg: 1rem;          /* 16px — card titles, modal titles */
-  --lt-font-xl: 1.25rem;       /* 20px — page titles */
+  --lt-font-xs: 0.6875rem;
+  --lt-font-sm: 0.75rem;
+  --lt-font-base: 0.8125rem;
+  --lt-font-md: 0.875rem;
+  --lt-font-lg: 1rem;
+  --lt-font-xl: 1.25rem;
 }
-
-/* ---- Reset & Base ---- */
 
 html {
   font-size: 16px;
@@ -51,7 +45,6 @@ body {
   line-height: 1.5;
 }
 
-/* Ensure all form elements inherit the font */
 input, select, textarea, button, .btn, .form-control, .form-select {
   font-family: var(--lt-font-family);
 }
@@ -60,12 +53,9 @@ input, select, textarea, button, .btn, .form-control, .form-select {
   font-size: var(--lt-font-base);
 }
 
-/* Global table base size */
 table, .table {
   font-size: var(--lt-font-base);
 }
-
-/* ---- Navbar ---- */
 
 .lt-navbar {
   background: linear-gradient(135deg, var(--lt-primary-dark), var(--lt-primary));
@@ -154,8 +144,6 @@ table, .table {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* ---- Layout ---- */
-
 .lt-layout {
   display: flex;
   min-height: calc(100vh - 56px);
@@ -234,8 +222,6 @@ table, .table {
   margin: 0.75rem 1.25rem;
 }
 
-/* ---- Content Area ---- */
-
 .lt-content {
   flex: 1;
   padding: 1.5rem 2rem;
@@ -264,8 +250,6 @@ table, .table {
   color: var(--lt-text-muted);
   margin-top: 0.125rem;
 }
-
-/* ---- Cards ---- */
 
 .lt-card {
   background: var(--lt-surface);
@@ -296,8 +280,6 @@ table, .table {
   color: var(--lt-text);
   margin: 0;
 }
-
-/* ---- Tables ---- */
 
 .lt-table-wrapper {
   background: var(--lt-surface);
@@ -338,8 +320,6 @@ table, .table {
   background: rgba(var(--lt-primary-rgb), 0.02);
 }
 
-/* ---- Buttons ---- */
-
 .lt-btn {
   display: inline-flex;
   align-items: center;
@@ -373,8 +353,6 @@ table, .table {
   background: var(--lt-primary);
   color: #fff;
 }
-
-/* ---- Tom Select overrides ---- */
 
 .ts-wrapper .ts-control {
   border-radius: var(--lt-radius-sm);
@@ -421,7 +399,6 @@ table, .table {
   background: rgba(var(--lt-primary-rgb), 0.04);
 }
 
-/* Fix Tom Select in DataTables headers */
 th .ts-wrapper {
   min-width: 130px;
   max-width: 180px;
@@ -432,8 +409,6 @@ th .ts-wrapper .ts-control {
   min-height: 32px;
   padding: 2px 8px;
 }
-
-/* ---- Modal styles ---- */
 
 .modal-content {
   border: none;
@@ -462,8 +437,6 @@ th .ts-wrapper .ts-control {
   padding: 0.75rem 1.25rem;
 }
 
-/* ---- Form styles ---- */
-
 .form-floating > .form-select,
 .form-floating > .form-control {
   border-radius: var(--lt-radius-sm);
@@ -483,45 +456,11 @@ th .ts-wrapper .ts-control {
   color: var(--lt-text-muted);
 }
 
-/* Tom Select inside .form-floating — match Bootstrap's floating-label layout */
-.form-floating > .ts-wrapper.form-select {
-  width: 100%;
-}
-
-.form-floating > .ts-wrapper.form-select .ts-control {
-  height: calc(3.5rem + 2px);
-  min-height: calc(3.5rem + 2px);
-  padding-top: 1.625rem;
-  padding-bottom: 0.625rem;
-  border-radius: var(--lt-radius-sm);
-  border-color: var(--lt-border);
-  font-size: var(--lt-font-base);
-  transition: border-color var(--lt-transition), box-shadow var(--lt-transition);
-}
-
-.form-floating > .ts-wrapper.form-select .ts-control input {
-  font-size: var(--lt-font-base);
-}
-
-/* Float label when focused or has value */
-.form-floating > .ts-wrapper.form-select.focus ~ label,
-.form-floating > .ts-wrapper.form-select.has-value ~ label {
-  opacity: 0.65;
-  transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
-}
-
-.form-floating > .ts-wrapper.form-select .ts-control:focus-within {
-  border-color: var(--lt-primary);
-  box-shadow: 0 0 0 3px rgba(var(--lt-primary-rgb), 0.12);
-}
-
 .form-label {
   font-size: var(--lt-font-sm);
   font-weight: 600;
   color: var(--lt-text);
 }
-
-/* ---- DataTables overrides ---- */
 
 .dt-buttons .btn {
   font-size: var(--lt-font-base);
@@ -558,8 +497,6 @@ th .ts-wrapper .ts-control {
   font-size: var(--lt-font-base);
 }
 
-/* ---- Utility ---- */
-
 .lt-badge {
   display: inline-flex;
   align-items: center;
@@ -589,8 +526,6 @@ th .ts-wrapper .ts-control {
   background: rgba(239, 68, 68, 0.1);
   color: #b91c1c;
 }
-
-/* ---- Responsive ---- */
 
 @media (max-width: 992px) {
   .lt-sidebar {

@@ -333,8 +333,8 @@ if(!isset($user_rights)) $user_rights = [];
             extend: 'excelHtml5',
             className:'btn btn-primary',
             text:'Exporter'
-            }
-            ,{
+            //}
+            //,{
 //             text:'Export Image',
 //             action:function(e,dt,node,config){
 //             $('#table-evaluation').parent().parent().parent().parent().attr('id','table-evaluation-wrapper')
@@ -486,7 +486,7 @@ if(!isset($user_rights)) $user_rights = [];
     }
 
     .ts-wrapper {
-        max-width: 150px;
+        /* max-width: 150px; */
         display: block;
     }
 </style>
