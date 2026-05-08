@@ -7,7 +7,7 @@
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Immatriculation</th><th>Marque</th><th>Modèle</th><th>Chassis</th><th>1ère utilisation</th><th>Expir. carte grise</th><th>Nb. places</th><th>Carburant</th><th>Puissance</th><th>Capacité</th><th></th></tr></thead><tbody>";
     $i = 1;
     foreach ($rows as $r):
-        $tableau .= "<tr><td>$i</td><td>" . h($r['immatriculation_vehicule']) . "</td><td>" . h($r['nom_marque']) . "</td><td>" . h($r['nom_modele_vehicule']) . "</td><td>" . h($r['chassis_vehicule']) . "</td><td>" . date('d M Y', strtotime($r['premiere_utilisation'])) . "</td><td>" . date('d M Y', strtotime($r['expiration_carte_grise'])) . "</td><td>" . h($r['nb_place']) . "</td><td>" . h($r['type_carburant']) . "</td><td>" . h($r['puissance_vehicule']) . " CV</td><td>" . h($r['capacite_consommation_vehicule']) . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_vehicule) ? "<button class='btn btn-primary' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-vh' data-bs-immat='" . sha1($r['id_vehicule'] . $r['immatriculation_vehicule']) . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array('del', $rights_vehicule) ? "<button class='btn btn-danger' title='Supprimer' onclick='delVehicule(\"" . h($r['immatriculation_vehicule']) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+        $tableau .= "<tr><td>$i</td><td>" . h($r['immatriculation_vehicule']) . "</td><td>" . h($r['nom_marque']) . "</td><td>" . h($r['nom_modele_vehicule']) . "</td><td>" . h($r['chassis_vehicule']) . "</td><td>" . date('d M Y', strtotime($r['premiere_utilisation'])) . "</td><td>" . date('d M Y', strtotime($r['expiration_carte_grise'])) . "</td><td>" . h($r['nb_place']) . "</td><td>" . h($r['type_carburant']) . "</td><td>" . h($r['puissance_vehicule']) . " CV</td><td>" . h($r['capacite_consommation_vehicule']) . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_vehicule) ? "<button class='btn btn-primary' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-vh' data-bs-immat='" . $r['id_vehicule'] . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array('del', $rights_vehicule) ? "<button class='btn btn-danger' title='Supprimer' onclick='delVehicule(\"" . h($r['immatriculation_vehicule']) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         $i++;
     endforeach;
     $tableau .= "</tbody></table>";
@@ -38,7 +38,7 @@
                                     <select type="text" id="marque-vh-upd" name="marque-vh-upd" required class="form-select">
                                         <?php $marqueRepo = new MarqueRepository($con);
                                         foreach ($marqueRepo->findAll() as $r):
-                                            echo "<option value='" . sha1($r['id_marque'] . $r['nom_marque']) . "'>" . h($r['nom_marque']) . "</option>";
+                                            echo "<option value='" . $r['id_marque'] . "'>" . h($r['nom_marque']) . "</option>";
                                         endforeach;
                                         ?>
                                     </select>
@@ -53,7 +53,7 @@
                                     <select type="text" id="modele-vh-upd" name="modele-vh-upd" required class="form-select">
                                         <?php $modeleRepo = new ModeleRepository($con);
                                         foreach ($modeleRepo->findAll() as $r):
-                                            echo "<option value='" . sha1($r['id_modele_vehicule'] . $r['nom_modele_vehicule']) . "'>" . h($r['nom_modele_vehicule']) . "</option>";
+                                            echo "<option value='" . $r['id_modele_vehicule'] . "'>" . h($r['nom_modele_vehicule']) . "</option>";
                                         endforeach;
                                         ?>
                                     </select>
@@ -104,7 +104,7 @@
                             <select id="qualif-permis-upd" name="qualif-permis-upd" required class="form-select">
                                 <?php $configRepo = new ConfigRepository($con);
                                 foreach ($configRepo->findAllTypePermis() as $r):
-                                    echo "<option value='" . sha1($r['id_type_permis'] . $r['lib_type_permis']) . "'>" . h($r['lib_type_permis']) . "</option>";
+                                    echo "<option value='" . $r['id_type_permis'] . "'>" . h($r['lib_type_permis']) . "</option>";
                                 endforeach;
                                 ?>
                             </select>

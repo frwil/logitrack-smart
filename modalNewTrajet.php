@@ -4,7 +4,7 @@ if (isset($_POST['refresh-destination'])):
     $trajetRepo = new TrajetRepository($con);
     $liste = "";
     foreach ($trajetRepo->findAll() as $r):
-        $liste .= "<option value='" . sha1($r['id_destination'] . $r['lib_destination']) . "'>" . h($r['lib_destination']) . "</option>";
+        $liste .= "<option value='" . $r['id_destination'] . "'>" . h($r['lib_destination']) . "</option>";
     endforeach;
     die(json_encode(['success' => true, 'html' => $liste]));
 endif;

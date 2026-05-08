@@ -1,4 +1,4 @@
-<?php /* POST /switchRegion handled by AuthController — see controllers/router.php */ ?>
+<?php /* POST /switchRegion handled by AuthController — see controllers/router.php */
 if(!isset($user_rights)) $user_rights = [];
 ?>
 <script>
@@ -88,7 +88,7 @@ if(!isset($user_rights)) $user_rights = [];
                 if ($uright[$i] != $_SESSION['usr-con']['region-sel']): ?>
                     <?php $r = $regionRepo->findById((int)$uright[$i]); ?>
                     <?php if ($r): ?>
-                        <li><a class="dropdown-item" href="#" onclick="changeSessionRegion('<?php echo sha1($r['id_region'] . $r['nom_region']); ?>')"><?php echo $r['nom_region']; ?></a></li>
+                        <li><a class="dropdown-item" href="#" onclick="changeSessionRegion('<?php echo $r['id_region']; ?>')"><?php echo $r['nom_region']; ?></a></li>
                     <?php endif; ?>
             <?php endif;
             endfor; ?>

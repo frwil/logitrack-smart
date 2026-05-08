@@ -11,15 +11,15 @@ class VehiculeController extends BaseController
         $this->vehiculeRepo = $vehiculeRepo;
     }
 
-    /** Fetch single vehicle data by SHA1 hash. */
+    /** Fetch single vehicle data by immatriculation. */
     public function fetchByHash(): never
     {
-        $hash = $this->post('im-vh-upd');
-        if (!$hash) {
-            $this->jsonError('Hash manquant');
+        $immat = $this->post('im-vh-upd');
+        if (!$immat) {
+            $this->jsonError('Immatriculation manquante');
         }
 
-        $row = $this->vehiculeRepo->findByHash($hash);
+        $row = $this->vehiculeRepo->findByImmat($immat);
         if (!$row) {
             $this->jsonError('Véhicule introuvable', 404);
         }
@@ -59,8 +59,8 @@ class VehiculeController extends BaseController
                 $this->vehiculeRepo->updateByImmat(
                     $immat,
                     (int)$this->post('puissance-vh-upd'),
-                    $this->post('marque-vh-upd'),
-                    $this->post('modele-vh-upd'),
+                    (int)$this->post('marque-vh-upd'),
+                    (int)$this->post('modele-vh-upd'),
                     $this->post('chassis-vh-upd') ?: null,
                     $this->post('dutil-vh-upd') ?: null,
                     $this->post('dexpir-vh-upd') ?: null,
@@ -68,7 +68,7 @@ class VehiculeController extends BaseController
                     (int)$this->post('nbplace-vh-upd'),
                     $this->post('tcarb-vh-upd')
                 );
-                $this->vehiculeRepo->upsertPermis($immat, $this->post('qualif-permis-upd'));
+                $this->vehiculeRepo->upsertPermis($immat, (int)$this->post('qualif-permis-upd'));
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {
@@ -98,7 +98,7 @@ class VehiculeController extends BaseController
                     $immat,
                     (int)$this->post('capacite-vh')
                 );
-                $this->vehiculeRepo->insertPermis($immat, $this->post('qualif-permis'));
+                $this->vehiculeRepo->insertPermis($immat, (int)$this->post('qualif-permis'));
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {

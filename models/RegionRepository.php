@@ -9,15 +9,6 @@ class RegionRepository extends BaseRepository
         return $this->select("SELECT * FROM region WHERE 1", []);
     }
 
-    /** Find region by its SHA1(id_region + nom_region) token. */
-    public function findByHash(string $hash): ?array
-    {
-        return $this->selectOne(
-            "SELECT * FROM region WHERE SHA1(CONCAT(id_region, nom_region)) = ?",
-            [$hash]
-        );
-    }
-
     /** Find region by numeric ID. */
     public function findById(int $id): ?array
     {

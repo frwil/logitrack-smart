@@ -18,9 +18,9 @@ class AuthController extends BaseController
     {
         $nameUser = $this->post('name-user');
         $passUser = $this->post('pass-user');
-        $regionHash = $this->post('region-user');
+        $regionId = $this->post('region-user');
 
-        if (!$nameUser || !$passUser || !$regionHash) {
+        if (!$nameUser || !$passUser || !$regionId) {
             $this->jsonError('Tous les champs sont obligatoires');
         }
 
@@ -29,7 +29,7 @@ class AuthController extends BaseController
             $this->jsonError('Nom d\'utilisateur ou mot de passe incorrect', 401);
         }
 
-        $region = $this->regionRepo->findByHash($regionHash);
+        $region = $this->regionRepo->findById((int)$regionId);
         if (!$region) {
             $this->jsonError('Région invalide', 400);
         }
@@ -37,7 +37,7 @@ class AuthController extends BaseController
         $userRegions = explode(',', $user['users_region']);
         $found = false;
         for ($i = 0; $i < count($userRegions); $i++) {
-            if (sha1($userRegions[$i] . $region['nom_region']) === $regionHash) {
+            if ((int)$userRegions[$i] === (int)$region['id_region']) {
                 $found = true;
                 break;
             }
@@ -63,12 +63,12 @@ class AuthController extends BaseController
     /** Handle region switch POST. Returns JSON. */
     public function switchRegion(): never
     {
-        $regionHash = $this->post('nSess');
-        if (!$regionHash) {
+        $regionId = $this->post('nSess');
+        if (!$regionId) {
             $this->jsonError('Région non spécifiée');
         }
 
-        $reg = $this->regionRepo->findByHash($regionHash);
+        $reg = $this->regionRepo->findById((int)$regionId);
         if (!$reg) {
             $this->jsonError('Région introuvable');
         }

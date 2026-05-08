@@ -7,26 +7,26 @@ class ConfigController extends BaseController
 
     // -- Type permis --
     public function fetchTypePermis(): never {
-        $row = $this->repo->findTypePermisByHash($this->post('c-dl-s'));
+        $row = $this->repo->findTypePermisById((int)$this->post('c-dl-s'));
         if (!$row) $this->jsonError('Introuvable', 404);
         unset($row[0], $row['id_type_permis']);
         $this->json(['data' => $row]);
     }
     public function updateTypePermis(): never {
         try { $this->repo->transactional(fn() =>
-            $this->repo->updateTypePermisByHash($this->post('id-type-permis'), $this->post('lib-type-upd'), $this->post('desc-type-upd') ?: null)
+            $this->repo->updateTypePermisById((int)$this->post('id-type-permis'), $this->post('lib-type-upd'), $this->post('desc-type-upd') ?: null)
         ); $this->json(); } catch (\mysqli_sql_exception $e) { $this->jsonError('Erreur'); }
     }
     public function deleteTypePermis(): never {
         try { $this->repo->transactional(fn() =>
-            $this->repo->deleteTypePermisByHash($this->post('dl-id'))
+            $this->repo->deleteTypePermisById((int)$this->post('dl-id'))
         ); $this->json(); } catch (\mysqli_sql_exception $e) { $this->jsonError('Erreur'); }
     }
 
     // -- Document --
     public function updateDocument(): never {
         try { $this->repo->transactional(fn() =>
-            $this->repo->updateDocumentByHash($this->post('id-doc'), $this->post('nom-doc-upd'), (int)$this->post('valid-doc-upd'))
+            $this->repo->updateDocumentById((int)$this->post('id-doc'), $this->post('nom-doc-upd'), (int)$this->post('valid-doc-upd'))
         ); $this->json(); } catch (\mysqli_sql_exception $e) { $this->jsonError('Erreur'); }
     }
 
@@ -41,7 +41,11 @@ class ConfigController extends BaseController
             $vh = $this->post('vh-folder-upd');
             $ref = $this->post('ref-folder');
             for ($i = 0; $i < count($names); $i++) {
-                db_exec($this->repo->con, "INSERT INTO dossier_vehicule_document (id_document,date_expiration_document,id_vehicule,id_dossier_vehicule,ref_document) VALUES ((select id_document from document_vehicule where sha1(concat(id_document,nom_document))=?),?,(select id_vehicule from affectation_vehicule where sha1(concat(id_affectation,id_vehicule))=?),(select id_dossier_vehicule from dossier_vehicule where ref_dossier=?),?)", [$ids[$i],$dts[$i],$vh,$ref,$refDocs[$i]]);
+                $this->repo->exec(
+                    "INSERT INTO dossier_vehicule_document (id_document, date_expiration_document, id_vehicule, id_dossier_vehicule, ref_document)
+                     VALUES (?, ?, (SELECT id_vehicule FROM affectation_vehicule WHERE id_affectation = ?), (SELECT id_dossier_vehicule FROM dossier_vehicule WHERE ref_dossier = ?), ?)",
+                    [(int)$ids[$i], $dts[$i], (int)$vh, $ref, $refDocs[$i]]
+                );
             }
         }); $this->json(); } catch (\mysqli_sql_exception $e) { $this->jsonError('Erreur'); }
     }

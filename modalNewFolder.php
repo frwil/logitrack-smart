@@ -9,14 +9,14 @@
             <div class="modal-body">
                 <form method="post" action="#" id="form-new-folder">
                     <div class="form-floating mb-3">
-                        <input type="text" class="form-control" required id="ref-folder" name="ref-folder" readonly value="DV-<?php echo sha1('DV-' . date('Y-m-d h:i:s')); ?>">
+                        <input type="text" class="form-control" required id="ref-folder" name="ref-folder" readonly value="DV-<?php echo 'DV-' . date('Ymd-His-') . bin2hex(random_bytes(4)); ?>">
                         <label for="ref-folder">Référence dossier</label>
                     </div>
                     <div class="form-floating mb-3">
                         <select id="vh-folder" name="vh-folder" class="form-select">
                             <?php $configRepo = new ConfigRepository($con);
                             foreach ($configRepo->findAllFoldersByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
-                                echo "<option value='" . sha1($r['id_affectation'] . $r['id_vehicule']) . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == sha1($r['id_affectation'] . $r['id_vehicule']) ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                                echo "<option value='" . $r['id_affectation'] . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $r['id_affectation'] ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                             endforeach;
                             ?>
                         </select>
@@ -26,7 +26,7 @@
                         <div class="form-floating">
                             <select class="form-select" id="folder-doc">
                                 <?php foreach ($configRepo->findAllDocuments() as $r):
-                                    echo "<option value='" . sha1($r['id_document'] . $r['nom_document']) . "'>" . h($r['nom_document']) . "</option>";
+                                    echo "<option value='" . $r['id_document'] . "'>" . h($r['nom_document']) . "</option>";
                                 endforeach;
                                 ?>
                             </select>

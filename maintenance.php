@@ -39,7 +39,7 @@ function getTableauVidange()
             else :
                 $success++;
             endif;
-            $table .= "<tr><td class='text-bg-" . ($r['kms_actuel'] > $r['km_prochaine_vidange'] - 1500 ? "danger" : "success") . "'>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . date('d M Y', strtotime($r['date_vidange'])) . "</td><td>" . h($r['km_vidange']) . "</td><td>" . h($r['km_prochaine_vidange']) . "</td><td>" . h($r['kms_actuel']) . "</td><td>" . ($r['kms_actuel'] > $r['km_prochaine_vidange'] - 1500 ? "<i class='fa fa-times text-danger'></i>&nbsp;Alerte" : "<i class='fa fa-check text-success'></i>&nbsp;Ok") . "</td><td><div class='btn-group'>" . (in_array("updVidange", $rights_maintenance) ? "<button class='btn btn-light btn-sm' data-bs-toggle='modal' data-bs-target='#modal-upd-vidange' data-bs-id-vd='" . h($r['code_vidange']) . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("historyVidange", $rights_maintenance) ? "<button class='btn btn-light btn-sm' title='historique des vidanges' onclick='showHistory(\"" . h($r['code_vidange']) . "\")'><i class='fa fa-file'></i></button>" : "") . (in_array("delVidange", $rights_maintenance) ? "<button class='btn btn-danger btn-sm' onclick='delVidange(\"" . sha1($r['id_vidange_vehicule'] . $r['code_vidange']) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+            $table .= "<tr><td class='text-bg-" . ($r['kms_actuel'] > $r['km_prochaine_vidange'] - 1500 ? "danger" : "success") . "'>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . date('d M Y', strtotime($r['date_vidange'])) . "</td><td>" . h($r['km_vidange']) . "</td><td>" . h($r['km_prochaine_vidange']) . "</td><td>" . h($r['kms_actuel']) . "</td><td>" . ($r['kms_actuel'] > $r['km_prochaine_vidange'] - 1500 ? "<i class='fa fa-times text-danger'></i>&nbsp;Alerte" : "<i class='fa fa-check text-success'></i>&nbsp;Ok") . "</td><td><div class='btn-group'>" . (in_array("updVidange", $rights_maintenance) ? "<button class='btn btn-light btn-sm' data-bs-toggle='modal' data-bs-target='#modal-upd-vidange' data-bs-id-vd='" . h($r['code_vidange']) . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("historyVidange", $rights_maintenance) ? "<button class='btn btn-light btn-sm' title='historique des vidanges' onclick='showHistory(\"" . h($r['code_vidange']) . "\")'><i class='fa fa-file'></i></button>" : "") . (in_array("delVidange", $rights_maintenance) ? "<button class='btn btn-danger btn-sm' onclick='delVidange(\"" . $r['id_vidange_vehicule'] . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         endforeach;
         $table .= "</tbody></table><div id='output' style='margin: 30px;'></div>";
         $stats = "<table class='no-datatable'><tbody><tr><td><span class='badge text-bg-danger' style='width:100px'><i class='fa fa-times'></i>Alerte</span></td><td>$danger</td></tr><tr><td><span class='badge text-bg-success' style='width:100px'><i class='fa fa-check'></i>Ok</span></td><td>$success</td></tr></tbody></table>";
@@ -57,7 +57,7 @@ function getTableauPrestataire()
         $rows = $repo->findAllPrestataires();
         $table = "<table id='table-prestataire' class='table table-striped'><thead><tr><th>Prestataire</th><th>Contact</th><th>Localisation</th><th></th></tr></thead><tbody>";
         foreach ($rows as $r):
-            $hash = sha1($r['id_prestataire'] . $r['nom_prestataire']);
+            $hash = $r['id_prestataire'];
             $table .= "<tr><td>" . h($r['nom_prestataire']) . "</td><td>" . h($r['contact_prestataire']) . "</td><td>" . h($r['localisation_prestataire']) . "</td><td><div class='btn-group'>" . (in_array("updPrestataire", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le prestataire' data-bs-toggle='modal' data-bs-target='#modal-upd-prestataire' data-bs-id-pt='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delPrestataire", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delPrestataire(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         endforeach;
         return $table . "</tbody></table>";
@@ -74,7 +74,7 @@ function getTableauCentreCout()
         $rows = $repo->findAllCentresCouts();
         $table = "<table id='table-centrecouts' class='table table-striped'><thead><tr><th>Centre de coûts</th><th></th></tr></thead><tbody>";
         foreach ($rows as $r):
-            $hash = sha1($r['id_centre_cout'] . $r['lib_centre_cout']);
+            $hash = $r['id_centre_cout'];
             $table .= "<tr><td>" . h($r['lib_centre_cout']) . "</td><td><div class='btn-group'>" . (in_array("updCentreCout", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le centre de coûts' data-bs-toggle='modal' data-bs-target='#modal-upd-centrecout' data-bs-id-cc='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delCentreCout", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delCentreCout(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div>";
         endforeach;
         return "<a class='btn btn-primary' href='?page=maintenances&subpage=centreCouts&action=new'>Nouveau Centre de coûts</a><hr>" . $table . "</tbody></table>";
@@ -91,7 +91,7 @@ function getTableauBonsReparation()
         $rows = $repo->findAllBonsReparation();
         $table = "<table id='table-centrecouts' class='table table-striped responsive'><thead><tr><th>N°</th><th>Véhicule</th><th>Date d'entrée</th><th>Diagnostic</th><th>Type d'exécution</th><th>Prestataire</th><th>Montant</th><th>Opération additionnelle</th><th>Montant opération</th><th>Montant réel</th><th>Destination</th><th>Durée réparation</th><th>Date de justification</th><th>Centre de coûts</th><th>Date prévue de sortie</th><th>Date effective de fin des travaux</th><th>Observations</th><th></th></tr></thead><tbody>";
         foreach ($rows as $r):
-            $hash = sha1($r['id_bon_reparation'] . $r['num_bon_reparation']);
+            $hash = $r['id_bon_reparation'];
             $table .= "<tr><td>" . h($r['num_bon_reparation']) . "</td><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . date('d-m-Y', strtotime($r['date_entree'])) . "</td><td>" . h($r['diagnostic']) . "</td><td>" . ($r['type_execution'] == '0' ? "Interne" : "Externe") . "</td><td>" . h($r['nom_prestataire']) . "</td><td>" . h($r['montant_reparation']) . "</td><td>" . h($r['lib_plus_ou_moins_value']) . "</td><td>" . h($r['plus_ou_moins_value_valeur']) . "</td><td>" . ($r['montant_reparation'] + $r['plus_ou_moins_value_valeur'] * ($r['type_plus_ou_moins_value'] == 0 ? 1 : -1)) . "</td><td>" . h($r['destination_bon']) . "</td><td>" . h($r['duree_reparation']) . "</td><td>" . ($r['date_justification'] == '' ? "" : date('d-m-Y', strtotime($r['date_justification']))) . "</td><td>" . h($r['lib_centre_cout']) . "</td><td>" . ($r['date_prevue_sortie'] == "" ? "" : date('d-m-Y', strtotime($r['date_prevue_sortie']))) . "</td><td>" . ($r['date_fin_reparation'] == "" ? "" : date('d-m-Y', strtotime($r['date_fin_reparation']))) . "</td><td>" . h($r['observations']) . "</td><td><div class='btn-group'>" . (in_array("updBonsReparation", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-bonsReparation' data-bs-id-cc='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delBonsReparation", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delBonsReparation(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         endforeach;
         return "<a class='btn btn-primary' href='?page=maintenances&subpage=suiviBonsReparation&action=new'>Nouveau Bon de réparation</a><hr>" . $table . "<tfoot></tfoot></tbody></table>";
@@ -160,7 +160,7 @@ function getPremiereSemaineDuMois($date)
                             <select required id="vh-upd-releve-kms" name="vh-upd-releve-kms" class="form-select" onchange="getKmsPeriode(this.value,$('#per-upd-releve-kms').val())">
                                 <?php $affRepo = new AffectationRepository($con);
                                 foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
-                                    $affHash = sha1($r['id_affectation'] . $r['id_vehicule']);
+                                    $affHash = $r['id_affectation'];
                                     echo "<option value='" . $affHash . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $affHash ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                                 endforeach;
                                 ?>
@@ -440,7 +440,7 @@ function getPremiereSemaineDuMois($date)
                             <select id="vh-upd-vd" name="vh-upd-vd" class="form-select">
                                 <?php $affRepo = new AffectationRepository($con);
                                 foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
-                                    $affHash = sha1($r['id_affectation'] . $r['id_vehicule']);
+                                    $affHash = $r['id_affectation'];
                                     echo "<option value='" . $affHash . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $affHash ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                                 endforeach;
                                 ?>
@@ -459,7 +459,7 @@ function getPremiereSemaineDuMois($date)
                             <select class="form-select" id="id-upd-pt-vd" name="id-upd-pt-vd">
                                 <?php $ptRepo = new MaintenanceRepository($con);
                                 foreach ($ptRepo->findAllPrestataires() as $r):
-                                    echo "<option value='" . sha1($r['id_prestataire'] . $r['nom_prestataire']) . "'>" . h($r['nom_prestataire']) . "</option>";
+                                    echo "<option value='" . $r['id_prestataire'] . "'>" . h($r['nom_prestataire']) . "</option>";
                                 endforeach;
                                 ?>
                             </select>

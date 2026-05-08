@@ -9,35 +9,35 @@ class ChauffeurRepository extends BaseRepository
         return $this->select("SELECT * FROM chauffeur WHERE 1", []);
     }
 
-    public function findByHash(string $hash): ?array
+    public function findById(int $id): ?array
     {
         return $this->selectOne(
-            "SELECT * FROM chauffeur WHERE SHA1(CONCAT(id_chauffeur, nom_chauffeur)) = ?",
-            [$hash]
+            "SELECT * FROM chauffeur WHERE id_chauffeur = ?",
+            [$id]
         );
     }
 
     public function insert(string $nom): int|string
     {
-        return $this->insert(
+        return $this->insertGetId(
             "INSERT INTO chauffeur (nom_chauffeur) VALUES (?)",
             [$nom]
         );
     }
 
-    public function updateByHash(string $hash, string $nom): bool
+    public function updateById(int $id, string $nom): bool
     {
         return $this->exec(
-            "UPDATE chauffeur SET nom_chauffeur = ? WHERE SHA1(CONCAT(id_chauffeur, nom_chauffeur)) = ?",
-            [$nom, $hash]
+            "UPDATE chauffeur SET nom_chauffeur = ? WHERE id_chauffeur = ?",
+            [$nom, $id]
         );
     }
 
-    public function deleteByHash(string $hash): bool
+    public function deleteById(int $id): bool
     {
         return $this->exec(
-            "DELETE FROM chauffeur WHERE SHA1(CONCAT(id_chauffeur, nom_chauffeur)) = ?",
-            [$hash]
+            "DELETE FROM chauffeur WHERE id_chauffeur = ?",
+            [$id]
         );
     }
 }

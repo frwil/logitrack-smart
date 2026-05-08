@@ -4,7 +4,7 @@ if (isset($_POST['refresh-vehicule'])):
     $vhRepo = new VehiculeRepository($con);
     $liste = "";
     foreach ($vhRepo->findAllWithDetails() as $r):
-        $liste .= "<option value='" . sha1($r['id_vehicule'] . $r['immatriculation_vehicule']) . "'>" . h($r['immatriculation_vehicule']) . "</option>";
+        $liste .= "<option value='" . $r['id_vehicule'] . "'>" . h($r['immatriculation_vehicule']) . "</option>";
     endforeach;
     die(json_encode(['success' => true, 'html' => $liste]));
 endif;
@@ -22,7 +22,7 @@ endif;
                         <select class="form-select" id="id-vehicule-aff" name="id-vehicule-aff" required>
                             <?php $vehiculeRepo = new VehiculeRepository($con);
                             foreach ($vehiculeRepo->findAllWithDetails() as $r):
-                                echo "<option value='" . sha1($r['id_vehicule'] . $r['immatriculation_vehicule']) . "'>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_marque']) . "</option>";
+                                echo "<option value='" . $r['id_vehicule'] . "'>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_marque']) . "</option>";
                             endforeach;
                             ?>
                         </select>
@@ -32,7 +32,7 @@ endif;
                         <select class="form-select" id="id-chauffeur-aff" name="id-chauffeur-aff" required>
                             <?php $chauffeurRepo = new ChauffeurRepository($con);
                             foreach ($chauffeurRepo->findAll() as $r):
-                                echo "<option value='" . sha1($r['id_chauffeur'] . $r['nom_chauffeur']) . "'>" . h($r['nom_chauffeur']) . "</option>";
+                                echo "<option value='" . $r['id_chauffeur'] . "'>" . h($r['nom_chauffeur']) . "</option>";
                             endforeach;
                             ?>
                         </select>
@@ -44,7 +44,7 @@ endif;
                                 <select class="form-select" id="id-typeutilisation-aff" name="id-typeutilisation-aff" required>
                                     <?php $typeUtilRepo = new TypeUtilisationRepository($con);
                                     foreach ($typeUtilRepo->findAll() as $r):
-                                        echo "<option value='" . sha1($r['id_type_utilisation'] . $r['lib_type_utilisation']) . "'>" . h($r['lib_type_utilisation']) . "</option>";
+                                        echo "<option value='" . $r['id_type_utilisation'] . "'>" . h($r['lib_type_utilisation']) . "</option>";
                                     endforeach;
                                     ?>
                                 </select>
@@ -56,7 +56,7 @@ endif;
                                 <select class="form-select" id="id-modeutilisation-aff" name="id-modeutilisation-aff" required>
                                     <?php $modeUtilRepo = new ModeUtilisationRepository($con);
                                     foreach ($modeUtilRepo->findAll() as $r):
-                                        echo "<option value='" . sha1($r['id_mode_utilisation'] . $r['lib_mode_utilisation']) . "'>" . h($r['lib_mode_utilisation']) . "</option>";
+                                        echo "<option value='" . $r['id_mode_utilisation'] . "'>" . h($r['lib_mode_utilisation']) . "</option>";
                                     endforeach;
                                     ?>
                                 </select>
@@ -68,7 +68,7 @@ endif;
                                 <select class="form-select" id="id-entite-aff" name="id-entite-aff" required>
                                     <?php $entiteRepo = new EntiteRepository($con);
                                     foreach ($entiteRepo->findAll() as $r):
-                                        echo "<option value='" . sha1($r['id_entite'] . $r['nom_entite']) . "'>" . h($r['nom_entite']) . "</option>";
+                                        echo "<option value='" . $r['id_entite'] . "'>" . h($r['nom_entite']) . "</option>";
                                     endforeach;
                                     ?>
                                 </select>
@@ -80,7 +80,7 @@ endif;
                                 <select class="form-select" id="id-region-aff" name="id-region-aff" required>
                                     <?php $regionRepo = new RegionRepository($con);
                                     foreach ($regionRepo->findAll() as $r):
-                                        echo "<option value='" . sha1($r['id_region'] . $r['nom_region']) . "'>" . h($r['nom_region']) . "</option>";
+                                        echo "<option value='" . $r['id_region'] . "'>" . h($r['nom_region']) . "</option>";
                                     endforeach;
                                     ?>
                                 </select>

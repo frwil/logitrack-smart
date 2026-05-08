@@ -18,7 +18,7 @@ if (isset($_POST['trajets'])):
     $rows = $trajetRepo->findAllExcept($trajets);
     $liste = "";
     foreach ($rows as $r):
-        $liste .= "<option value='" . sha1($r['id_destination'] . $r['lib_destination']) . "' dest-km='" . h($r['distance_destination']) . "'>" . h($r['lib_destination']) . " (" . h($r['distance_destination']) . " km)</option>";
+        $liste .= "<option value='" . $r['id_destination'] . "' dest-km='" . h($r['distance_destination']) . "'>" . h($r['lib_destination']) . " (" . h($r['distance_destination']) . " km)</option>";
     endforeach;
     die(json_encode(['success' => true, 'html' => $liste]));
 endif;
@@ -50,7 +50,7 @@ endif;
                                 <select class="form-select" id="id-vehicule-vg" name="id-vehicule-vg">
                                     <?php $affectationRepo = new AffectationRepository($con);
                                     foreach ($affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
-                                        echo "<option value='" . sha1($r['id_affectation'] . $r['id_vehicule']) . "'>" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                                        echo "<option value='" . $r['id_affectation'] . "'>" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                                     endforeach;
                                     ?>
                                 </select>
@@ -74,7 +74,7 @@ endif;
                                 <select class="form-select" id="typechargement-vg" name="typechargement-vg">
                                     <?php $voyageRepo = new VoyageRepository($con);
                                     foreach ($voyageRepo->findAllTypesChargement() as $r):
-                                        echo "<option value='" . sha1($r['id_type_chargement'] . $r['lib_type_chargement']) . "' val-min='" . h($r['valeur_min']) . "' val-max='" . h($r['valeur_max']) . "'>" . h($r['lib_type_chargement']) . "</option>";
+                                        echo "<option value='" . $r['id_type_chargement'] . "' val-min='" . h($r['valeur_min']) . "' val-max='" . h($r['valeur_max']) . "'>" . h($r['lib_type_chargement']) . "</option>";
                                     endforeach;
                                     ?>
                                 </select>
@@ -97,7 +97,7 @@ endif;
                                     <select class="form-select" id="trajet-list-vg" role="trajet">
                                         <?php $trajetRepo = new TrajetRepository($con);
                                         foreach ($trajetRepo->findAll() as $r):
-                                            echo "<option value='" . sha1($r['id_destination'] . $r['lib_destination']) . "' dest-km='" . h($r['distance_destination']) . "'>" . h($r['lib_destination']) . " (" . h($r['distance_destination']) . " km)</option>";
+                                            echo "<option value='" . $r['id_destination'] . "' dest-km='" . h($r['distance_destination']) . "'>" . h($r['lib_destination']) . " (" . h($r['distance_destination']) . " km)</option>";
                                         endforeach;
                                         ?>
                                     </select>

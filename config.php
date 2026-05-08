@@ -11,7 +11,7 @@
     $tableau = "<table class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-drivelicence'><thead><tr><th>#</th><th>Catégorie</th><th>Description</th><th></th></tr></thead><tbody>";
     $i = 1;
     foreach ($rows as $r):
-        $hash = sha1($r['id_type_permis'] . $r['lib_type_permis']);
+        $hash = $r['id_type_permis'];
         $tableau .= "<tr><td>$i</td><td>" . h($r['lib_type_permis']) . "</td><td>" . h($r['desc_type_permis']) . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_config) ? "<button class='btn btn-primary' data-bs-toggle='modal' data-bs-target='#modal-driveLicence-upd' data-bs-idtype='$hash' title='Modifier'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array('del', $rights_config) ? "<button class='btn btn-danger' title='Supprimer' onclick='delDriveLicence(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         $i++;
     endforeach;
@@ -28,7 +28,7 @@ function getTableauDocs()
     $tableau = "<table class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-docs'><thead><tr><th>#</th><th>Désignation</th><th>Validité (en mois)</th><th></th></tr></thead><tbody>";
     $i = 1;
     foreach ($rows as $r):
-        $hash = sha1($r['id_document'] . $r['nom_document']);
+        $hash = $r['id_document'];
         $tableau .= "<tr><td>$i</td><td>" . h($r['nom_document']) . "</td><td>" . h($r['validite_document']) . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_config) ? "<a class='btn btn-primary' href='?page=configuration&subpage=documentslist&action=upd&id=$hash' title='Modifier'><i class='fa fa-pencil-alt'></i></a>" : "") . (in_array('del', $rights_config) ? "<button class='btn btn-danger' title='Supprimer' onclick='delDoc(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         $i++;
     endforeach;
@@ -338,7 +338,7 @@ function getTableauFolder()
                                         $affRepo = new AffectationRepository($con);
                                         $affRows = $affRepo->findActiveByVehiculeAndRegion((int)$folder[0]['id_vehicule'], (int)$_SESSION['usr-con']['region-sel']);
                                         foreach ($affRows as $r):
-                                            echo "<option value='" . sha1($r['id_affectation'] . $r['id_vehicule']) . "' " . ($folder[0]['id_vehicule'] == $r['id_vehicule'] ? 'selected' : '') . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                                            echo "<option value='" . $r['id_affectation'] . "' " . ($folder[0]['id_vehicule'] == $r['id_vehicule'] ? 'selected' : '') . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                                         endforeach;
                                         ?>
                                     </select>
@@ -348,7 +348,7 @@ function getTableauFolder()
                                     <div class="form-floating">
                                         <select class="form-select" id="folder-doc">
                                             <?php foreach ($configRepo->findAllDocuments() as $r):
-                                                echo "<option value='" . sha1($r['id_document'] . $r['nom_document']) . "'>" . h($r['nom_document']) . "</option>";
+                                                echo "<option value='" . $r['id_document'] . "'>" . h($r['nom_document']) . "</option>";
                                             endforeach;
                                             ?>
                                         </select>

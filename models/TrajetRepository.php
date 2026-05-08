@@ -9,24 +9,24 @@ class TrajetRepository extends BaseRepository
         return $this->select("SELECT * FROM destination_voyage WHERE 1", []);
     }
 
-    /** All destinations EXCEPT those whose SHA1 hashes are in the given list. */
-    public function findAllExcept(array $hashes): array
+    /** All destinations EXCEPT those whose IDs are in the given list. */
+    public function findAllExcept(array $ids): array
     {
-        if (empty($hashes)) {
+        if (empty($ids)) {
             return $this->findAll();
         }
-        [$placeholders, $params] = db_in($hashes);
+        [$placeholders, $params] = db_in($ids);
         return $this->select(
-            "SELECT * FROM destination_voyage WHERE SHA1(CONCAT(id_destination, lib_destination)) NOT IN ($placeholders) ORDER BY lib_destination",
+            "SELECT * FROM destination_voyage WHERE id_destination NOT IN ($placeholders) ORDER BY lib_destination",
             $params
         );
     }
 
-    public function findByHash(string $hash): ?array
+    public function findById(int $id): ?array
     {
         return $this->selectOne(
-            "SELECT * FROM destination_voyage WHERE SHA1(CONCAT(id_destination, lib_destination)) = ?",
-            [$hash]
+            "SELECT * FROM destination_voyage WHERE id_destination = ?",
+            [$id]
         );
     }
 
@@ -40,26 +40,26 @@ class TrajetRepository extends BaseRepository
 
     public function insert(string $lib, int $distance): int|string
     {
-        return $this->insert(
+        return $this->insertGetId(
             "INSERT INTO destination_voyage (lib_destination, distance_destination) VALUES (?, ?)",
             [$lib, $distance]
         );
     }
 
-    public function updateByHash(string $hash, string $lib, int $distance): bool
+    public function updateById(int $id, string $lib, int $distance): bool
     {
         return $this->exec(
             "UPDATE destination_voyage SET lib_destination = ?, distance_destination = ?
-             WHERE SHA1(CONCAT(id_destination, lib_destination)) = ?",
-            [$lib, $distance, $hash]
+             WHERE id_destination = ?",
+            [$lib, $distance, $id]
         );
     }
 
-    public function deleteByHash(string $hash): bool
+    public function deleteById(int $id): bool
     {
         return $this->exec(
-            "DELETE FROM destination_voyage WHERE SHA1(CONCAT(id_destination, lib_destination)) = ?",
-            [$hash]
+            "DELETE FROM destination_voyage WHERE id_destination = ?",
+            [$id]
         );
     }
 }

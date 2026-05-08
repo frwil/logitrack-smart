@@ -36,7 +36,7 @@ class BaseRepository
     }
 
     /** Run INSERT and return the new auto-increment ID. */
-    protected function insert(string $sql, array $params = []): int|string
+    protected function insertGetId(string $sql, array $params = []): int|string
     {
         return db_insert_id($this->con, $sql, $params);
     }

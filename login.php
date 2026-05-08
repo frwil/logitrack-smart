@@ -31,7 +31,7 @@
                     <select class="login-select" id="region-user" name="region-user">
                         <?php $regionRepo = new RegionRepository($con);
                         foreach ($regionRepo->findAll() as $r):
-                            echo "<option value='" . sha1($r['id_region'] . $r['nom_region']) . "'>{$r['nom_region']}</option>";
+                            echo "<option value='" . $r['id_region'] . "'>{$r['nom_region']}</option>";
                         endforeach;
                         ?>
                     </select>

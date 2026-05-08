@@ -31,7 +31,7 @@ class UserRepository extends BaseRepository
 
     public function insertUser(string $name, string $passHash, ?string $fullname, ?string $email): int|string
     {
-        return $this->insert(
+        return $this->insertGetId(
             "INSERT INTO users (name_user, pass_user, fullname_user, email_user) VALUES (?, ?, ?, ?)",
             [$name, $passHash, $fullname, $email]
         );

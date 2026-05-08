@@ -4,7 +4,7 @@ if (isset($_POST['load-cc-br'])):
     $centresCouts = $maintenanceRepo->findAllCentresCouts();
     $options = "";
     foreach ($centresCouts as $r):
-        $options .= "<option value='" . sha1($r['id_centre_cout'] . $r['lib_centre_cout']) . "'>" . h($r['lib_centre_cout']) . "</option>";
+        $options .= "<option value='" . $r['id_centre_cout'] . "'>" . h($r['lib_centre_cout']) . "</option>";
     endforeach;
     if (count($centresCouts) == 0) $options = "<option value=''></option>";
     die(json_encode(['success' => true, 'html' => $options]));
@@ -30,7 +30,7 @@ endif;
                             <select id="vh-br" name="vh-br" class="form-select">
                                 <?php $affectationRepo = new AffectationRepository($con);
                                 foreach ($affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
-                                    echo "<option value='" . sha1($r['id_affectation'] . $r['id_vehicule']) . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == sha1($r['id_affectation'] . $r['id_vehicule']) ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                                    echo "<option value='" . $r['id_affectation'] . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $r['id_affectation'] ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                                 endforeach;
                                 ?>
                             </select>
@@ -65,7 +65,7 @@ endif;
                                     <?php $maintenanceRepo = new MaintenanceRepository($con);
                                     $prestataires = $maintenanceRepo->findAllPrestataires();
                                     foreach ($prestataires as $r):
-                                        echo "<option value='" . sha1($r['id_prestataire'] . $r['nom_prestataire']) . "'>" . h($r['nom_prestataire']) . "</option>";
+                                        echo "<option value='" . $r['id_prestataire'] . "'>" . h($r['nom_prestataire']) . "</option>";
                                     endforeach;
                                     if (count($prestataires) == 0) echo "<option value=''></option>";
                                     ?>
@@ -86,7 +86,7 @@ endif;
                             <select class="form-select" id="plus-moins-br" name="plus-moins-br">
                                 <?php $plusOuMoins = $maintenanceRepo->findAllPlusOuMoinsValue();
                                 foreach ($plusOuMoins as $r):
-                                    echo "<option value='" . sha1($r['id_plus_ou_moins_value'] . $r['lib_plus_ou_moins_value']) . "'>" . h($r['lib_plus_ou_moins_value']) . "</option>";
+                                    echo "<option value='" . $r['id_plus_ou_moins_value'] . "'>" . h($r['lib_plus_ou_moins_value']) . "</option>";
                                 endforeach;
                                 if (count($plusOuMoins) == 0) echo "<option value=''></option>";
                                 ?>
@@ -125,7 +125,7 @@ endif;
                                     <?php $maintenanceRepo = new MaintenanceRepository($con);
                                     $centresCouts = $maintenanceRepo->findAllCentresCouts();
                                     foreach ($centresCouts as $r):
-                                        echo "<option value='" . sha1($r['id_centre_cout'] . $r['lib_centre_cout']) . "'>" . h($r['lib_centre_cout']) . "</option>";
+                                        echo "<option value='" . $r['id_centre_cout'] . "'>" . h($r['lib_centre_cout']) . "</option>";
                                     endforeach;
                                     if (count($centresCouts) == 0) echo "<option value=''></option>";
                                     ?>

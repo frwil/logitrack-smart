@@ -35,8 +35,8 @@
             if (empty($voyages)) $voyage .= "</ul></td>";
             $cpte = 0;
             foreach ($voyages as $r1):
-                $vgHash = sha1($r1['id_voyage'] . $r1['titre_voyage']);
-                $affHash = sha1($r1['id_affectation'] . $r['id_vehicule']);
+                $vgHash = $r1['id_voyage'];
+                $affHash = $r1['id_affectation'];
                 $voyage .= "<li class='list-group-item'>" . ($cpte > 0 ? "<span class='text-white' style='font-size:5px'>|==></span>" : "") . h($r1['lib_destination']) . " - " . h($r1['distance_destination']) . "km - " . h($r1['qte_carburant']) . "L - " . h($r1['qte_chargement']) . " (" . h($r1['lib_type_chargement']) . ") <div class='btn-group'>".(in_array('upd',$rights_voyage) ? "<button class='btn btn-light btn-sm' onclick='updvg(\"$vgHash\",\"$affHash\")'><i class='fa fa-pencil-alt'></i></button>" : "").(in_array("del",$rights_voyage) ? "<button class='btn btn-danger btn-sm' onclick='delvg(\"$vgHash\")'><i class='fa fa-times'></i></button>" : "")."</div></li>";
                 $total_voyages++;
                 $total_kms += $r1['distance_destination'];
@@ -431,7 +431,7 @@ function getTableauEvaluationVoyages()
                             <select class="form-select" id="id-upd-vh-voyage" name="id-upd-vh-voyage">
                                 <?php $affRepo = new AffectationRepository($con);
                                 foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
-                                    echo "<option value='" . sha1($r['id_affectation'] . $r['id_vehicule']) . "'>" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                                    echo "<option value='" . $r['id_affectation'] . "'>" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                                 endforeach;
                                 ?>
                             </select>
@@ -455,7 +455,7 @@ function getTableauEvaluationVoyages()
                             <select class="form-select" id="tc-upd-voyage" name="tc-upd-voyage" required>
                             <?php $voyageRepo = new VoyageRepository($con);
                                     foreach ($voyageRepo->findAllTypesChargement() as $r):
-                                        echo "<option value='" . sha1($r['id_type_chargement'] . $r['lib_type_chargement']) . "' val-min='" . h($r['valeur_min']) . "' val-max='" . h($r['valeur_max']) . "'>" . h($r['lib_type_chargement']) . "</option>";
+                                        echo "<option value='" . $r['id_type_chargement'] . "' val-min='" . h($r['valeur_min']) . "' val-max='" . h($r['valeur_max']) . "'>" . h($r['lib_type_chargement']) . "</option>";
                                     endforeach;
                                     ?>
                             </select>

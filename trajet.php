@@ -6,7 +6,7 @@
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Libellé</th><th>Distance</th><th></th></tr></thead><tbody>";
     $i = 1;
     foreach ($rows as $r):
-        $tableau .= "<tr><td>$i</td><td>" . h($r['lib_destination']) . "</td><td>" . h($r['distance_destination']) . "</td><td><div class='btn-group'><button class='btn btn-secondary' title='Modifier le trajet' onclick='showModalUpdateTrajet(\"".sha1($r['id_destination'].$r['lib_destination'])."\")'><i class='fa fa-pencil-alt'></i></button><button class='btn btn-danger' title='Supprimer le trajet' onclick='delTrajet(\"".(sha1($r['id_destination'].$r['lib_destination']))."\")'><i class='fa fa-times'></i></button></div></td></tr>";
+        $tableau .= "<tr><td>$i</td><td>" . h($r['lib_destination']) . "</td><td>" . h($r['distance_destination']) . "</td><td><div class='btn-group'><button class='btn btn-secondary' title='Modifier le trajet' onclick='showModalUpdateTrajet(\"".$r['id_destination']."\")'><i class='fa fa-pencil-alt'></i></button><button class='btn btn-danger' title='Supprimer le trajet' onclick='delTrajet(\"".($r['id_destination'])."\")'><i class='fa fa-times'></i></button></div></td></tr>";
         $i++;
     endforeach;
     $tableau .= "</tbody></table>";

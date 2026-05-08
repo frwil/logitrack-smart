@@ -24,12 +24,12 @@ class AffectationRepository extends BaseRepository
         );
     }
 
-    /** Single affectation by SHA1(id_affectation + id_vehicule). */
-    public function findByHash(string $hash): ?array
+    /** Single affectation by ID. */
+    public function findById(int $id): ?array
     {
         return $this->selectOne(
-            "SELECT * FROM affectation_vehicule WHERE SHA1(CONCAT(id_affectation, id_vehicule)) = ?",
-            [$hash]
+            "SELECT * FROM affectation_vehicule WHERE id_affectation = ?",
+            [$id]
         );
     }
 
@@ -71,20 +71,20 @@ class AffectationRepository extends BaseRepository
         );
     }
 
-    public function closeByHash(string $hash): bool
+    public function closeById(int $id): bool
     {
         return $this->exec(
             "UPDATE affectation_vehicule SET is_ferme = 1, date_fin_affectation = CURRENT_DATE
-             WHERE SHA1(CONCAT(id_affectation, id_vehicule)) = ?",
-            [$hash]
+             WHERE id_affectation = ?",
+            [$id]
         );
     }
 
-    public function deleteByHash(string $hash): bool
+    public function deleteById(int $id): bool
     {
         return $this->exec(
-            "DELETE FROM affectation_vehicule WHERE SHA1(CONCAT(id_affectation, id_vehicule)) = ?",
-            [$hash]
+            "DELETE FROM affectation_vehicule WHERE id_affectation = ?",
+            [$id]
         );
     }
 }

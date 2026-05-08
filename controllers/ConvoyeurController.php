@@ -10,7 +10,7 @@ class ConvoyeurController extends BaseController
 
     public function fetchByHash(): never
     {
-        $row = $this->repo->findByHash($this->post('id-convoyeur-forModal'));
+        $row = $this->repo->findById((int)$this->post('id-convoyeur-forModal'));
         if (!$row) {
             $this->jsonError('Convoyeur introuvable', 404);
         }
@@ -21,7 +21,7 @@ class ConvoyeurController extends BaseController
     {
         try {
             $this->repo->transactional(function () {
-                $this->repo->updateByHash(
+                $this->repo->updateById(
                     $this->post('id-convoyeur'),
                     trim(strtoupper($this->post('nom-upd-convoyeur')))
                 );
@@ -36,7 +36,7 @@ class ConvoyeurController extends BaseController
     {
         try {
             $this->repo->transactional(function () {
-                $this->repo->deleteByHash($this->post('id-convoyeur-forDel'));
+                $this->repo->deleteById((int)$this->post('id-convoyeur-forDel'));
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {

@@ -32,28 +32,28 @@ class ObjectifRepository extends BaseRepository
         return count($this->select($sql, $params));
     }
 
-    public function findByHash(string $hash): ?array
+    public function findById(int $id): ?array
     {
         return $this->selectOne(
-            "SELECT * FROM objectif_periode_region WHERE SHA1(CONCAT(id_objectif_periode, date_objectif_periode)) = ?",
-            [$hash]
+            "SELECT * FROM objectif_periode_region WHERE id_objectif_periode = ?",
+            [$id]
         );
     }
 
-    public function updateByHash(string $hash, string $date, int $objectif): bool
+    public function updateById(int $id, string $date, int $objectif): bool
     {
         return $this->exec(
             "UPDATE objectif_periode_region SET date_objectif_periode = ?, objectif = ?
-             WHERE SHA1(CONCAT(id_objectif_periode, date_objectif_periode)) = ?",
-            [$date, $objectif, $hash]
+             WHERE id_objectif_periode = ?",
+            [$date, $objectif, $id]
         );
     }
 
-    public function deleteByHash(string $hash): bool
+    public function deleteById(int $id): bool
     {
         return $this->exec(
-            "DELETE FROM objectif_periode_region WHERE SHA1(CONCAT(id_objectif_periode, date_objectif_periode)) = ?",
-            [$hash]
+            "DELETE FROM objectif_periode_region WHERE id_objectif_periode = ?",
+            [$id]
         );
     }
 }

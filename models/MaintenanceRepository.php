@@ -40,65 +40,55 @@ class MaintenanceRepository extends BaseRepository
         );
     }
 
-    public function findKmReleve(string $periodeHash, string $affectationHash): ?array
+    public function findKmReleve(string $periode, int $affectationId): ?array
     {
         return $this->selectOne(
             "SELECT km_releve FROM releve_kms_vehicule
-             WHERE SHA1(periode_releve) = ?
-             AND id_affectation_vehicule = (
-               SELECT id_affectation FROM affectation_vehicule WHERE SHA1(CONCAT(id_affectation, id_vehicule)) = ?
-             )",
-            [$periodeHash, $affectationHash]
+             WHERE periode_releve = ?
+             AND id_affectation_vehicule = ?",
+            [$periode, $affectationId]
         );
     }
 
-    public function updateReleveKms(int $kms, string $periodeHash, string $affectationHash): bool
+    public function updateReleveKms(int $kms, string $periode, int $affectationId): bool
     {
         return $this->exec(
             "UPDATE releve_kms_vehicule SET km_releve = ?
-             WHERE SHA1(periode_releve) = ?
-             AND id_affectation_vehicule = (
-               SELECT id_affectation FROM affectation_vehicule WHERE SHA1(CONCAT(id_affectation, id_vehicule)) = ?
-             )",
-            [$kms, $periodeHash, $affectationHash]
+             WHERE periode_releve = ?
+             AND id_affectation_vehicule = ?",
+            [$kms, $periode, $affectationId]
         );
     }
 
-    public function findMaxKmByAffectationHash(string $affectationHash, string $dateFin): ?array
+    public function findMaxKmByAffectationId(int $affectationId, string $dateFin): ?array
     {
         return $this->selectOne(
             "SELECT MAX(km_releve) AS km FROM releve_kms_vehicule
-             WHERE id_affectation_vehicule = (
-               SELECT id_affectation FROM affectation_vehicule WHERE SHA1(CONCAT(id_affectation, id_vehicule)) = ?
-             )
+             WHERE id_affectation_vehicule = ?
              AND date_fin_periode_releve <= ?
              ORDER BY date_fin_periode_releve DESC",
-            [$affectationHash, $dateFin]
+            [$affectationId, $dateFin]
         );
     }
 
-    public function countReleveByPeriode(string $periode, string $affectationHash, string $start, string $end): int
+    public function countReleveByPeriode(string $periode, int $affectationId, string $start, string $end): int
     {
         return count($this->select(
             "SELECT * FROM releve_kms_vehicule
              WHERE periode_releve = ?
-             AND id_affectation_vehicule = (
-               SELECT id_affectation FROM affectation_vehicule WHERE SHA1(CONCAT(id_affectation, id_vehicule)) = ?
-             )
+             AND id_affectation_vehicule = ?
              AND date_debut_periode_releve = ? AND date_fin_periode_releve = ?",
-            [$periode, $affectationHash, $start, $end]
+            [$periode, $affectationId, $start, $end]
         ));
     }
 
-    public function countRelevesByAffectationAndDateRange(string $affectationHash, string $start, string $end): int
+    public function countRelevesByAffectationAndDateRange(int $affectationId, string $start, string $end): int
     {
         return count($this->select(
             "SELECT * FROM releve_kms_vehicule
-             WHERE id_affectation_vehicule = (
-               SELECT id_affectation FROM affectation_vehicule WHERE SHA1(CONCAT(id_affectation, id_vehicule)) = ?
-             )
+             WHERE id_affectation_vehicule = ?
              AND date_debut_periode_releve >= ? AND date_fin_periode_releve <= ?",
-            [$affectationHash, $start, $end]
+            [$affectationId, $start, $end]
         ));
     }
 
@@ -139,23 +129,23 @@ class MaintenanceRepository extends BaseRepository
 
     public function updateVidangeByCode(
         string $code,
-        string $affectationHash,
+        int $affectationId,
         string $date,
         int $kmAvant,
         int $kmProchaine,
-        string $prestataireHash,
+        int $prestataireId,
         ?string $commentaire
     ): bool {
         return $this->exec(
             "UPDATE vidange_vehicule SET
-             id_affectation_vehicule = (SELECT id_affectation FROM affectation_vehicule WHERE SHA1(CONCAT(id_affectation, id_vehicule)) = ?),
+             id_affectation_vehicule = ?,
              date_vidange = ?,
              km_vidange = ?,
              km_prochaine_vidange = ?,
-             id_prestataire = (SELECT id_prestataire FROM prestataire_intervention WHERE SHA1(CONCAT(id_prestataire, nom_prestataire)) = ?),
+             id_prestataire = ?,
              commentaire_vidange = ?
              WHERE code_vidange = ?",
-            [$affectationHash, $date, $kmAvant, $kmProchaine, $prestataireHash, $commentaire, $code]
+            [$affectationId, $date, $kmAvant, $kmProchaine, $prestataireId, $commentaire, $code]
         );
     }
 
@@ -184,11 +174,11 @@ class MaintenanceRepository extends BaseRepository
         );
     }
 
-    public function deleteVidangeByHash(string $hash): bool
+    public function deleteVidangeById(int $id): bool
     {
         return $this->exec(
-            "DELETE FROM vidange_vehicule WHERE SHA1(CONCAT(id_vidange_vehicule, code_vidange)) = ?",
-            [$hash]
+            "DELETE FROM vidange_vehicule WHERE id_vidange_vehicule = ?",
+            [$id]
         );
     }
 
@@ -199,30 +189,29 @@ class MaintenanceRepository extends BaseRepository
         return $this->select("SELECT * FROM prestataire_intervention", []);
     }
 
-    public function findPrestataireByHash(string $hash): ?array
+    public function findPrestataireById(int $id): ?array
     {
         return $this->selectOne(
-            "SELECT *, SHA1(CONCAT(id_prestataire, nom_prestataire)) AS id_pt
-             FROM prestataire_intervention
-             WHERE SHA1(CONCAT(id_prestataire, nom_prestataire)) = ?",
-            [$hash]
+            "SELECT * FROM prestataire_intervention
+             WHERE id_prestataire = ?",
+            [$id]
         );
     }
 
-    public function updatePrestataireByHash(string $hash, string $nom, ?string $contact, ?string $localisation): bool
+    public function updatePrestataireById(int $id, string $nom, ?string $contact, ?string $localisation): bool
     {
         return $this->exec(
             "UPDATE prestataire_intervention SET nom_prestataire = ?, contact_prestataire = ?, localisation_prestataire = ?
-             WHERE SHA1(CONCAT(id_prestataire, nom_prestataire)) = ?",
-            [$nom, $contact, $localisation, $hash]
+             WHERE id_prestataire = ?",
+            [$nom, $contact, $localisation, $id]
         );
     }
 
-    public function deletePrestataireByHash(string $hash): bool
+    public function deletePrestataireById(int $id): bool
     {
         return $this->exec(
-            "DELETE FROM prestataire_intervention WHERE SHA1(CONCAT(id_prestataire, nom_prestataire)) = ?",
-            [$hash]
+            "DELETE FROM prestataire_intervention WHERE id_prestataire = ?",
+            [$id]
         );
     }
 
@@ -233,21 +222,20 @@ class MaintenanceRepository extends BaseRepository
         return $this->select("SELECT * FROM centre_couts", []);
     }
 
-    public function findCentreCoutByHash(string $hash): ?array
+    public function findCentreCoutById(int $id): ?array
     {
         return $this->selectOne(
-            "SELECT *, SHA1(CONCAT(id_centre_cout, lib_centre_cout)) AS id_cc
-             FROM centre_couts
-             WHERE SHA1(CONCAT(id_centre_cout, lib_centre_cout)) = ?",
-            [$hash]
+            "SELECT * FROM centre_couts
+             WHERE id_centre_cout = ?",
+            [$id]
         );
     }
 
-    public function deleteCentreCoutByHash(string $hash): bool
+    public function deleteCentreCoutById(int $id): bool
     {
         return $this->exec(
-            "DELETE FROM centre_couts WHERE SHA1(CONCAT(id_centre_cout, lib_centre_cout)) = ?",
-            [$hash]
+            "DELETE FROM centre_couts WHERE id_centre_cout = ?",
+            [$id]
         );
     }
 

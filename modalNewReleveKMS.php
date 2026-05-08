@@ -33,7 +33,7 @@ endif;
                                 ? $affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel'])
                                 : $affectationRepo->findAllActive();
                             foreach ($rows as $r):
-                                $hash = sha1($r['id_affectation'] . $r['id_vehicule']);
+                                $hash = $r['id_affectation'];
                                 echo "<option value='" . $hash . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $hash ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                             endforeach;
                             ?>

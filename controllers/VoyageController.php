@@ -14,13 +14,12 @@ class VoyageController extends BaseController
     /** Fetch voyage data for modal edit. */
     public function fetchByHash(): never
     {
-        $voyageHash = $this->post('id-voyage-forModal');
-        $vehiculeHash = $this->post('id-vh-forModal');
-        if (!$voyageHash || !$vehiculeHash) {
+        $id = (int)$this->post('id-voyage-forModal');
+        if (!$id) {
             $this->jsonError('Paramètres manquants');
         }
 
-        $row = $this->voyageRepo->findByHash($voyageHash, $vehiculeHash);
+        $row = $this->voyageRepo->findById($id);
         if (!$row) {
             $this->jsonError('Voyage introuvable', 404);
         }
@@ -33,12 +32,12 @@ class VoyageController extends BaseController
     {
         try {
             $this->voyageRepo->transactional(function () {
-                $this->voyageRepo->updateByHash(
-                    $this->post('id-voyage'),
+                $this->voyageRepo->updateById(
+                    (int)$this->post('id-voyage'),
                     $this->post('date-upd-voyage'),
                     (float)$this->post('cb-upd-voyage'),
                     $this->post('cv-upd-voyage'),
-                    $this->post('tc-upd-voyage'),
+                    (int)$this->post('tc-upd-voyage'),
                     (float)$this->post('qtec-upd-voyage')
                 );
             });
@@ -51,7 +50,7 @@ class VoyageController extends BaseController
     /** Delete voyage. */
     public function delete(): never
     {
-        $ok = $this->voyageRepo->deleteByHash($this->post('id-voyage-forDel'));
+        $ok = $this->voyageRepo->deleteById((int)$this->post('id-voyage-forDel'));
         if ($ok) {
             $this->json();
         }

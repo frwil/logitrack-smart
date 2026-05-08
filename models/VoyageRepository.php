@@ -86,28 +86,26 @@ class VoyageRepository extends BaseRepository
         );
     }
 
-    /** Single voyage by SHA1(id_voyage + titre_voyage) with full details. */
-    public function findByHash(string $voyageHash, string $vehiculeHash): ?array
+    /** Single voyage by ID with full details. */
+    public function findById(int $id): ?array
     {
         return $this->selectOne(
-            "SELECT *,
-             (SELECT id_vehicule FROM vehicule WHERE SHA1(CONCAT(voyage.id_affectation, id_vehicule)) = ?) AS vh,
-             SHA1(CONCAT(type_chargement_voyage.id_type_chargement, lib_type_chargement)) AS tc
+            "SELECT *
              FROM voyage, voyage_vehicule, destination_voyage, type_chargement_voyage
              WHERE voyage.id_voyage = voyage_vehicule.id_voyage
              AND destination_voyage.id_destination = voyage_vehicule.id_destination
              AND voyage.id_type_chargement = type_chargement_voyage.id_type_chargement
-             AND SHA1(CONCAT(voyage.id_voyage, titre_voyage)) = ?",
-            [$vehiculeHash, $voyageHash]
+             AND voyage.id_voyage = ?",
+            [$id]
         );
     }
 
-    public function updateByHash(
-        string $hash,
+    public function updateById(
+        int $id,
         string $date,
         float $qteCarburant,
         string $convoyeur,
-        string $typeChargementHash,
+        int $typeChargementId,
         float $qteChargement
     ): bool {
         return $this->exec(
@@ -115,18 +113,18 @@ class VoyageRepository extends BaseRepository
              date_voyage = ?,
              qte_carburant = ?,
              convoyeur = ?,
-             id_type_chargement = (SELECT id_type_chargement FROM type_chargement_voyage WHERE SHA1(CONCAT(id_type_chargement, lib_type_chargement)) = ?),
+             id_type_chargement = ?,
              qte_chargement = ?
-             WHERE SHA1(CONCAT(id_voyage, titre_voyage)) = ?",
-            [$date, $qteCarburant, $convoyeur, $typeChargementHash, $qteChargement, $hash]
+             WHERE id_voyage = ?",
+            [$date, $qteCarburant, $convoyeur, $typeChargementId, $qteChargement, $id]
         );
     }
 
-    public function deleteByHash(string $hash): bool
+    public function deleteById(int $id): bool
     {
         return $this->exec(
-            "DELETE FROM voyage WHERE SHA1(CONCAT(id_voyage, titre_voyage)) = ?",
-            [$hash]
+            "DELETE FROM voyage WHERE id_voyage = ?",
+            [$id]
         );
     }
 

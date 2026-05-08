@@ -26,7 +26,7 @@ endif;
                         <select id="type-permis" name="type-permis" required class="form-select">
                             <?php $configRepo = new ConfigRepository($con);
                             foreach ($configRepo->findAllTypePermis() as $r):
-                                echo "<option value='" . sha1($r['id_type_permis'] . $r['lib_type_permis']) . "'>" . h($r['lib_type_permis']) . "</option>";
+                                echo "<option value='" . $r['id_type_permis'] . "'>" . h($r['lib_type_permis']) . "</option>";
                             endforeach;
                             ?>
                         </select>

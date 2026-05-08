@@ -43,7 +43,7 @@ class ModeleRepository extends BaseRepository
 
     public function insert(string $nom): int|string
     {
-        return $this->insert(
+        return $this->insertGetId(
             "INSERT INTO modele_vehicule (nom_modele_vehicule) VALUES (?)",
             [$nom]
         );

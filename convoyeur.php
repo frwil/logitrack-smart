@@ -6,7 +6,7 @@
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Nom Convoyeur</th><th></th></tr></thead><tbody>";
     $i = 1;
     foreach ($rows as $r):
-        $tableau .= "<tr><td>$i</td><td>" . h($r['nom_convoyeur']) . "</td><td><div class='btn-group'><button class='btn btn-light' type='button' title='Modifier le convoyeur " . h($r['nom_convoyeur']) . "' onclick='showModalUpdateConvoyeur(\"".sha1($r['id_convoyeur'].$r['nom_convoyeur'])."\")'><i class='fa fa-pencil-alt'></i></button><button class='btn btn-danger' title='Supprimer le convoyeur " . h($r['nom_convoyeur']) . "' onclick='deleteConvoyeur(\"".sha1($r['id_convoyeur'].$r['nom_convoyeur'])."\")'><i class='fa fa-times'></i></button></div></td></tr>";
+        $tableau .= "<tr><td>$i</td><td>" . h($r['nom_convoyeur']) . "</td><td><div class='btn-group'><button class='btn btn-light' type='button' title='Modifier le convoyeur " . h($r['nom_convoyeur']) . "' onclick='showModalUpdateConvoyeur(\"".$r['id_convoyeur']."\")'><i class='fa fa-pencil-alt'></i></button><button class='btn btn-danger' title='Supprimer le convoyeur " . h($r['nom_convoyeur']) . "' onclick='deleteConvoyeur(\"".$r['id_convoyeur']."\")'><i class='fa fa-times'></i></button></div></td></tr>";
         $i++;
     endforeach;
     $tableau .= "</tbody></table>";

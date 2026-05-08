@@ -43,7 +43,7 @@ class MarqueRepository extends BaseRepository
 
     public function insert(string $nom): int|string
     {
-        return $this->insert(
+        return $this->insertGetId(
             "INSERT INTO marque_vehicule (nom_marque) VALUES (?)",
             [$nom]
         );

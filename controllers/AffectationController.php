@@ -8,9 +8,9 @@ class AffectationController extends BaseController
         $this->repo = $repo;
     }
 
-    public function fetchByHash(): never
+    public function fetchById(): never
     {
-        $row = $this->repo->findByHash($this->post('id-affectation-forModal'));
+        $row = $this->repo->findById((int)$this->post('id-affectation-forModal'));
         if (!$row) {
             $this->jsonError('Affectation introuvable', 404);
         }
@@ -21,10 +21,9 @@ class AffectationController extends BaseController
     {
         try {
             $this->repo->transactional(function () {
-                // Note: original code updates nom_chauffeur on affectation — kept for compatibility
                 $this->repo->exec(
-                    "UPDATE affectation_vehicule SET nom_chauffeur = ? WHERE SHA1(CONCAT(id_affectation, id_vehicule)) = ?",
-                    [$this->post('nom-upd-chauffeur'), $this->post('id-affectation')]
+                    "UPDATE affectation_vehicule SET nom_chauffeur = ? WHERE id_affectation = ?",
+                    [$this->post('nom-upd-chauffeur'), (int)$this->post('id-affectation')]
                 );
             });
             $this->json();
@@ -35,7 +34,7 @@ class AffectationController extends BaseController
 
     public function delete(): never
     {
-        $ok = $this->repo->deleteByHash($this->post('id-affectation-forDel'));
+        $ok = $this->repo->deleteById((int)$this->post('id-affectation-forDel'));
         if ($ok) {
             $this->json();
         }
@@ -46,7 +45,7 @@ class AffectationController extends BaseController
     {
         try {
             $this->repo->transactional(function () {
-                $this->repo->closeByHash($this->post('id-aff-toClose'));
+                $this->repo->closeById((int)$this->post('id-aff-toClose'));
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {

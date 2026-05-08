@@ -16,16 +16,13 @@ class VehiculeRepository extends BaseRepository
         );
     }
 
-    /** Single vehicle by SHA1(id_vehicule + immatriculation). */
-    public function findByHash(string $hash): ?array
+    /** Single vehicle by immatriculation. */
+    public function findByImmat(string $immat): ?array
     {
         return $this->selectOne(
-            "SELECT *,
-             (SELECT SHA1(CONCAT(id_marque, nom_marque)) FROM marque_vehicule mv WHERE mv.id_marque = vehicule.id_marque) AS id_m,
-             (SELECT SHA1(CONCAT(id_modele_vehicule, nom_modele_vehicule)) FROM modele_vehicule mdv WHERE mdv.id_modele_vehicule = vehicule.id_marque) AS id_md
-             FROM vehicule
-             WHERE SHA1(CONCAT(id_vehicule, immatriculation_vehicule)) = ?",
-            [$hash]
+            "SELECT * FROM vehicule
+             WHERE immatriculation_vehicule = ?",
+            [$immat]
         );
     }
 
@@ -37,8 +34,8 @@ class VehiculeRepository extends BaseRepository
     public function updateByImmat(
         string $immat,
         int $puissance,
-        string $marqueHash,
-        string $modeleHash,
+        int $marqueId,
+        int $modeleId,
         ?string $chassis,
         ?string $premiereUtilisation,
         ?string $expirationCarteGrise,
@@ -49,8 +46,8 @@ class VehiculeRepository extends BaseRepository
         return $this->exec(
             "UPDATE vehicule SET
              puissance_vehicule = ?,
-             id_marque = (SELECT id_marque FROM marque_vehicule WHERE SHA1(CONCAT(id_marque, nom_marque)) = ?),
-             id_modele_vehicule = (SELECT id_modele_vehicule FROM modele_vehicule WHERE SHA1(CONCAT(id_modele_vehicule, nom_modele_vehicule)) = ?),
+             id_marque = ?,
+             id_modele_vehicule = ?,
              chassis_vehicule = ?,
              premiere_utilisation = ?,
              expiration_carte_grise = ?,
@@ -58,19 +55,19 @@ class VehiculeRepository extends BaseRepository
              nb_place = ?,
              type_carburant = ?
              WHERE immatriculation_vehicule = ?",
-            [$puissance, $marqueHash, $modeleHash, $chassis, $premiereUtilisation, $expirationCarteGrise, $capacite, $nbPlace, $typeCarburant, $immat]
+            [$puissance, $marqueId, $modeleId, $chassis, $premiereUtilisation, $expirationCarteGrise, $capacite, $nbPlace, $typeCarburant, $immat]
         );
     }
 
-    public function upsertPermis(string $immat, string $permisHash): bool
+    public function upsertPermis(string $immat, int $permisId): bool
     {
         return $this->exec(
             "REPLACE INTO qualification_permis_vehicule (id_vehicule, id_type_permis)
              VALUES (
                (SELECT id_vehicule FROM vehicule WHERE immatriculation_vehicule = ?),
-               (SELECT id_type_permis FROM type_permis_vehicule WHERE SHA1(CONCAT(id_type_permis, lib_type_permis)) = ?)
+               ?
              )",
-            [$immat, $permisHash]
+            [$immat, $permisId]
         );
     }
 
@@ -86,22 +83,22 @@ class VehiculeRepository extends BaseRepository
         string $immat,
         int $capacite
     ): int|string {
-        return $this->insert(
+        return $this->insertGetId(
             "INSERT INTO vehicule (puissance_vehicule, chassis_vehicule, premiere_utilisation, expiration_carte_grise, nb_place, type_carburant, id_marque, id_modele_vehicule, id_entite, immatriculation_vehicule, capacite_consommation_vehicule)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)",
             [$puissance, $chassis, $dutil, $dexpir, $nbPlace, $tcarb, $idMarque, $idModele, $immat, $capacite]
         );
     }
 
-    public function insertPermis(string $immat, string $permisHash): bool
+    public function insertPermis(string $immat, int $permisId): bool
     {
         return $this->exec(
             "INSERT INTO qualification_permis_vehicule (id_vehicule, id_type_permis)
              VALUES (
                (SELECT id_vehicule FROM vehicule WHERE immatriculation_vehicule = ?),
-               (SELECT id_type_permis FROM type_permis_vehicule WHERE SHA1(CONCAT(id_type_permis, lib_type_permis)) = ?)
+               ?
              )",
-            [$immat, $permisHash]
+            [$immat, $permisId]
         );
     }
 

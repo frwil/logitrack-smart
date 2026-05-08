@@ -30,11 +30,11 @@ class MaintenanceController extends BaseController
             $this->maintenanceRepo->transactional(function () {
                 $this->maintenanceRepo->updateVidangeByCode(
                     $this->post('c-upd-vd'),
-                    $this->post('vh-upd-vd'),
+                    (int)$this->post('vh-upd-vd'),
                     $this->post('date-upd-vd'),
                     (int)$this->post('km-upd-av-vd'),
                     (int)$this->post('km-upd-next-vd'),
-                    $this->post('id-upd-pt-vd'),
+                    (int)$this->post('id-upd-pt-vd'),
                     $this->post('comment-upd-vd') ?: null
                 );
             });
@@ -48,7 +48,7 @@ class MaintenanceController extends BaseController
     {
         try {
             $this->maintenanceRepo->transactional(function () {
-                $this->maintenanceRepo->deleteVidangeByHash($this->post('del-vd-id'));
+                $this->maintenanceRepo->deleteVidangeById((int)$this->post('del-vd-id'));
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {
@@ -84,7 +84,7 @@ class MaintenanceController extends BaseController
 
     public function fetchPrestataire(): never
     {
-        $row = $this->maintenanceRepo->findPrestataireByHash($this->post('c-pt-s'));
+        $row = $this->maintenanceRepo->findPrestataireById((int)$this->post('c-pt-s'));
         if (!$row) {
             $this->jsonError('Prestataire introuvable', 404);
         }
@@ -96,8 +96,8 @@ class MaintenanceController extends BaseController
     {
         try {
             $this->maintenanceRepo->transactional(function () {
-                $this->maintenanceRepo->updatePrestataireByHash(
-                    $this->post('id-upd-pt'),
+                $this->maintenanceRepo->updatePrestataireById(
+                    (int)$this->post('id-upd-pt'),
                     $this->post('nom-upd-pt'),
                     $this->post('contact-upd-pt') ?: null,
                     $this->post('localisation-upd-pt') ?: null
@@ -113,7 +113,7 @@ class MaintenanceController extends BaseController
     {
         try {
             $this->maintenanceRepo->transactional(function () {
-                $this->maintenanceRepo->deletePrestataireByHash($this->post('del-pt-id'));
+                $this->maintenanceRepo->deletePrestataireById((int)$this->post('del-pt-id'));
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {
@@ -125,7 +125,7 @@ class MaintenanceController extends BaseController
 
     public function fetchCentreCout(): never
     {
-        $row = $this->maintenanceRepo->findCentreCoutByHash($this->post('c-cc-s'));
+        $row = $this->maintenanceRepo->findCentreCoutById((int)$this->post('c-cc-s'));
         if (!$row) {
             $this->jsonError('Centre de coût introuvable', 404);
         }
@@ -136,7 +136,7 @@ class MaintenanceController extends BaseController
     {
         try {
             $this->maintenanceRepo->transactional(function () {
-                $this->maintenanceRepo->deleteCentreCoutByHash($this->post('del-cc-id'));
+                $this->maintenanceRepo->deleteCentreCoutById((int)$this->post('del-cc-id'));
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {
@@ -154,14 +154,14 @@ class MaintenanceController extends BaseController
 
         ob_start();
         foreach ($rows as $r):
-            echo "<option value='" . sha1($r['periode_releve']) . "'>{$r['periode_releve']}</option>";
+            echo "<option value='" . $r['periode_releve'] . "'>{$r['periode_releve']}</option>";
         endforeach;
         $this->json(['html' => ob_get_clean()]);
     }
 
     public function fetchKmReleve(): never
     {
-        $row = $this->maintenanceRepo->findKmReleve($this->post('perSem'), $this->post('vhPer'));
+        $row = $this->maintenanceRepo->findKmReleve($this->post('perSem'), (int)$this->post('vhPer'));
         $this->json(['kms' => $row ? $row['km_releve'] : 0]);
     }
 
@@ -172,7 +172,7 @@ class MaintenanceController extends BaseController
                 $this->maintenanceRepo->updateReleveKms(
                     (int)$this->post('kmsRel'),
                     $this->post('updRel'),
-                    $this->post('vhRel')
+                    (int)$this->post('vhRel')
                 );
             });
             $this->json();

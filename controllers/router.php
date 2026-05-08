@@ -64,7 +64,7 @@ $routes = [
     'id-convoyeur-forDel' => [$convoyeurCtrl, 'delete'],
 
     // Affectation
-    'id-affectation-forModal' => [$affectationCtrl, 'fetchByHash'],
+    'id-affectation-forModal' => [$affectationCtrl, 'fetchById'],
     'id-affectation'      => [$affectationCtrl, 'update'],
     'id-affectation-forDel' => [$affectationCtrl, 'delete'],
     'id-aff-toClose'      => [$affectationCtrl, 'close'],

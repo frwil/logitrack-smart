@@ -11,30 +11,29 @@ class ConfigRepository extends BaseRepository
         return $this->select("SELECT * FROM type_permis_vehicule", []);
     }
 
-    public function findTypePermisByHash(string $hash): ?array
+    public function findTypePermisById(int $id): ?array
     {
         return $this->selectOne(
-            "SELECT *, SHA1(CONCAT(id_type_permis, lib_type_permis)) AS id_dl
-             FROM type_permis_vehicule
-             WHERE SHA1(CONCAT(id_type_permis, lib_type_permis)) = ?",
-            [$hash]
+            "SELECT * FROM type_permis_vehicule
+             WHERE id_type_permis = ?",
+            [$id]
         );
     }
 
-    public function updateTypePermisByHash(string $hash, string $lib, ?string $desc): bool
+    public function updateTypePermisById(int $id, string $lib, ?string $desc): bool
     {
         return $this->exec(
             "UPDATE type_permis_vehicule SET lib_type_permis = ?, desc_type_permis = ?
-             WHERE SHA1(CONCAT(id_type_permis, lib_type_permis)) = ?",
-            [$lib, $desc, $hash]
+             WHERE id_type_permis = ?",
+            [$lib, $desc, $id]
         );
     }
 
-    public function deleteTypePermisByHash(string $hash): bool
+    public function deleteTypePermisById(int $id): bool
     {
         return $this->exec(
-            "DELETE FROM type_permis_vehicule WHERE SHA1(CONCAT(id_type_permis, lib_type_permis)) = ?",
-            [$hash]
+            "DELETE FROM type_permis_vehicule WHERE id_type_permis = ?",
+            [$id]
         );
     }
 
@@ -57,20 +56,20 @@ class ConfigRepository extends BaseRepository
         return $this->select("SELECT * FROM document_vehicule", []);
     }
 
-    public function findDocumentByHash(string $hash): ?array
+    public function findDocumentById(int $id): ?array
     {
         return $this->selectOne(
-            "SELECT * FROM document_vehicule WHERE SHA1(CONCAT(id_document, nom_document)) = ?",
-            [$hash]
+            "SELECT * FROM document_vehicule WHERE id_document = ?",
+            [$id]
         );
     }
 
-    public function updateDocumentByHash(string $hash, string $nom, int $validite): bool
+    public function updateDocumentById(int $id, string $nom, int $validite): bool
     {
         return $this->exec(
             "UPDATE document_vehicule SET nom_document = ?, validite_document = ?
-             WHERE SHA1(CONCAT(id_document, nom_document)) = ?",
-            [$nom, $validite, $hash]
+             WHERE id_document = ?",
+            [$nom, $validite, $id]
         );
     }
 
@@ -111,7 +110,7 @@ class ConfigRepository extends BaseRepository
     {
         return $this->select(
             "SELECT *,
-             (SELECT SHA1(CONCAT(id_document, nom_document)) FROM document_vehicule dv
+             (SELECT dv.id_document FROM document_vehicule dv
               WHERE dv.id_document = dossier_vehicule_document.id_document) AS iddoc
              FROM dossier_vehicule_document
              LEFT JOIN dossier_vehicule ON dossier_vehicule.id_dossier_vehicule = dossier_vehicule_document.id_dossier_vehicule
