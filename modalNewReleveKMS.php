@@ -26,7 +26,10 @@ endif;
             </div>
             <div class="modal-body">
                 <form method="post" action="#" id="form-new-relevekms">
-                    <div class="form-floating mb-3">
+                    <div class="mb-3">
+
+                        <label for="vh-releve-kms">Véhicule</label>
+
                         <select required id="vh-releve-kms" name="vh-releve-kms" onchange="$('#date-releve-kms').change();">
                             <?php $affectationRepo = new AffectationRepository($con);
                             $rows = $_SESSION['usr-con']['region-sel'] != ''
@@ -38,18 +41,21 @@ endif;
                             endforeach;
                             ?>
                         </select>
-                        <label for="vh-releve-kms">Véhicule</label>
+
                     </div>
                     <div class="form-floating mb-3">
                         <input type="month" required id="date-releve-kms" name="date-releve-kms" value="<?php if (isset($_GET['dch'])) echo date('Y-m', strtotime($_GET['dch']));
                                                                                                         else echo date('Y-m'); ?>" class="form-control" onchange="getSemaines($('#vh-releve-kms').val(),this.value,<?php echo isset($_GET['dch']) ? j($_GET['dch']) : "''"; ?>)" <?php if (isset($_GET['dch'])) echo "readonly"; ?>>
                         <label for="date-releve-kms">Période</label>
                     </div>
-                    <div class="form-floating mb-3">
+                    <div class="mb-3">
+
+                        <label for="per-releve-kms">Semaine</label>
+
                         <select required name="per-releve-kms" id="per-releve-kms">
 
                         </select>
-                        <label for="per-releve-kms">Semaine</label>
+
                     </div>
                     <div class="form-floating mb-3">
                         <input type="number" min="0" value="0" required id="val-releve-kms" name="val-releve-kms" class="form-control">

@@ -34,7 +34,10 @@
                         </div>
                         <div class="col-6">
                             <div class="input-group mb-3">
-                                <div class="form-floating">
+                                <div class="mb-3">
+
+                                    <label for="marque-vh-upd">Marque</label>
+
                                     <select type="text" id="marque-vh-upd" name="marque-vh-upd" required>
                                         <?php $marqueRepo = new MarqueRepository($con);
                                         foreach ($marqueRepo->findAll() as $r):
@@ -42,14 +45,17 @@
                                         endforeach;
                                         ?>
                                     </select>
-                                    <label for="marque-vh-upd">Marque</label>
+
                                 </div>
                                 <button class="btn btn-primary" type="button" title="Ajouter une marque" onclick="openModalMarque()"><i class="fa fa-plus"></i></button>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="input-group mb-3">
-                                <div class="form-floating">
+                                <div class="mb-3">
+
+                                    <label for="modele-vh-upd">Modele</label>
+
                                     <select type="text" id="modele-vh-upd" name="modele-vh-upd" required>
                                         <?php $modeleRepo = new ModeleRepository($con);
                                         foreach ($modeleRepo->findAll() as $r):
@@ -57,7 +63,7 @@
                                         endforeach;
                                         ?>
                                     </select>
-                                    <label for="modele-vh-upd">Modele</label>
+
                                 </div>
                                 <button class="btn btn-primary" type="button" title="Ajouter un modèle de véhicule" onclick="openModalModele()"><i class="fa fa-plus"></i></button>
                             </div>

@@ -26,7 +26,10 @@ endif;
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="form-floating mb-3">
+                        <div class="mb-3">
+
+                            <label for="vh-br">Véhicule</label>
+
                             <select id="vh-br" name="vh-br">
                                 <?php $affectationRepo = new AffectationRepository($con);
                                 foreach ($affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
@@ -34,7 +37,7 @@ endif;
                                 endforeach;
                                 ?>
                             </select>
-                            <label for="vh-br">Véhicule</label>
+
                         </div>
                     </div>
                     <div class="col-6">
@@ -50,17 +53,23 @@ endif;
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="form-floating mb-3">
+                        <div class="mb-3">
+
+                            <label for="type-execution-br">Type d'exécution</label>
+
                             <select id="type-execution-br" name="type-execution-br">
                                 <option value="0">Interne</option>
                                 <option value="1">Externe</option>
                             </select>
-                            <label for="type-execution-br">Type d'exécution</label>
+
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="input-group mb-3">
-                            <div class="form-floating">
+                            <div class="mb-3">
+
+                                <label for="prestataire-br">Prestataire</label>
+
                                 <select id="prestataire-br" name="prestataire-br">
                                     <?php $maintenanceRepo = new MaintenanceRepository($con);
                                     $prestataires = $maintenanceRepo->findAllPrestataires();
@@ -70,7 +79,7 @@ endif;
                                     if (count($prestataires) == 0) echo "<option value=''></option>";
                                     ?>
                                 </select>
-                                <label for="prestataire-br">Prestataire</label>
+
                             </div>
                             <a class="btn btn-primary" style="padding:15px" href="?page=maintenances&subpage=prestataire&action=new&extpage" target="blank" title="Nouveau prestataire"><i class="fa fa-plus"></i></a>
                         </div>
@@ -82,7 +91,10 @@ endif;
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="form-floating mb-3">
+                        <div class="mb-3">
+
+                            <label for="plus-moins-br">Type Valeur additionnelle</label>
+
                             <select id="plus-moins-br" name="plus-moins-br">
                                 <?php $plusOuMoins = $maintenanceRepo->findAllPlusOuMoinsValue();
                                 foreach ($plusOuMoins as $r):
@@ -91,7 +103,7 @@ endif;
                                 if (count($plusOuMoins) == 0) echo "<option value=''></option>";
                                 ?>
                             </select>
-                            <label for="plus-moins-br">Type Valeur additionnelle</label>
+
                         </div>
                     </div>
                     <div class="col-6">
@@ -120,7 +132,10 @@ endif;
                     </div>
                     <div class="col-6">
                         <div class="input-group mb-3">
-                            <div class="form-floating">
+                            <div class="mb-3">
+
+                                <label for="centrecout-br">Centre de coûts</label>
+
                                 <select id="centrecout-br" name="centrecout-br" required>
                                     <?php $maintenanceRepo = new MaintenanceRepository($con);
                                     $centresCouts = $maintenanceRepo->findAllCentresCouts();
@@ -130,7 +145,7 @@ endif;
                                     if (count($centresCouts) == 0) echo "<option value=''></option>";
                                     ?>
                                 </select>
-                                <label for="centrecout-br">Centre de coûts</label>
+
                             </div>
                             <button class="btn btn-primary" style="padding:15px" onclick="var win = window.open('?page=maintenances&subpage=centreCouts&action=new&extpage', '_blank'); setTimeout(()=>{win.addEventListener('beforeunload', function(event) {loadCentreCouts()})},5000);" type="button" title="Nouveau centre de coûts"><i class="fa fa-plus"></i></button>
                         </div>

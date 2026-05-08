@@ -13,7 +13,8 @@
                         <input type="date" id="date-vd" name="date-vd" required class="form-control">
                         <label for="date-vd">Date Vidange</label>
                     </div>
-                    <div class="form-floating mb-3">
+                    <div class="mb-3">
+                        <label for="vh-vd">Véhicule</label>
                         <select id="vh-vd" name="vh-vd">
                             <?php $affectationRepo = new AffectationRepository($con);
                             foreach ($affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
@@ -21,7 +22,6 @@
                             endforeach;
                             ?>
                         </select>
-                        <label for="vh-vd">Véhicule</label>
                     </div>
                     <div class="form-floating mb-3">
                         <input type="number" class="form-control" id="km-av-vd" name="km-av-vd" required min="0" value="0">
@@ -31,7 +31,8 @@
                         <input type="number" class="form-control" id="km-next-vd" name="km-next-vd" required min="0" value="0">
                         <label for="km-av-vd">Km (prochaine vidange)</label>
                     </div>
-                    <div class="form-floating mb-3">
+                    <div class="mb-3">
+                        <label for="id-pt-vd">Prestataire</label>
                         <select id="id-pt-vd" name="id-pt-vd">
                             <?php $maintenanceRepo = new MaintenanceRepository($con);
                             foreach ($maintenanceRepo->findAllPrestataires() as $r):

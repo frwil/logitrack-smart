@@ -18,7 +18,10 @@ endif;
             </div>
             <div class="modal-body">
                 <form method="post" action="#" id="form-new-affectation">
-                    <div class="form-floating mb-3">
+                    <div class="mb-3">
+
+                        <label for="id-vehicule-aff">Véhicule</label>
+
                         <select id="id-vehicule-aff" name="id-vehicule-aff" required>
                             <?php $vehiculeRepo = new VehiculeRepository($con);
                             foreach ($vehiculeRepo->findAllWithDetails() as $r):
@@ -26,9 +29,12 @@ endif;
                             endforeach;
                             ?>
                         </select>
-                        <label for="id-vehicule-aff">Véhicule</label>
+
                     </div>
-                    <div class="form-floating mb-3">
+                    <div class="mb-3">
+
+                        <label for="id-chauffeur-aff">Chauffeur</label>
+
                         <select id="id-chauffeur-aff" name="id-chauffeur-aff" required>
                             <?php $chauffeurRepo = new ChauffeurRepository($con);
                             foreach ($chauffeurRepo->findAll() as $r):
@@ -36,11 +42,14 @@ endif;
                             endforeach;
                             ?>
                         </select>
-                        <label for="id-chauffeur-aff">Chauffeur</label>
+
                     </div>
                     <div class="row">
                         <div class="col-6">
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+
+                                <label for="id-typeutilisation-aff">Type utilisation</label>
+
                                 <select id="id-typeutilisation-aff" name="id-typeutilisation-aff" required>
                                     <?php $typeUtilRepo = new TypeUtilisationRepository($con);
                                     foreach ($typeUtilRepo->findAll() as $r):
@@ -48,11 +57,14 @@ endif;
                                     endforeach;
                                     ?>
                                 </select>
-                                <label for="id-typeutilisation-aff">Type utilisation</label>
+
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+
+                                <label for="id-modeutilisation-aff">Mode utilisation</label>
+
                                 <select id="id-modeutilisation-aff" name="id-modeutilisation-aff" required>
                                     <?php $modeUtilRepo = new ModeUtilisationRepository($con);
                                     foreach ($modeUtilRepo->findAll() as $r):
@@ -60,11 +72,14 @@ endif;
                                     endforeach;
                                     ?>
                                 </select>
-                                <label for="id-modeutilisation-aff">Mode utilisation</label>
+
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+
+                                <label for="id-entite-aff">Entité</label>
+
                                 <select id="id-entite-aff" name="id-entite-aff" required>
                                     <?php $entiteRepo = new EntiteRepository($con);
                                     foreach ($entiteRepo->findAll() as $r):
@@ -72,11 +87,14 @@ endif;
                                     endforeach;
                                     ?>
                                 </select>
-                                <label for="id-entite-aff">Entité</label>
+
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+
+                                <label for="id-region-aff">Région</label>
+
                                 <select id="id-region-aff" name="id-region-aff" required>
                                     <?php $regionRepo = new RegionRepository($con);
                                     foreach ($regionRepo->findAll() as $r):
@@ -84,7 +102,7 @@ endif;
                                     endforeach;
                                     ?>
                                 </select>
-                                <label for="id-region-aff">Région</label>
+
                             </div>
                         </div>
                         <div class="col-6">

@@ -427,7 +427,10 @@ function getTableauEvaluationVoyages()
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="form-floating mb-3">
+                        <div class="mb-3">
+
+                            <label for="id-upd-vh-voyage">Véhicule</label>
+
                             <select id="id-upd-vh-voyage" name="id-upd-vh-voyage">
                                 <?php $affRepo = new AffectationRepository($con);
                                 foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
@@ -435,7 +438,7 @@ function getTableauEvaluationVoyages()
                                 endforeach;
                                 ?>
                             </select>
-                            <label for="id-upd-vh-voyage">Véhicule</label>
+
                         </div>
                     </div>
                     <div class="col-6">
@@ -451,7 +454,10 @@ function getTableauEvaluationVoyages()
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="form-floating mb-3">
+                        <div class="mb-3">
+
+                            <label for="tc-upd-voyage">Type de chargement</label>
+
                             <select id="tc-upd-voyage" name="tc-upd-voyage" required>
                             <?php $voyageRepo = new VoyageRepository($con);
                                     foreach ($voyageRepo->findAllTypesChargement() as $r):
@@ -459,7 +465,7 @@ function getTableauEvaluationVoyages()
                                     endforeach;
                                     ?>
                             </select>
-                            <label for="tc-upd-voyage">Type de chargement</label>
+
                         </div>
                     </div>
                     <div class="col-6">

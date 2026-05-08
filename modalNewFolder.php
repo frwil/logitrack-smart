@@ -12,7 +12,10 @@
                         <input type="text" class="form-control" required id="ref-folder" name="ref-folder" readonly value="DV-<?php echo 'DV-' . date('Ymd-His-') . bin2hex(random_bytes(4)); ?>">
                         <label for="ref-folder">Référence dossier</label>
                     </div>
-                    <div class="form-floating mb-3">
+                    <div class="mb-3">
+
+                        <label for="vh-folder">Véhicule</label>
+
                         <select id="vh-folder" name="vh-folder">
                             <?php $configRepo = new ConfigRepository($con);
                             foreach ($configRepo->findAllFoldersByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
@@ -20,17 +23,20 @@
                             endforeach;
                             ?>
                         </select>
-                        <label for="vh-folder">Véhicule</label>
+
                     </div>
                     <div class="input-group mb-3">
-                        <div class="form-floating">
+                        <div class="mb-3">
+
+                            <label for="folder-doc">Document</label>
+
                             <select id="folder-doc">
                                 <?php foreach ($configRepo->findAllDocuments() as $r):
                                     echo "<option value='" . $r['id_document'] . "'>" . h($r['nom_document']) . "</option>";
                                 endforeach;
                                 ?>
                             </select>
-                            <label for="folder-doc">Document</label>
+
                         </div>
                         <div class="form-floating">
                             <input type="date" id="date-expiry" class="form-control" value="<?php date('Y-m-d'); ?>">

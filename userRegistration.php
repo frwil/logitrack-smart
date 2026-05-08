@@ -45,7 +45,10 @@ if (isset($_POST['name-user'])) {
                 <input type="text" id="fullname-user" name="fullname-user" class="form-control">
                 <label for="fullname-user">Nom Complet</label>
             </div>
-            <div class="form-floating mb-3">
+            <div class="mb-3">
+
+                <label for="region-user">Région</label>
+
                 <select id="region-user" name="region-user" required>
                     <?php $regionRepo = new RegionRepository($con);
                     foreach ($regionRepo->findActive() as $r):
@@ -53,7 +56,7 @@ if (isset($_POST['name-user'])) {
                     endforeach;
                     ?>
                 </select>
-                <label for="region-user">Région</label>
+
             </div>
             <div class="text-end" style="width:100%">
                 <button class="btn btn-primary" id="btn-save-user" type="button">Enregistrer</button>

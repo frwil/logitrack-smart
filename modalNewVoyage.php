@@ -46,7 +46,10 @@ endif;
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+
+                                <label for="id-vehicule-vg">Véhicule</label>
+
                                 <select id="id-vehicule-vg" name="id-vehicule-vg">
                                     <?php $affectationRepo = new AffectationRepository($con);
                                     foreach ($affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
@@ -54,7 +57,7 @@ endif;
                                     endforeach;
                                     ?>
                                 </select>
-                                <label for="id-vehicule-vg">Véhicule</label>
+
                             </div>
                         </div>
                         <div class="col-6">
@@ -70,7 +73,10 @@ endif;
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="form-floating">
+                            <div class="mb-3">
+
+                                <label for="typechargement-vg">Type de chargement</label>
+
                                 <select id="typechargement-vg" name="typechargement-vg">
                                     <?php $voyageRepo = new VoyageRepository($con);
                                     foreach ($voyageRepo->findAllTypesChargement() as $r):
@@ -78,7 +84,7 @@ endif;
                                     endforeach;
                                     ?>
                                 </select>
-                                <label for="typechargement-vg">Type de chargement</label>
+
                             </div>
                         </div>
                         <div class="col-6 mb-3">
@@ -93,7 +99,10 @@ endif;
                         </div>
                         <div class="col-12">
                             <div class="input-group mb-3">
-                                <div class="form-floating">
+                                <div class="mb-3">
+
+                                    <label for="trajet-list-vg">Trajet</label>
+
                                     <select id="trajet-list-vg" role="trajet">
                                         <?php $trajetRepo = new TrajetRepository($con);
                                         foreach ($trajetRepo->findAll() as $r):
@@ -101,7 +110,7 @@ endif;
                                         endforeach;
                                         ?>
                                     </select>
-                                    <label for="trajet-list-vg">Trajet</label>
+
                                 </div>
                                 <button class="btn btn-primary" onclick="addTrajet()" type="button">Ajouter le trajet</button>
                             </div>

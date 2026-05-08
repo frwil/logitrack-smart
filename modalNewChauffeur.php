@@ -22,7 +22,10 @@ endif;
                         <input type="text" id="nom-chauffeur" name="nom-chauffeur" required class="form-control">
                         <label for="nom-chauffeur">Nom chauffeur</label>
                     </div>
-                    <div class="form-floating mb-3">
+                    <div class="mb-3">
+
+                        <label for="type-permis">Cat. de permis (la plus élevée)</label>
+
                         <select id="type-permis" name="type-permis" required>
                             <?php $configRepo = new ConfigRepository($con);
                             foreach ($configRepo->findAllTypePermis() as $r):
@@ -30,7 +33,7 @@ endif;
                             endforeach;
                             ?>
                         </select>
-                        <label for="type-permis">Cat. de permis (la plus élevée)</label>
+
                     </div>
                 </form>
             </div>

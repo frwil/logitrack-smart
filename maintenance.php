@@ -150,13 +150,19 @@ function getPremiereSemaineDuMois($date)
                                                                                                                     else echo date('Y-m'); ?>" class="form-control" onchange="getSemainesToUpd(this.value)" <?php if (isset($_GET['dch'])) echo "readonly"; ?>>
                             <label for="date-upd-releve-kms">Période</label>
                         </div>
-                        <div class="form-floating mb-3">
+                        <div class="mb-3">
+
+                            <label for="per-upd-releve-kms">Semaine</label>
+
                             <select required name="per-upd-releve-kms" id="per-upd-releve-kms" onchange="$('#vh-upd-releve-kms').change()">
 
                             </select>
-                            <label for="per-upd-releve-kms">Semaine</label>
+
                         </div>
-                        <div class="form-floating mb-3">
+                        <div class="mb-3">
+
+                            <label for="vh-upd-releve-kms">Véhicule</label>
+
                             <select required id="vh-upd-releve-kms" name="vh-upd-releve-kms" onchange="getKmsPeriode(this.value,$('#per-upd-releve-kms').val())">
                                 <?php $affRepo = new AffectationRepository($con);
                                 foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
@@ -165,7 +171,7 @@ function getPremiereSemaineDuMois($date)
                                 endforeach;
                                 ?>
                             </select>
-                            <label for="vh-upd-releve-kms">Véhicule</label>
+
                         </div>
                         <div class="form-floating mb-3">
                             <input type="number" min="0" value="0" required id="val-upd-releve-kms" name="val-upd-releve-kms" class="form-control">
@@ -436,7 +442,10 @@ function getPremiereSemaineDuMois($date)
                             <input type="date" id="date-upd-vd" name="date-upd-vd" required class="form-control">
                             <label for="date-vd">Date Vidange</label>
                         </div>
-                        <div class="form-floating mb-3">
+                        <div class="mb-3">
+
+                            <label for="vh-upd-vd">Véhicule</label>
+
                             <select id="vh-upd-vd" name="vh-upd-vd">
                                 <?php $affRepo = new AffectationRepository($con);
                                 foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
@@ -445,7 +454,7 @@ function getPremiereSemaineDuMois($date)
                                 endforeach;
                                 ?>
                             </select>
-                            <label for="vh-upd-vd">Véhicule</label>
+
                         </div>
                         <div class="form-floating mb-3">
                             <input type="number" class="form-control" id="km-upd-av-vd" name="km-upd-av-vd" required min="0" value="0">
@@ -455,7 +464,10 @@ function getPremiereSemaineDuMois($date)
                             <input type="number" class="form-control" id="km-upd-next-vd" name="km-upd-next-vd" required min="0" value="0">
                             <label for="km-upd-av-vd">Km (prochaine vidange)</label>
                         </div>
-                        <div class="form-floating mb-3">
+                        <div class="mb-3">
+
+                            <label for="id-upd-pt-vd">Prestataire</label>
+
                             <select id="id-upd-pt-vd" name="id-upd-pt-vd">
                                 <?php $ptRepo = new MaintenanceRepository($con);
                                 foreach ($ptRepo->findAllPrestataires() as $r):
@@ -463,7 +475,7 @@ function getPremiereSemaineDuMois($date)
                                 endforeach;
                                 ?>
                             </select>
-                            <label for="id-upd-pt-vd">Prestataire</label>
+
                         </div>
                         <div class="form-floating mb-3">
                             <textarea class="form-control" id="comment-upd-vd" name="comment-upd-vd"></textarea>
