@@ -79,7 +79,7 @@
             }
             foreach ($voyages as $row2) {
               $table .= "<tr><td>" . h($row['immatriculation_vehicule']) . " (" . $countVoyages . " Voyages)" . "</td><td>".h($row['immatriculation_vehicule'])."</td>";
-              $table .= "<td>".date('d/m/Y',strtotime($row2['date_voyage']))."</td><td>".h($row['immatriculation_vehicule'])." - ".h($row2['lib_type_chargement']). " (".$sum_chargement[$id_vehicule][$row2['id_type_chargement']]." - ". $sum_kms[$id_vehicule][$row2['id_type_chargement']]."kms - " .$sum_conso[$id_vehicule][$row2['id_type_chargement']]."Litres)"."</td><td>".h($row2['lib_type_chargement'])."</td><td>" . h($row2['qte_chargement']) . "</td><td>".h($row2['distance_destination'])."</td><td>".h($row2['qte_carburant'])."</td></tr>";
+              $table .= "<td>".($row2['date_voyage'] ? date('d/m/Y',strtotime($row2['date_voyage'])) : '')."</td><td>".h($row['immatriculation_vehicule'])." - ".h($row2['lib_type_chargement']). " (".$sum_chargement[$id_vehicule][$row2['id_type_chargement']]." - ". $sum_kms[$id_vehicule][$row2['id_type_chargement']]."kms - " .$sum_conso[$id_vehicule][$row2['id_type_chargement']]."Litres)"."</td><td>".h($row2['lib_type_chargement'])."</td><td>" . h($row2['qte_chargement']) . "</td><td>".h($row2['distance_destination'])."</td><td>".h($row2['qte_carburant'])."</td></tr>";
             }
             if ($countVoyages == 0) {
               $table .= "<tr><td>" . h($row['immatriculation_vehicule']) . " (0)" . "</td><td>Aucun voyage trouvé</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";

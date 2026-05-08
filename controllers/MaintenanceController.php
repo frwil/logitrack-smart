@@ -72,7 +72,7 @@ class MaintenanceController extends BaseController
                 echo "<tr><td colspan='6'></td></tr>";
                 echo "<tr><td>Date vidange</td><td>Date</td><td>KM (avant vidange)</td><td>KM (prochaine vidange)</td><td>Prestataire</td><td>Commentaire</td></tr>";
             endif;
-            echo "<tr><td>" . date('d M Y', strtotime($r['date_vidange'])) . "</td><td>{$r['date_vidange']}</td><td>{$r['km_vidange']}</td><td>{$r['km_prochaine_vidange']}</td><td>{$r['nom_prestataire']}</td><td>{$r['commentaire_vidange']}</td></tr>";
+            echo "<tr><td>" . ($r['date_vidange'] ? date('d M Y', strtotime($r['date_vidange'])) : '') . "</td><td>{$r['date_vidange']}</td><td>{$r['km_vidange']}</td><td>{$r['km_prochaine_vidange']}</td><td>{$r['nom_prestataire']}</td><td>{$r['commentaire_vidange']}</td></tr>";
             $i++;
         endforeach;
         $html = ob_get_clean();
