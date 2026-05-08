@@ -27,7 +27,7 @@ class ChauffeurRepository extends BaseRepository
 
     public function insertIgnore(string $nom): bool
     {
-        return $this->insertIgnore(
+        return $this->execIgnore(
             "INSERT IGNORE INTO chauffeur (nom_chauffeur) VALUES (?)",
             [$nom]
         );

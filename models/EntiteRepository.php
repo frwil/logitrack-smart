@@ -11,7 +11,7 @@ class EntiteRepository extends BaseRepository
 
     public function insertIgnore(string $nom): bool
     {
-        return $this->insertIgnore(
+        return $this->execIgnore(
             "INSERT IGNORE INTO entite (nom_entite) VALUES (?)",
             [$nom]
         );

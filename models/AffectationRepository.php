@@ -96,7 +96,7 @@ class AffectationRepository extends BaseRepository
         string $modeUtilisationNom,
         string $entiteNom
     ): bool {
-        return $this->insertIgnore(
+        return $this->execIgnore(
             "INSERT IGNORE INTO affectation_vehicule (id_vehicule, id_chauffeur, id_type_utilisation, id_mode_utilisation, id_entite, objet_affectation, date_debut_affectation, date_fin_affectation, id_region, date_affectation, is_ferme)
              VALUES (
                (SELECT id_vehicule FROM vehicule WHERE immatriculation_vehicule = ?),

@@ -36,7 +36,7 @@ class BaseRepository
     }
 
     /** Run INSERT IGNORE — returns true regardless of whether row was inserted or already existed. */
-    protected function insertIgnore(string $sql, array $params = []): bool
+    protected function execIgnore(string $sql, array $params = []): bool
     {
         return db_exec($this->con, $sql, $params);
     }

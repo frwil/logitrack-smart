@@ -51,7 +51,7 @@ class ModeleRepository extends BaseRepository
 
     public function insertIgnore(string $nom): bool
     {
-        return $this->insertIgnore(
+        return $this->execIgnore(
             "INSERT IGNORE INTO modele_vehicule (nom_modele_vehicule) VALUES (?)",
             [$nom]
         );

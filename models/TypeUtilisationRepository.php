@@ -11,7 +11,7 @@ class TypeUtilisationRepository extends BaseRepository
 
     public function insertIgnore(string $lib): bool
     {
-        return $this->insertIgnore(
+        return $this->execIgnore(
             "INSERT IGNORE INTO type_utilisation_vehicule (lib_type_utilisation) VALUES (?)",
             [$lib]
         );

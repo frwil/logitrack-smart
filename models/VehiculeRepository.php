@@ -84,7 +84,7 @@ class VehiculeRepository extends BaseRepository
         string $immat,
         int $capacite
     ): bool {
-        return $this->insertIgnore(
+        return $this->execIgnore(
             "INSERT IGNORE INTO vehicule (puissance_vehicule, chassis_vehicule, premiere_utilisation, expiration_carte_grise, nb_place, type_carburant, id_marque, id_modele_vehicule, id_entite, immatriculation_vehicule, capacite_consommation_vehicule)
              VALUES (?, ?, ?, ?, ?, ?,
                (SELECT id_marque FROM marque_vehicule WHERE nom_marque = ?),
