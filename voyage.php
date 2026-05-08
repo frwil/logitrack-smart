@@ -47,7 +47,7 @@
         $tableau .= "<td class='text-bg-dark'>$total_voyages</td><td class='text-bg-dark'>$total_kms</td><td class='text-bg-dark'>$total_chargement</td><td class='text-bg-dark'>$total_carburant</td></tr>";
     endwhile;
     $tableau .= "</tbody></table>";
-    $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='" . (isset($_POST['date-f']) ? $_POST['date-f'] : date('Y-m-01')) . "'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='" . (isset($_POST['date-t']) ? $_POST['date-t'] : date('Y-m-t')) . "'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
+    $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='" . (isset($_POST['date-f']) ? h($_POST['date-f']) : date('Y-m-01')) . "'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='" . (isset($_POST['date-t']) ? h($_POST['date-t']) : date('Y-m-t')) . "'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
     return $form . "<hr>" . $tableau;
 }
 function getTableauVoyagesVehicules()
@@ -164,7 +164,7 @@ function getTableauVoyagesVehicules()
         $tfoot .= "</tr>";
     endif;
     $tableau .= "</tbody><tfoot>$tfoot</tfoot></table>";
-    $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='" . (isset($_POST['date-f']) ? $_POST['date-f'] : date('Y-m-01')) . "'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='" . (isset($_POST['date-t']) ? $_POST['date-t'] : date('Y-m-t')) . "'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
+    $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='" . (isset($_POST['date-f']) ? h($_POST['date-f']) : date('Y-m-01')) . "'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='" . (isset($_POST['date-t']) ? h($_POST['date-t']) : date('Y-m-t')) . "'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
     return $form . "<hr>" . $tableau;
 }
 function getTableauVoyagesPeriodes()
@@ -268,7 +268,7 @@ error_reporting(E_ALL); */
         $tfoot .= "</tr>";
     endif;
     $tableau .= "</tbody><tfoot>$tfoot</tfoot></table>";
-    $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='" . (isset($_POST['date-f']) ? $_POST['date-f'] : date('Y-m-01')) . "'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='" . (isset($_POST['date-t']) ? $_POST['date-t'] : date('Y-m-t')) . "'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
+    $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='" . (isset($_POST['date-f']) ? h($_POST['date-f']) : date('Y-m-01')) . "'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='" . (isset($_POST['date-t']) ? h($_POST['date-t']) : date('Y-m-t')) . "'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
     return $form . "<hr>" . $tableau;
 }
 
@@ -331,7 +331,7 @@ function getTableauEvaluationVoyages()
         $tableau .= "</tr>";
     endforeach;
     $tableau .= "</tbody></table>";
-    $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='" . (isset($_POST['date-f']) ? $_POST['date-f'] : date('Y-m-01')) . "'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='" . (isset($_POST['date-t']) ? $_POST['date-t'] : date('Y-m-t')) . "'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
+    $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='" . (isset($_POST['date-f']) ? h($_POST['date-f']) : date('Y-m-01')) . "'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='" . (isset($_POST['date-t']) ? h($_POST['date-t']) : date('Y-m-t')) . "'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
 
     return $form . "<hr>" . $tableau;
 }

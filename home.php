@@ -106,11 +106,11 @@ endif;
         <ul class="nav nav-underline bg-primary navbar-expand-lg text-center" style="padding:5px;width:100%;font-size:1.1em">
             <li class="nav-item">
                 <a class="nav-link text-white">
-                    <?php echo $_SESSION['usr-con']['name_user'] != "" ? strtoupper($_SESSION['usr-con']['name_user']) : ""; ?>
+                    <?php echo h($_SESSION['usr-con']['name_user'] != "" ? strtoupper($_SESSION['usr-con']['name_user']) : ""); ?>
                 </a>
             </li>
         </ul>
-        <a class="dropdown-toggle text-white" style="padding:15px;font-weight:bold" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false"><?php echo $_SESSION['usr-con']['region-sel-name']; ?></a>
+        <a class="dropdown-toggle text-white" style="padding:15px;font-weight:bold" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false"><?php echo h($_SESSION['usr-con']['region-sel-name']); ?></a>
         <ul class="dropdown-menu">
             <?php $uright = explode(',', $_SESSION['usr-con']['users_region']);
             for ($i = 0; $i < count($uright); $i++):
@@ -137,15 +137,15 @@ endif;
                     <?php endif; ?>
                     <?php if (isset($_GET['subpage'])) : ?>
                         <li class="nav-item">
-                            <a class="nav-link" href="?page=<?php echo $_GET['page'] != '' ? $_GET['page'] : 'vehicules'; ?>" title="Afficher la liste des véhicules">Liste des véhicules</a>
+                            <a class="nav-link" href="?page=<?php echo h($_GET['page'] != '' ? $_GET['page'] : 'vehicules'); ?>" title="Afficher la liste des véhicules">Liste des véhicules</a>
                         </li>
                     <?php endif; ?>
                     <?php if (in_array('save', $rights_vehicule)): ?>
                         <li class="nav-item">
-                            <a class="nav-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeMarquesVehicules') echo 'active'; ?>" href="?page=<?php echo isset($_GET['page']) && $_GET['page'] != '' ? $_GET['page'] : 'vehicules'; ?>&subpage=listeMarquesVehicules" title="Afficher la liste des marques de véhicules">Marques de véhicule</a>
+                            <a class="nav-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeMarquesVehicules') echo 'active'; ?>" href="?page=<?php echo h(isset($_GET['page']) && $_GET['page'] != '' ? $_GET['page'] : 'vehicules'); ?>&subpage=listeMarquesVehicules" title="Afficher la liste des marques de véhicules">Marques de véhicule</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeModelesVehicules') echo 'active'; ?>" href="?page=<?php echo isset($_GET['page']) && $_GET['page'] != '' ? $_GET['page'] : 'vehicules'; ?>&subpage=listeModelesVehicules" title="Afficher la liste des modèles de véhicules">Modèles de véhicule</a>
+                            <a class="nav-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeModelesVehicules') echo 'active'; ?>" href="?page=<?php echo h(isset($_GET['page']) && $_GET['page'] != '' ? $_GET['page'] : 'vehicules'); ?>&subpage=listeModelesVehicules" title="Afficher la liste des modèles de véhicules">Modèles de véhicule</a>
                         </li>
                         <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeMarquesVehicules') : ?>
                             <hr>

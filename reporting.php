@@ -22,12 +22,12 @@
         <div class="mb-3 row">
           <div class="col-6">
             <label for="date_debut" class="form-label">Date de début</label>
-            <input type="date" class="form-control" id="date_debut" name="date_debut" required value="<?php if (isset($_POST['date_debut'])) echo $_POST['date_debut'];
+            <input type="date" class="form-control" id="date_debut" name="date_debut" required value="<?php if (isset($_POST['date_debut'])) echo h($_POST['date_debut']);
                                                                                                       else echo date("Y-m-d"); ?>">
           </div>
           <div class="col-6">
             <label for="date_fin" class="form-label">Date de fin</label>
-            <input type="date" class="form-control" id="date_fin" name="date_fin" required value="<?php if (isset($_POST['date_fin'])) echo $_POST['date_fin'];
+            <input type="date" class="form-control" id="date_fin" name="date_fin" required value="<?php if (isset($_POST['date_fin'])) echo h($_POST['date_fin']);
                                                                                                   else echo date("Y-m-d"); ?>">
           </div>
         </div>

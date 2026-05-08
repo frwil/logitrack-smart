@@ -163,7 +163,7 @@ endif;
     <?php if ($_GET['subpage'] == 'drivelicence') : ?>
         <?php if (isset($_GET['action']) && $_GET['action'] == 'new') include("modalNewDriveLicence.php"); ?>
         <div class="alert alert-primary">Catégories de Permis de conduire</div>
-        <a href="?page=configuration&subpage=drivelicence&action=new" class="btn btn-primary">Nouvelle catégorie de permis</a>&nbsp;<a href="?page=configuration&subpage=<?php echo $_GET['subpage']; ?>&action=tableexport&id=table-drivelicence" class="btn btn-primary">Exporter</a>
+        <a href="?page=configuration&subpage=drivelicence&action=new" class="btn btn-primary">Nouvelle catégorie de permis</a>&nbsp;<a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-drivelicence" class="btn btn-primary">Exporter</a>
         <hr>
         <?php echo getTableauDriveLicence(); ?>
         <script>
@@ -269,7 +269,7 @@ endif;
     <?php elseif ($_GET['subpage'] == 'documentslist') : ?>
         <?php if (isset($_GET['action']) && $_GET['action'] == 'new') include("modalNewDocs.php"); ?>
         <div class="alert alert-primary">Documents de véhicule</div>
-        <a href="?page=configuration&subpage=documentslist&action=new" class="btn btn-primary">Nouveau document de véhicules</a>&nbsp;<a href="?page=configuration&subpage=<?php echo $_GET['subpage']; ?>&action=tableexport&id=table-docs" class="btn btn-primary">Exporter</a>
+        <a href="?page=configuration&subpage=documentslist&action=new" class="btn btn-primary">Nouveau document de véhicules</a>&nbsp;<a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-docs" class="btn btn-primary">Exporter</a>
         <hr>
         <?php echo getTableauDocs(); ?>
         <?php if (isset($_GET['action']) && $_GET['action'] == 'upd' && isset($_GET['id']) && $_GET['id'] != ""): ?>
@@ -290,7 +290,7 @@ endif;
                             <form method="post" action="#" id="form-upd-doc">
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" required id="nom-doc-upd" name="nom-doc-upd" value="<?php echo $doc['nom_document']; ?>">
-                                    <input type="hidden" id="id-doc" name="id-doc" value="<?php echo $_GET['id']; ?>">
+                                    <input type="hidden" id="id-doc" name="id-doc" value="<?php echo h($_GET['id']); ?>">
                                     <label for="nom-doc-upd">Désignation</label>
                                 </div>
                                 <div class="form-floating mb-3">
@@ -352,7 +352,7 @@ endif;
     <?php elseif ($_GET['subpage'] == 'folderdetails') : ?>
         <?php if (isset($_GET['action']) && $_GET['action'] == 'new') include("modalNewFolder.php"); ?>
         <div class="alert alert-primary">Dossier de véhicule</div>
-        <a href="?page=configuration&subpage=folderdetails&action=new" class="btn btn-primary">Nouveau dossier de véhicule</a>&nbsp;<a href="?page=configuration&subpage=<?php echo $_GET['subpage']; ?>&action=tableexport&id=table-folder" class="btn btn-primary">Exporter</a>
+        <a href="?page=configuration&subpage=folderdetails&action=new" class="btn btn-primary">Nouveau dossier de véhicule</a>&nbsp;<a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-folder" class="btn btn-primary">Exporter</a>
         <hr>
         <?php echo getTableauFolder(); ?>
         <script>
@@ -379,7 +379,7 @@ endif;
                         <div class="modal-body">
                             <form method="post" action="#" id="form-new-folder">
                                 <div class="form-floating mb-3">
-                                    <input type="text" class="form-control" required id="ref-folder" name="ref-folder" readonly value="<?php echo $_GET['id']; ?>">
+                                    <input type="text" class="form-control" required id="ref-folder" name="ref-folder" readonly value="<?php echo h($_GET['id']); ?>">
                                     <label for="ref-folder">Référence dossier</label>
                                 </div>
                                 <div class="form-floating mb-3">

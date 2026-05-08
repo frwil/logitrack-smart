@@ -26,7 +26,7 @@ function getTableauReleveKMS()
         endwhile;
         $table .= "</tbody></table><div id='output' style='margin: 30px;'></div>";
         include("modalNewReleveKMS.php");
-        return "<a class='btn btn-primary' href='?page=maintenances&subpage=releveKms&action=new'>Nouveau Relevé</a>&nbsp;<button class='btn btn-primary' data-bs-toggle='modal' data-bs-target='#modal-upd-relevekms'>Modifier Relevé</button>&nbsp;<div style='display:inline-block;padding:15px'><form class='row' style='width:700px' method='post' action='#'><div class='col-5 form-floating' style='padding-left:5px'><input type='month' id='date-f' name='date-f' value='" . (isset($_POST['date-f']) ? $_POST['date-f'] : date('Y-m')) . "' class='form-control'><label for='date-f'>Date début</label></div><div class='col-5 form-floating' style='padding-left:5px'><input type='month' id='date-t' name='date-t' value='" . (isset($_POST['date-t']) ? $_POST['date-t'] : date('Y-m')) . "' class='form-control'><label for='date-t'>Date fin</label></div><div class='col-2' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form></div><hr>$table";
+        return "<a class='btn btn-primary' href='?page=maintenances&subpage=releveKms&action=new'>Nouveau Relevé</a>&nbsp;<button class='btn btn-primary' data-bs-toggle='modal' data-bs-target='#modal-upd-relevekms'>Modifier Relevé</button>&nbsp;<div style='display:inline-block;padding:15px'><form class='row' style='width:700px' method='post' action='#'><div class='col-5 form-floating' style='padding-left:5px'><input type='month' id='date-f' name='date-f' value='" . (isset($_POST['date-f']) ? h($_POST['date-f']) : date('Y-m')) . "' class='form-control'><label for='date-f'>Date début</label></div><div class='col-5 form-floating' style='padding-left:5px'><input type='month' id='date-t' name='date-t' value='" . (isset($_POST['date-t']) ? h($_POST['date-t']) : date('Y-m')) . "' class='form-control'><label for='date-t'>Date fin</label></div><div class='col-2' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form></div><hr>$table";
     else :
         return "<div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>";
     endif;
@@ -279,7 +279,7 @@ endif;
                 <div class="modal-body">
                     <form method="post" action="#" id="form-upd-relevekms">
                         <div class="form-floating mb-3">
-                            <input type="month" required id="date-upd-releve-kms" name="date-upd-releve-kms" value="<?php if (isset($_GET['dch'])) echo date('Y-m', strtotime($_GET['dch']));
+                            <input type="month" required id="date-upd-releve-kms" name="date-upd-releve-kms" value="<?php if (isset($_GET['dch'])) echo h(date('Y-m', strtotime($_GET['dch'])));
                                                                                                                     else echo date('Y-m'); ?>" class="form-control" onchange="getSemainesToUpd(this.value)" <?php if (isset($_GET['dch'])) echo "readonly"; ?>>
                             <label for="date-upd-releve-kms">Période</label>
                         </div>
