@@ -91,13 +91,15 @@
             } else {
                 showLoginError(resp.error || "Erreur d'authentification");
             }
-        }).fail(function(jqXHR) {
-            var msg = "Erreur de connexion";
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            var msg;
             try {
                 var r = JSON.parse(jqXHR.responseText);
-                if (r.error) msg = r.error;
-            } catch (_) {}
-            if (jqXHR.status === 403) msg = "Session expirée, rechargez la page";
+                msg = r.error || r.message || JSON.stringify(r);
+            } catch (_) {
+                var preview = (jqXHR.responseText || '').substring(0, 300);
+                msg = 'HTTP ' + jqXHR.status + ' ' + errorThrown + (preview ? ' — ' + preview : '');
+            }
             showLoginError(msg);
         }).always(function() {
             $btn.prop('disabled', false);

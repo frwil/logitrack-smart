@@ -65,11 +65,25 @@ endif; ?>
     endif;
     if (!hash_equals($_SESSION['csrf_token'], (string)$csrf_token)):
         http_response_code(403);
-        die('CSRF validation failed');
+        header('Content-Type: application/json; charset=utf-8');
+        die(json_encode(['success' => false, 'error' => 'CSRF validation failed — reload the page']));
     endif;
 endif; ?>
-    <?php $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME')); ?>
-    <?php require_once __DIR__ . '/controllers/router.php'; ?>
+    <?php try {
+        $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME'));
+        if (!$con) {
+            throw new \RuntimeException('Database connection failed');
+        }
+        require_once __DIR__ . '/controllers/router.php';
+    } catch (\Throwable $e) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+            die(json_encode(['success' => false, 'error' => $e->getMessage()]));
+        }
+        // On GET, let the page render with the error visible
+        $dbError = $e->getMessage();
+    } ?>
     <?php if (!isset($_SESSION['usr-con'])): include('login.php');
     else : ?>
         <?php
