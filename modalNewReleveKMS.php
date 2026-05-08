@@ -156,14 +156,12 @@ endif;
         }).done((e) => {
             let v = e.split('NewReleveKMS%%%%%%')[1]
             if (v == '1') {
-                $.notify("Nouveau relevé enregistré!!", {
-                    className: 'success'
-                })
+                showSuccess("Nouveau relevé enregistré!!")
                 $('#modal-new-relevekms').modal('hide')
                 $('#form-new-relevekms *').val('')
                 location.reload()
             } else {
-                $.notify("Erreur lors de l'enregistrement")
+                showError("Erreur lors de l'enregistrement")
             }
         })
     }

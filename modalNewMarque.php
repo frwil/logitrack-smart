@@ -61,7 +61,7 @@ endif;
 
     function saveMarque() {
         if ($('#nom-marque').val() == '') {
-            $.notify("Le champs est obligatoire!");
+            showError("Le champs est obligatoire!");
             return false
         }
         $.ajax({
@@ -70,9 +70,7 @@ endif;
         }).done((e) => {
             let v = e.split('NewMarque%%%%%%')[1]
             if (v == '1') {
-                $.notify("Nouvelle marque créee!!", {
-                    className: 'success'
-                })
+                showSuccess("Nouvelle marque créee!!")
                 $('#modal-new-marque').modal('hide')
                 $('#form-new-marque *').val('')
                 refreshMarqueOptions()
@@ -80,9 +78,9 @@ endif;
                     location.reload()
                 <?php endif; ?>
             } else if (v == '1062') {
-                $.notify("Cette marque de véhicule existe déjà")
+                showError("Cette marque de véhicule existe déjà")
             } else {
-                $.notify("Erreur lors de l'enregistrement")
+                showError("Erreur lors de l'enregistrement")
             }
         })
     }

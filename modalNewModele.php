@@ -63,7 +63,7 @@ endif;
 
     function saveModele() {
         if ($('#nom-modele').val() == '') {
-            $.notify("Le champs est obligatoire!");
+            showError("Le champs est obligatoire!");
             return false
         }
         $.ajax({
@@ -72,9 +72,7 @@ endif;
         }).done((e) => {
             let v = e.split('NewModele%%%%%%')[1]
             if (v == '1') {
-                $.notify("Nouveau modèle de véhicule créé!!", {
-                    className: 'success'
-                })
+                showSuccess("Nouveau modèle de véhicule créé!!")
                 $('#modal-new-modele').modal('hide')
                 $('#form-new-modele *').val('')
                 refreshModeleOptions()
@@ -82,9 +80,9 @@ endif;
                     location.reload()
                 <?php endif; ?>
             } else if (v == '1062') {
-                $.notify("Ce modèle de véhicule existe déjà")
+                showError("Ce modèle de véhicule existe déjà")
             } else {
-                $.notify("Erreur lors de l'enregistrement")
+                showError("Erreur lors de l'enregistrement")
             }
         })
     }

@@ -459,11 +459,9 @@ endif;
                 if (v == '1') {
                     location.reload();
                 } else if (v == '2') {
-                    $.notify("Vous n'avez pas les droits pour passer à cette région", {
-                        className: 'warning'
-                    })
+                    showWarning("Vous n'avez pas les droits pour passer à cette région")
                 } else {
-                    $.notify("Erreur lors du changement de région")
+                    showError("Erreur lors du changement de région")
                 }
             })
         }

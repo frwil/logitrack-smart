@@ -164,7 +164,7 @@ if (isset($_POST['immat-vh-upd'])) {
             }
         })
         if (!valid) {
-            $.notify('Les champs en rouge sont obligatoires')
+            showError('Les champs en rouge sont obligatoires')
             return false
         }
         $.ajax({
@@ -173,10 +173,10 @@ if (isset($_POST['immat-vh-upd'])) {
         }).done((e) => {
             let v = e.split('UPDVH%%%%%%')[1]
             if (v == '1') {
-                alert('Enregistrement effectué!!!')
+                showSuccess('Enregistrement effectué!!!')
                 location.reload()
             } else {
-                $.notify("Erreur lors de l'enregistrement")
+                showError("Erreur lors de l'enregistrement")
             }
         })
     }
@@ -214,10 +214,10 @@ if (isset($_POST['immat-vh-upd'])) {
             }).done((e)=>{
                 let v=e.split('DELVH%%%%%%')[1]
                 if(v=='1'){
-                    alert('Véhicule supprimé!')
+                    showSuccess('Véhicule supprimé!')
                     location.reload()
-                }
-                $.notify("Echec de l'opération!")
+                } else {
+                showError("Echec de l'opération!") }
             })
         }
     }

@@ -23,7 +23,9 @@ if (isset($_POST['name-user'])):
                     array_push($rights, $r);
                 endwhile;
                 $user['users-rights'] = $rights;
+                unset($user['pass_user']);
                 $_SESSION['usr-con'] = $user;
+                session_regenerate_id(true);
                 die("%%%%%%1");
             } else {
                 die("%%%%%%2");
@@ -90,7 +92,7 @@ endif;
             }
         })
         if (!valid) {
-            $.notify("Tous les champs sont obligatoires!!")
+            showError("Tous les champs sont obligatoires!!")
             return false
         }
         $.ajax({
@@ -101,11 +103,11 @@ endif;
             if (v == '1') {
                 location = 'index.php'
             } else if (v == '0') {
-                $.notify("Cet utilisateur n'existe pas")
+                showError("Cet utilisateur n'existe pas")
             } else if (v == '3') {
-                $.notify("Vous n'avez pas le droit de vous connecter à cette région")
+                showError("Vous n'avez pas le droit de vous connecter à cette région")
             } else {
-                $.notify("Le mot de passe est incorrect!!")
+                showError("Le mot de passe est incorrect!!")
             }
         })
     })

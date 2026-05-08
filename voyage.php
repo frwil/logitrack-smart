@@ -406,16 +406,14 @@ endif;
             }).done((e) => {
                 let v = e.split('UpdVoyage%%%%%%')[1]
                 if (v == '1') {
-                    $.notify('Modification effectuée!!', {
-                        className: 'success'
-                    })
+                    showSuccess('Modification effectuée!!')
                     <?php if(isset($_POST['date-f'])): 
                     echo "$('body').append('<form method=\"post\" action=\"#\" id=\"form-reload-after-upd\"><input type=\"hidden\" name=\"date-f\" value=" . j($_POST['date-f']) . "><input type=\"hidden\" name=\"date-t\" value=" . j($_POST['date-t']) . "></form>');$('#form-reload-after-upd').submit();";
                     else : ?>
                     location = "?page=voyages"
                     <?php endif; ?>
                 } else {
-                    $.notify("Erreur lors de la modificaiton")
+                    showError("Erreur lors de la modificaiton")
                 }
             })
         }
@@ -430,12 +428,10 @@ endif;
             }).done((e) => {
                 let v = e.split('UpdVoyage%%%%%%')[1]
                 if (v == '1') {
-                    $.notify('Voyage supprimée!!', {
-                        className: 'success'
-                    })
+                    showSuccess('Voyage supprimée!!')
                     location.reload()
                 } else {
-                    $.notify("Echec de l'opération")
+                    showError("Echec de l'opération")
                 }
             })
         }

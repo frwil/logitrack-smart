@@ -59,7 +59,7 @@ endif;
         }).done((e)=>{
             let v=e.split('NEWDOC%%%%%%')[1]
             if(v=='1'){
-                alert('Enregistrement effectué!')
+                showSuccess('Enregistrement effectué!')
                 location.reload()
             }else if(v=='1062'){
                 $('#modal-doc').notify('Ce document existe déjà!',{position:'top'})

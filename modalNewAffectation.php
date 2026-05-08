@@ -158,7 +158,7 @@ endif;
             }
         })
         if (!valid) {
-            $.notify('Tous les champs en rouge sont obligatoires!!!')
+            showError('Tous les champs en rouge sont obligatoires!!!')
             return false
         }
         $.ajax({
@@ -167,9 +167,7 @@ endif;
         }).done((e) => {
             let v = e.split('NewAffectation%%%%%%')[1]
             if (v == '1') {
-                $.notify("Nouvelle affectation créee!!", {
-                    className: 'success'
-                })
+                showSuccess("Nouvelle affectation créee!!")
                 $('#modal-new-affectation').modal('hide')
                 $('#form-new-affectation *').val('')
                 location="?page=affectationVehicules"
@@ -178,7 +176,7 @@ endif;
                     position:'top'
                 })
             } else {
-                $.notify("Erreur lors de l'enregistrement")
+                showError("Erreur lors de l'enregistrement")
             }
         })
     }

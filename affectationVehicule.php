@@ -82,12 +82,10 @@ endif;
             }).done((e)=>{
                 let v = e.split('UpdAffectation%%%%%%')[1]
                 if (v == '1') {
-                    $.notify('Modification effectuée!!', {
-                        className: 'success'
-                    })
+                    showSuccess('Modification effectuée!!')
                     location="?page=affectationVehicules&subpage=listeAffectationsVehicules"
                 } else {
-                    $.notify("Erreur lors de la modificaiton")
+                    showError("Erreur lors de la modificaiton")
                 }
             })
         }
@@ -101,12 +99,10 @@ endif;
             }).done((e)=>{
                 let v=e.split('UpdAffectation%%%%%%')[1]
                 if(v=='1'){
-                    $.notify('Affectation supprimée!!',{
-                        className:'success'
-                    })
+                    showSuccess('Affectation supprimée!!')
                     setTimeout(()=>{location.reload()},3000)
                 }else{
-                    $.notify("Echec de l'opération")
+                    showError("Echec de l'opération")
                 }
             })
         }
@@ -120,12 +116,10 @@ endif;
             }).done((e)=>{
                 let v=e.split('CloseAffectation%%%%%%')[1]
                 if(v=='1'){
-                    $.notify('Affectation clôturée!!',{
-                        className:'success'
-                    })
+                    showSuccess('Affectation clôturée!!')
                     setTimeout(()=>{location.reload()},3000)
                 }else{
-                    $.notify("Erreur lors de l'opération!")
+                    showError("Erreur lors de l'opération!")
                 }
             })
         }

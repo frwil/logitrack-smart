@@ -63,12 +63,10 @@ endif;
             }).done((e) => {
                 let v = e.split('UpdMarque%%%%%%')[1]
                 if (v == '1') {
-                    $.notify('Modification effectuée!!', {
-                        className: 'success'
-                    })
+                    showSuccess('Modification effectuée!!')
                     location.reload()
                 } else {
-                    $.notify("Erreur lors de la modificaiton")
+                    showError("Erreur lors de la modificaiton")
                 }
             })
         }
@@ -82,12 +80,10 @@ endif;
             }).done((e)=>{
                 let v=e.split('UpdMarque%%%%%%')[1]
                 if(v=='1'){
-                    $.notify('Marque supprimée!!',{
-                        className:'success'
-                    })
+                    showSuccess('Marque supprimée!!')
                     location.reload()
                 }else{
-                    $.notify("Echec de l'opération")
+                    showError("Echec de l'opération")
                 }
             })
         }

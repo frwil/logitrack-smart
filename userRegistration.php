@@ -9,7 +9,8 @@ try{
     die("%%%%%%1");
 }catch(mysqli_sql_exception $e){
     mysqli_rollback($con);
-    die("%%%%%%0".$e->getMessage());
+    error_log("User registration failed: " . $e->getMessage());
+	    die("%%%%%%0");
 }
 endif;
 ?>
@@ -65,19 +66,19 @@ endif;
         $('#pass-user-confirm').removeClass('is-invalid')
         if($('#pass-user').val()!=$('#pass-user-confirm').val()){
             valid=false
-            $.notify("Le mot de passe doit être identique à la confirmation!")
+            showError("Le mot de passe doit être identique à la confirmation!")
             $('#pass-user-confirm').addClass('is-invalid')
             return false
         }
         $('#name-user').removeClass('is-invalid')
         if($('#name-user').val().trim().split(" ").length>1){
-            $.notify("Le nom d'utilisateur doit être en un seul mot")
+            showError("Le nom d'utilisateur doit être en un seul mot")
             valid=false
             $('#name-user').addClass('is-invalid')
             return false
         }
         if(!valid){
-            $.notify("Tous les champs en rouge sont obligatoires!")
+            showError("Tous les champs en rouge sont obligatoires!")
             return false
         }
         $.ajax({
@@ -86,12 +87,10 @@ endif;
         }).done((e)=>{
             let v=e.split('%%%%%%')[1]
             if(v=='1'){
-                $.notify("Enregistrement effectué!",{
-                    className:'success'
-                })
+                showSuccess("Enregistrement effectué!")
                 location.reload()
             }else{
-                $.notify("Erreur lors de l'enregistrement !!!")
+                showError("Erreur lors de l'enregistrement !!!")
             }
         })
     })

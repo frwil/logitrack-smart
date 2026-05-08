@@ -46,7 +46,7 @@ endif;
     }
     function saveObjectif() {
         if ($('#date-objectif').val() == '' || $('#objectif').val()=='') {
-            $.notify("Les champs sont obligatoires!");
+            showError("Les champs sont obligatoires!");
             return false
         }
         $.ajax({
@@ -55,16 +55,14 @@ endif;
         }).done((e) => {
             let v = e.split('NewObjectif%%%%%%')[1]
             if (v == '1') {
-                $.notify("Objectif enregisté pour la date du "+$('#date-objectif').val()+" !!", {
-                    className: 'success'
-                })
+                showSuccess("Objectif enregisté pour la date du "+$('#date-objectif').val()+" !!")
                 $('#modal-new-objectif').modal('hide')
                 $('#form-new-objectif *').val('')
                 location="?page=voyages&subpage=listeObjectifsVoyages&action=new"
             } else if (v == '1062') {
-                $.notify("Un objectif a déjà été défini pour cette journée.")
+                showError("Un objectif a déjà été défini pour cette journée.")
             } else {
-                $.notify("Erreur lors de l'enregistrement")
+                showError("Erreur lors de l'enregistrement")
             }
         })
     }

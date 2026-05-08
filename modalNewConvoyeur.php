@@ -61,7 +61,7 @@ endif;
 
     function saveConvoyeur() {
         if ($('#nom-convoyeur').val() == '') {
-            $.notify("Le champ est obligatoire!");
+            showError("Le champ est obligatoire!");
             return false
         }
         $.ajax({
@@ -70,17 +70,15 @@ endif;
         }).done((e) => {
             let v = e.split('NewConvoyeur%%%%%%')[1]
             if (v == '1') {
-                $.notify("Nouveau convoyeur créee!!", {
-                    className: 'success'
-                })
+                showSuccess("Nouveau convoyeur créee!!")
                 $('#modal-new-convoyeur').modal('hide')
                 $('#form-new-convoyeur *').val('')
                 refreshConvoyeurOptions()
                 location="?page=affectationVehicules&subpage=listeConvoyeurs"
             } else if (v == '1062') {
-                $.notify("Ce convoyeur existe déjà")
+                showError("Ce convoyeur existe déjà")
             } else {
-                $.notify("Erreur lors de l'enregistrement")
+                showError("Erreur lors de l'enregistrement")
             }
         })
     }

@@ -385,9 +385,9 @@ endif;
             }).done((e) => {
                 let v = e.split('UPDREL%%%%%%')[1]
                 if (v == '1') {
-                    alert('Enregistrement effectué!')
+                    showSuccess('Enregistrement effectué!')
                     location.reload()
-                }
+                } else {
                 $('#form-upd-relevekms').notify("Erreur lors de l'enregistrement", {
                     position: 'top'
                 })
@@ -476,7 +476,7 @@ endif;
             }).done((e) => {
                 let v = e.split('PTMOD%%%%%%')[1]
                 if (v == '1') {
-                    alert('Enregistrement effectué')
+                    showSuccess('Enregistrement effectué')
                     location.reload()
                 } else {
                     $('#modal-upd-prestataire .modal-body').notify("Erreur lors de l'enregistrement!", {
@@ -494,12 +494,10 @@ endif;
                 }).done((e) => {
                     let v = e.split('DELPT%%%%%%')[1]
                     if (v == '1') {
-                        alert('Suppression effectuée!')
+                        showSuccess('Suppression effectuée!')
                         location.reload()
-                    }
-                    $.notify("Erreur lors de la suppression!", {
-                        position: 'top'
-                    })
+                    } else {
+                    showError("Erreur lors de la suppression!") }
                 })
             }
         }
@@ -631,7 +629,7 @@ endif;
             }).done((e) => {
                 let v = e.split('VIDANGEMOD%%%%%%')[1]
                 if (v == '1') {
-                    alert('Enregistrement effectué')
+                    showSuccess('Enregistrement effectué')
                     location.reload()
                 } else {
                     $('#modal-upd-vidange').notify("Erreur lors de l'enregistrement!", {
@@ -660,12 +658,10 @@ endif;
                 }).done((e) => {
                     let v = e.split('DELVD%%%%%%')[1]
                     if (v == '1') {
-                        alert('Suppression effectuée!')
+                        showSuccess('Suppression effectuée!')
                         location.reload()
-                    }
-                    $.notify("Erreur lors de la suppression!", {
-                        position: 'top'
-                    })
+                    } else {
+                    showError("Erreur lors de la suppression!") }
                 })
             }
         }
@@ -771,7 +767,7 @@ endif;
             }).done((e) => {
                 let v = e.split('CCMOD%%%%%%')[1]
                 if (v == '1') {
-                    alert('Enregistrement effectué')
+                    showSuccess('Enregistrement effectué')
                     location.reload()
                 } else {
                     $('#modal-upd-centrecout .modal-body').notify("Erreur lors de l'enregistrement!", {
@@ -805,12 +801,10 @@ endif;
                 }).done((e) => {
                     let v = e.split('DELCC%%%%%%')[1]
                     if (v == '1') {
-                        alert('Suppression effectuée!')
+                        showSuccess('Suppression effectuée!')
                         location.reload()
-                    }
-                    $.notify("Erreur lors de la suppression!", {
-                        position: 'top'
-                    })
+                    } else {
+                    showError("Erreur lors de la suppression!") }
                 })
             }
         }

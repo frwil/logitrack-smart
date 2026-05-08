@@ -127,7 +127,7 @@ if (isset($_POST['immat-vh'])) {
             }
         })
         if (!valid) {
-            $.notify('Les champs en rouge sont obligatoires')
+            showError('Les champs en rouge sont obligatoires')
             return false
         }
         $.ajax({
@@ -136,14 +136,12 @@ if (isset($_POST['immat-vh'])) {
         }).done((e) => {
             let v = e.split('NewVehicule%%%%%%')[1]
             if (v == '1') {
-                $.notify("Enregistrement effectué!!!", {
-                    className: 'success'
-                })
+                showSuccess("Enregistrement effectué!!!")
                 location.reload()
             } else if (v == '1062') {
-                $.notify("Ce véhicule existe déjà!!")
+                showError("Ce véhicule existe déjà!!")
             } else {
-                $.notify("Erreur lors de l'enregistrement")
+                showError("Erreur lors de l'enregistrement")
             }
         })
     }

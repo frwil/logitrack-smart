@@ -66,12 +66,10 @@ endif;
             }).done((e)=>{
                 let v = e.split('UpdConvoyeur%%%%%%')[1]
                 if (v == '1') {
-                    $.notify('Modification effectuée!!', {
-                        className: 'success'
-                    })
+                    showSuccess('Modification effectuée!!')
                     location="?page=affectationVehicules&subpage=listeConvoyeurs"
                 } else {
-                    $.notify("Erreur lors de la modificaiton")
+                    showError("Erreur lors de la modificaiton")
                 }
             })
         }
@@ -85,12 +83,10 @@ endif;
             }).done((e)=>{
                 let v=e.split('UpdConvoyeur%%%%%%')[1]
                 if(v=='1'){
-                    $.notify('Convoyeur supprimée!!',{
-                        className:'success'
-                    })
+                    showSuccess('Convoyeur supprimée!!')
                     location.reload()
                 }else{
-                    $.notify("Echec de l'opération")
+                    showError("Echec de l'opération")
                 }
             })
         }

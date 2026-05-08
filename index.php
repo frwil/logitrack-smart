@@ -1,4 +1,11 @@
-<?php @session_start(); ?>
+<?php
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_samesite', 'Lax');
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    ini_set('session.cookie_secure', 1);
+}
+@session_start();
+?>
 <?php if (!isset($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); ?>
 <?php if (isset($_GET['logout'])): unset($_SESSION['usr-con']);
 endif; ?>
@@ -45,9 +52,6 @@ endif; ?>
             return false;
     }
     ?>
-    <?php /* ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL); */ ?>
     <?php require_once __DIR__ . '/env_loader.php'; ?>
     <?php require_once __DIR__ . '/db.php'; ?>
     <?php require_once __DIR__ . '/sanitize.php'; ?>
@@ -70,6 +74,7 @@ endif; ?>
         while ($r = mysqli_fetch_array($q)):
             $user = $r;
         endwhile;
+        unset($user['pass_user']);
         $user['region-sel']=(isset($_SESSION['usr-con']['region-sel']) ? $_SESSION['usr-con']['region-sel'] : '');
         $user['region-sel-name']=(isset($_SESSION['usr-con']['region-sel-name']) ? $_SESSION['usr-con']['region-sel-name'] : '');
         $user['region-sel-admin']=(isset($_SESSION['usr-con']['region-sel-admin']) ? $_SESSION['usr-con']['region-sel-admin'] : '');
@@ -85,15 +90,20 @@ endif; ?>
         <?php  ?>
         <?php //print_r($user_rights); 
         ?>
-        <?php if (isset($_GET['page']) && $_GET['page'] != '') :
-            if (file_exists($_GET['page'] . ".php")) :
-                include($_GET['page'] . ".php");
-            else :
-                include("home.php");
-            endif;
-        else:
-            include("home.php");
-        endif; ?>
+        <?php
+$page = '';
+if (isset($_GET['page']) && is_string($_GET['page']) && $_GET['page'] !== '') {
+    $page = basename($_GET['page']);
+}
+if ($page !== '' && is_valid_page($page)) :
+    if (file_exists($page . ".php")) :
+        include($page . ".php");
+    else :
+        include("home.php");
+    endif;
+else:
+    include("home.php");
+endif; ?>
     <?php endif; ?>
 </body>
 

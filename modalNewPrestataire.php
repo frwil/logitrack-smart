@@ -62,7 +62,7 @@ endif; ?>
         }).done((e)=>{
             let v=e.split('NEWPT%%%%%%')[1]
             if(v=='1'){
-                alert('Enregistrement effectué')
+                showSuccess('Enregistrement effectué')
                 setTimeout(()=>{$('#modal-new-prestataire *').val(''); $('#modal-new-prestataire').modal('hide')},2000)
             }else if(v=='1062'){
                 $('#modal-new-prestataire').notify("Ce prestataire existe déjà",{position:'top'})

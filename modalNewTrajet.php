@@ -85,9 +85,7 @@ endif;
         }).done((e) => {
             let v = e.split('NewTrajet%%%%%%')[1]
             if (v == '1') {
-                $.notify("Nouveau trajet créé!!", {
-                    className: 'success'
-                })
+                showSuccess("Nouveau trajet créé!!")
                 $('#modal-new-destination').modal('hide')
                 $('#form-new-destination *').val('')
                 refreshTrajetOptions()
@@ -95,9 +93,9 @@ endif;
                     location.reload()
                 <?php endif; ?>
             } else if (v == '1062') {
-                $.notify("Ce trajet de voyage existe déjà")
+                showError("Ce trajet de voyage existe déjà")
             } else {
-                $.notify("Erreur lors de l'enregistrement")
+                showError("Erreur lors de l'enregistrement")
             }
         })
     }

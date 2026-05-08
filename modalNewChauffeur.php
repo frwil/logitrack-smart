@@ -71,7 +71,7 @@ endif;
 
     function saveChauffeur() {
         if ($('#nom-chauffeur').val() == '') {
-            $.notify("Le champ est obligatoire!");
+            showError("Le champ est obligatoire!");
             return false
         }
         $.ajax({
@@ -80,17 +80,15 @@ endif;
         }).done((e) => {
             let v = e.split('NewChauffeur%%%%%%')[1]
             if (v == '1') {
-                $.notify("Nouveau chauffeur créee!!", {
-                    className: 'success'
-                })
+                showSuccess("Nouveau chauffeur créee!!")
                 $('#modal-new-chauffeur').modal('hide')
                 $('#form-new-chauffeur *').val('')
                 refreshChauffeurOptions()
                 location = "?page=affectationVehicules&subpage=listeChauffeurs"
             } else if (v == '1062') {
-                $.notify("Ce chauffeur existe déjà")
+                showError("Ce chauffeur existe déjà")
             } else {
-                $.notify("Erreur lors de l'enregistrement")
+                showError("Erreur lors de l'enregistrement")
             }
         })
     }

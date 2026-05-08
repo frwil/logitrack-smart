@@ -250,7 +250,7 @@ endif;
             /*if(confirm("Aucun relevé de kilométrage n'a été fait pour ce véhicule cette semaine.\nVoulez-vous procéder au relevé du km ?\nVous devrez peut-être contacter votre administrateur si vous n'avez pas les droits d'acces.")){
                 <?php /*if(in_array("view",$rights_maintenance)): echo "window.open('?page=maintenances&subpage=releveKms&action=new&idvgch='+$('#id-vehicule-vg').val()+'&dch='+$('#date-vg').val());"; 
                 else : ?>
-                alert("Vous n'avez pas les droits!\nContactez votre administrateur.")
+                showError("Vous n'avez pas les droits!\nContactez votre administrateur.")
                 <?php endif;*/ ?>
                 return false
             }else{
@@ -263,15 +263,13 @@ endif;
         }).done((e) => {
             let v = e.split('NewVoyage%%%%%%')[1]
             if (v == '1') {
-                $.notify("Nouveau voyage créee!!", {
-                    className: 'success'
-                })
+                showSuccess("Nouveau voyage créee!!")
                 $('#modal-new-voyage').modal('hide')
                 $('#form-new-voyage *').val('')
                 trajets = []
                 location.reload()
             } else {
-                $.notify("Erreur lors de l'enregistrement")
+                showError("Erreur lors de l'enregistrement")
             }
         })
     }

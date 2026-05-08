@@ -54,7 +54,7 @@ endif; ?>
         }).done((e)=>{
             let v=e.split('NEWCC%%%%%%')[1]
             if(v=='1'){
-                alert('Enregistrement effectué')
+                showSuccess('Enregistrement effectué')
                 setTimeout(()=>{$('#form-new-cc *').val(''); $('#modal-new-centrecout').modal('hide')},2000)
                 <?php if(isset($_GET['extpage'])) : ?> self.close() <?php endif; ?>
             }else if(v=='1062'){

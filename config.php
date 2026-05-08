@@ -175,10 +175,10 @@ endif;
                     }).done((e) => {
                         let v = e.split('DELDL%%%%%%')[1]
                         if (v == '1') {
-                            alert('Opération effectuée!')
+                            showSuccess('Opération effectuée!')
                             location.reload()
-                        }
-                        $.notify("Echec de l'opération!")
+                        } else {
+                        showError("Echec de l'opération!") }
                     })
                 }
             }
@@ -257,9 +257,9 @@ endif;
                 }).done((e) => {
                     let v = e.split('UPDDL%%%%%%')[1]
                     if (v == '1') {
-                        alert('Enregistrement effectué!')
+                        showSuccess('Enregistrement effectué!')
                         location.reload()
-                    }
+                    } else {
                     $('#modal-driveLicence-upd').notify("Erreur lors de l'enregistrement !", {
                         position: 'top'
                     })
@@ -332,9 +332,9 @@ endif;
                     }).done((e) => {
                         let v = e.split('UPDDOC%%%%%%')[1]
                         if (v == '1') {
-                            alert('Enregistrement effectué!')
+                            showSuccess('Enregistrement effectué!')
                             location = '?page=configuration&subpage=documentslist'
-                        }
+                        } else {
                         $('#modal-doc-upd').notify("Erreur lors de l'enregistrement !", {
                             position: 'top'
                         })
@@ -517,9 +517,9 @@ endif;
                     }).done((e) => {
                         let v = e.split('UPDFLD%%%%%%')[1]
                         if (v == '1') {
-                            alert('Enregistrement effectué!')
+                            showSuccess('Enregistrement effectué!')
                             location = "?page=configuration&subpage=folderdetails"
-                        }
+                        } else {
                         $('#modal-folder').notify("Erreur lors de l'enregistrement !", {
                             position: 'top'
                         })

@@ -1,5 +1,7 @@
 import jQuery from 'jquery'
 window.$ = window.jQuery = jQuery
+
+import './js/helpers.js'
 window.moment = require('moment')
 window.XLSX = require('xlsx')
 

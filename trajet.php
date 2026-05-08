@@ -70,12 +70,10 @@ endif;
             }).done((e) => {
                 let v = e.split('UpdTrajet%%%%%%')[1]
                 if (v == '1') {
-                    $.notify('Modification effectuée!!', {
-                        className: 'success'
-                    })
+                    showSuccess('Modification effectuée!!')
                     location = "?page=voyages&subpage=listeTrajets"
                 } else {
-                    $.notify("Erreur lors de la modificaiton")
+                    showError("Erreur lors de la modificaiton")
                 }
             })
         }
@@ -89,12 +87,10 @@ endif;
             }).done((e) => {
                 let v = e.split('UpdTrajet%%%%%%')[1]
                 if (v == '1') {
-                    $.notify('Trajet supprimée!!', {
-                        className: 'success'
-                    })
+                    showSuccess('Trajet supprimée!!')
                     location.reload()
                 } else {
-                    $.notify("Echec de l'opération")
+                    showError("Echec de l'opération")
                 }
             })
         }

@@ -200,7 +200,7 @@ endif;
         }).done((e) => {
             let v = e.split('NEWBR%%%%%%')[1]
             if (v == '1') {
-                alert('Enregistrement effectué!')
+                showSuccess('Enregistrement effectué!')
                 location.reload()
             } else {
                 $('#form-new-br').notify("Erreur lors de l'enregistrement!", {
