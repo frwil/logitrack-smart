@@ -1,5 +1,6 @@
-import jQuery from 'jquery'
-window.$ = window.jQuery = jQuery
+const _jq = require('jquery')
+const $ = _jq.default || _jq
+window.$ = window.jQuery = $
 
 import './js/helpers.js'
 window.moment = require('moment')
