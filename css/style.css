@@ -127,10 +127,16 @@ body {
   outline: none;
 }
 
-.login-input:focus, .login-select:focus {
+.login-input:focus {
   border-color: #5D54A4;
   box-shadow: 0 0 0 3px rgba(93, 84, 164, 0.12);
   background: #fff;
+}
+
+.login-select:focus {
+  border-color: #5D54A4;
+  box-shadow: 0 0 0 3px rgba(93, 84, 164, 0.12);
+  background-color: #fff;
 }
 
 .login-input::placeholder {
