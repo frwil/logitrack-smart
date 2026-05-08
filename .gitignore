@@ -5,4 +5,5 @@ logistique-app/
 logistique-apps/
 logitrack/
 box/*.xlsx
+box/*.ps1
 box/backup_*
