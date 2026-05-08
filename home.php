@@ -254,8 +254,8 @@ if(!isset($user_rights)) $user_rights = [];
         initComplete: function() {
             this.api().columns().every(function() {
                 var column = this;
-                // Skip # column (index 0) — no filter, no sort
-                if (column.index() === 0) return;
+                // Skip # column — no filter, no sort
+                if (column.index() === 0 || $(column.header()).text().trim() === '#') return;
                 //added class "mymsel"
                 var select = $('<select class="mymsel" multiple="multiple"><option value=""></option></select>')
                     .appendTo($(column.header()))
