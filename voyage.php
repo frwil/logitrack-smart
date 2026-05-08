@@ -428,7 +428,7 @@ function getTableauEvaluationVoyages()
                     </div>
                     <div class="col-6">
                         <div class="form-floating mb-3">
-                            <select class="form-select" id="id-upd-vh-voyage" name="id-upd-vh-voyage">
+                            <select id="id-upd-vh-voyage" name="id-upd-vh-voyage">
                                 <?php $affRepo = new AffectationRepository($con);
                                 foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
                                     echo "<option value='" . $r['id_affectation'] . "'>" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
@@ -452,7 +452,7 @@ function getTableauEvaluationVoyages()
                     </div>
                     <div class="col-6">
                         <div class="form-floating mb-3">
-                            <select class="form-select" id="tc-upd-voyage" name="tc-upd-voyage" required>
+                            <select id="tc-upd-voyage" name="tc-upd-voyage" required>
                             <?php $voyageRepo = new VoyageRepository($con);
                                     foreach ($voyageRepo->findAllTypesChargement() as $r):
                                         echo "<option value='" . $r['id_type_chargement'] . "' val-min='" . h($r['valeur_min']) . "' val-max='" . h($r['valeur_max']) . "'>" . h($r['lib_type_chargement']) . "</option>";

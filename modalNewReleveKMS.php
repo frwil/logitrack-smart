@@ -27,7 +27,7 @@ endif;
             <div class="modal-body">
                 <form method="post" action="#" id="form-new-relevekms">
                     <div class="form-floating mb-3">
-                        <select required id="vh-releve-kms" name="vh-releve-kms" class="form-select" onchange="$('#date-releve-kms').change();">
+                        <select required id="vh-releve-kms" name="vh-releve-kms" onchange="$('#date-releve-kms').change();">
                             <?php $affectationRepo = new AffectationRepository($con);
                             $rows = $_SESSION['usr-con']['region-sel'] != ''
                                 ? $affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel'])
@@ -46,7 +46,7 @@ endif;
                         <label for="date-releve-kms">Période</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <select required name="per-releve-kms" id="per-releve-kms" class="form-select">
+                        <select required name="per-releve-kms" id="per-releve-kms">
 
                         </select>
                         <label for="per-releve-kms">Semaine</label>

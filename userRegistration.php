@@ -46,7 +46,7 @@ if (isset($_POST['name-user'])) {
                 <label for="fullname-user">Nom Complet</label>
             </div>
             <div class="form-floating mb-3">
-                <select id="region-user" name="region-user" class="form-select" required>
+                <select id="region-user" name="region-user" required>
                     <?php $regionRepo = new RegionRepository($con);
                     foreach ($regionRepo->findActive() as $r):
                         echo "<option value='" . h($r['id_region']) . "'>" . h($r['nom_region']) . "</option>";

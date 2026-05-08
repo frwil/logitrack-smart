@@ -27,7 +27,7 @@ endif;
                     </div>
                     <div class="col-6">
                         <div class="form-floating mb-3">
-                            <select id="vh-br" name="vh-br" class="form-select">
+                            <select id="vh-br" name="vh-br">
                                 <?php $affectationRepo = new AffectationRepository($con);
                                 foreach ($affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
                                     echo "<option value='" . $r['id_affectation'] . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $r['id_affectation'] ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
@@ -51,7 +51,7 @@ endif;
                     </div>
                     <div class="col-6">
                         <div class="form-floating mb-3">
-                            <select class="form-select" id="type-execution-br" name="type-execution-br">
+                            <select id="type-execution-br" name="type-execution-br">
                                 <option value="0">Interne</option>
                                 <option value="1">Externe</option>
                             </select>
@@ -61,7 +61,7 @@ endif;
                     <div class="col-6">
                         <div class="input-group mb-3">
                             <div class="form-floating">
-                                <select class="form-select" id="prestataire-br" name="prestataire-br">
+                                <select id="prestataire-br" name="prestataire-br">
                                     <?php $maintenanceRepo = new MaintenanceRepository($con);
                                     $prestataires = $maintenanceRepo->findAllPrestataires();
                                     foreach ($prestataires as $r):
@@ -83,7 +83,7 @@ endif;
                     </div>
                     <div class="col-6">
                         <div class="form-floating mb-3">
-                            <select class="form-select" id="plus-moins-br" name="plus-moins-br">
+                            <select id="plus-moins-br" name="plus-moins-br">
                                 <?php $plusOuMoins = $maintenanceRepo->findAllPlusOuMoinsValue();
                                 foreach ($plusOuMoins as $r):
                                     echo "<option value='" . $r['id_plus_ou_moins_value'] . "'>" . h($r['lib_plus_ou_moins_value']) . "</option>";
@@ -121,7 +121,7 @@ endif;
                     <div class="col-6">
                         <div class="input-group mb-3">
                             <div class="form-floating">
-                                <select class="form-select" id="centrecout-br" name="centrecout-br" required>
+                                <select id="centrecout-br" name="centrecout-br" required>
                                     <?php $maintenanceRepo = new MaintenanceRepository($con);
                                     $centresCouts = $maintenanceRepo->findAllCentresCouts();
                                     foreach ($centresCouts as $r):

@@ -47,7 +47,7 @@ endif;
                         </div>
                         <div class="col-6">
                             <div class="form-floating mb-3">
-                                <select class="form-select" id="id-vehicule-vg" name="id-vehicule-vg">
+                                <select id="id-vehicule-vg" name="id-vehicule-vg">
                                     <?php $affectationRepo = new AffectationRepository($con);
                                     foreach ($affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
                                         echo "<option value='" . $r['id_affectation'] . "'>" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
@@ -71,7 +71,7 @@ endif;
                         </div>
                         <div class="col-6">
                             <div class="form-floating">
-                                <select class="form-select" id="typechargement-vg" name="typechargement-vg">
+                                <select id="typechargement-vg" name="typechargement-vg">
                                     <?php $voyageRepo = new VoyageRepository($con);
                                     foreach ($voyageRepo->findAllTypesChargement() as $r):
                                         echo "<option value='" . $r['id_type_chargement'] . "' val-min='" . h($r['valeur_min']) . "' val-max='" . h($r['valeur_max']) . "'>" . h($r['lib_type_chargement']) . "</option>";
@@ -94,7 +94,7 @@ endif;
                         <div class="col-12">
                             <div class="input-group mb-3">
                                 <div class="form-floating">
-                                    <select class="form-select" id="trajet-list-vg" role="trajet">
+                                    <select id="trajet-list-vg" role="trajet">
                                         <?php $trajetRepo = new TrajetRepository($con);
                                         foreach ($trajetRepo->findAll() as $r):
                                             echo "<option value='" . $r['id_destination'] . "' dest-km='" . h($r['distance_destination']) . "'>" . h($r['lib_destination']) . " (" . h($r['distance_destination']) . " km)</option>";

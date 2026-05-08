@@ -23,7 +23,7 @@ endif;
                         <label for="nom-chauffeur">Nom chauffeur</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <select id="type-permis" name="type-permis" required class="form-select">
+                        <select id="type-permis" name="type-permis" required>
                             <?php $configRepo = new ConfigRepository($con);
                             foreach ($configRepo->findAllTypePermis() as $r):
                                 echo "<option value='" . $r['id_type_permis'] . "'>" . h($r['lib_type_permis']) . "</option>";

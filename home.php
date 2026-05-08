@@ -250,10 +250,12 @@ if(!isset($user_rights)) $user_rights = [];
         }).appendTo(column));
     }
     table = $('table:not(".no-datatable")').DataTable({
-        columnDefs: [{ targets: 0, searchable: false }],
+        columnDefs: [{ targets: 0, searchable: false, orderable: false }],
         initComplete: function() {
             this.api().columns().every(function() {
                 var column = this;
+                // Skip # column (index 0) — no filter, no sort
+                if (column.index() === 0) return;
                 //added class "mymsel"
                 var select = $('<select class="mymsel" multiple="multiple"><option value=""></option></select>')
                     .appendTo($(column.header()))
@@ -401,9 +403,9 @@ if(!isset($user_rights)) $user_rights = [];
     $('<button class="btn btn-primary mb-3" onclick="exportTableToExcel(\'table-evaluation\')">Exporter</button>').insertBefore('#table-evaluation')
     <?php endif; ?>
 
-    // Tom Select: enhance all form-select in modals when modal opens
+    // Tom Select: enhance all selects in modals when modal opens
     $(document).on('shown.bs.modal', '.modal', function() {
-        initTomSelect($(this).find('select.form-select:not(.no-tom-select)'), {
+        initTomSelect($(this).find('select:not(.no-tom-select)'), {
             render: { no_results: function() { return '<div class="no-results">Aucun résultat</div>'; } }
         });
     });

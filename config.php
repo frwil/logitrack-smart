@@ -333,7 +333,7 @@ function getTableauFolder()
                                     <label for="ref-folder">Référence dossier</label>
                                 </div>
                                 <div class="form-floating mb-3">
-                                    <select id="vh-folder" name="vh-folder-upd" class="form-select">
+                                    <select id="vh-folder" name="vh-folder-upd">
                                         <?php
                                         $affRepo = new AffectationRepository($con);
                                         $affRows = $affRepo->findActiveByVehiculeAndRegion((int)$folder[0]['id_vehicule'], (int)$_SESSION['usr-con']['region-sel']);
@@ -346,7 +346,7 @@ function getTableauFolder()
                                 </div>
                                 <div class="input-group mb-3">
                                     <div class="form-floating">
-                                        <select class="form-select" id="folder-doc">
+                                        <select id="folder-doc">
                                             <?php foreach ($configRepo->findAllDocuments() as $r):
                                                 echo "<option value='" . $r['id_document'] . "'>" . h($r['nom_document']) . "</option>";
                                             endforeach;

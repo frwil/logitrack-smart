@@ -151,13 +151,13 @@ function getPremiereSemaineDuMois($date)
                             <label for="date-upd-releve-kms">Période</label>
                         </div>
                         <div class="form-floating mb-3">
-                            <select required name="per-upd-releve-kms" id="per-upd-releve-kms" class="form-select" onchange="$('#vh-upd-releve-kms').change()">
+                            <select required name="per-upd-releve-kms" id="per-upd-releve-kms" onchange="$('#vh-upd-releve-kms').change()">
 
                             </select>
                             <label for="per-upd-releve-kms">Semaine</label>
                         </div>
                         <div class="form-floating mb-3">
-                            <select required id="vh-upd-releve-kms" name="vh-upd-releve-kms" class="form-select" onchange="getKmsPeriode(this.value,$('#per-upd-releve-kms').val())">
+                            <select required id="vh-upd-releve-kms" name="vh-upd-releve-kms" onchange="getKmsPeriode(this.value,$('#per-upd-releve-kms').val())">
                                 <?php $affRepo = new AffectationRepository($con);
                                 foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
                                     $affHash = $r['id_affectation'];
@@ -437,7 +437,7 @@ function getPremiereSemaineDuMois($date)
                             <label for="date-vd">Date Vidange</label>
                         </div>
                         <div class="form-floating mb-3">
-                            <select id="vh-upd-vd" name="vh-upd-vd" class="form-select">
+                            <select id="vh-upd-vd" name="vh-upd-vd">
                                 <?php $affRepo = new AffectationRepository($con);
                                 foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
                                     $affHash = $r['id_affectation'];
@@ -456,7 +456,7 @@ function getPremiereSemaineDuMois($date)
                             <label for="km-upd-av-vd">Km (prochaine vidange)</label>
                         </div>
                         <div class="form-floating mb-3">
-                            <select class="form-select" id="id-upd-pt-vd" name="id-upd-pt-vd">
+                            <select id="id-upd-pt-vd" name="id-upd-pt-vd">
                                 <?php $ptRepo = new MaintenanceRepository($con);
                                 foreach ($ptRepo->findAllPrestataires() as $r):
                                     echo "<option value='" . $r['id_prestataire'] . "'>" . h($r['nom_prestataire']) . "</option>";

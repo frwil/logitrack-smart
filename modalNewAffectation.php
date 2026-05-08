@@ -19,7 +19,7 @@ endif;
             <div class="modal-body">
                 <form method="post" action="#" id="form-new-affectation">
                     <div class="form-floating mb-3">
-                        <select class="form-select" id="id-vehicule-aff" name="id-vehicule-aff" required>
+                        <select id="id-vehicule-aff" name="id-vehicule-aff" required>
                             <?php $vehiculeRepo = new VehiculeRepository($con);
                             foreach ($vehiculeRepo->findAllWithDetails() as $r):
                                 echo "<option value='" . $r['id_vehicule'] . "'>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_marque']) . "</option>";
@@ -29,7 +29,7 @@ endif;
                         <label for="id-vehicule-aff">Véhicule</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <select class="form-select" id="id-chauffeur-aff" name="id-chauffeur-aff" required>
+                        <select id="id-chauffeur-aff" name="id-chauffeur-aff" required>
                             <?php $chauffeurRepo = new ChauffeurRepository($con);
                             foreach ($chauffeurRepo->findAll() as $r):
                                 echo "<option value='" . $r['id_chauffeur'] . "'>" . h($r['nom_chauffeur']) . "</option>";
@@ -41,7 +41,7 @@ endif;
                     <div class="row">
                         <div class="col-6">
                             <div class="form-floating mb-3">
-                                <select class="form-select" id="id-typeutilisation-aff" name="id-typeutilisation-aff" required>
+                                <select id="id-typeutilisation-aff" name="id-typeutilisation-aff" required>
                                     <?php $typeUtilRepo = new TypeUtilisationRepository($con);
                                     foreach ($typeUtilRepo->findAll() as $r):
                                         echo "<option value='" . $r['id_type_utilisation'] . "'>" . h($r['lib_type_utilisation']) . "</option>";
@@ -53,7 +53,7 @@ endif;
                         </div>
                         <div class="col-6">
                             <div class="form-floating mb-3">
-                                <select class="form-select" id="id-modeutilisation-aff" name="id-modeutilisation-aff" required>
+                                <select id="id-modeutilisation-aff" name="id-modeutilisation-aff" required>
                                     <?php $modeUtilRepo = new ModeUtilisationRepository($con);
                                     foreach ($modeUtilRepo->findAll() as $r):
                                         echo "<option value='" . $r['id_mode_utilisation'] . "'>" . h($r['lib_mode_utilisation']) . "</option>";
@@ -65,7 +65,7 @@ endif;
                         </div>
                         <div class="col-6">
                             <div class="form-floating mb-3">
-                                <select class="form-select" id="id-entite-aff" name="id-entite-aff" required>
+                                <select id="id-entite-aff" name="id-entite-aff" required>
                                     <?php $entiteRepo = new EntiteRepository($con);
                                     foreach ($entiteRepo->findAll() as $r):
                                         echo "<option value='" . $r['id_entite'] . "'>" . h($r['nom_entite']) . "</option>";
@@ -77,7 +77,7 @@ endif;
                         </div>
                         <div class="col-6">
                             <div class="form-floating mb-3">
-                                <select class="form-select" id="id-region-aff" name="id-region-aff" required>
+                                <select id="id-region-aff" name="id-region-aff" required>
                                     <?php $regionRepo = new RegionRepository($con);
                                     foreach ($regionRepo->findAll() as $r):
                                         echo "<option value='" . $r['id_region'] . "'>" . h($r['nom_region']) . "</option>";
