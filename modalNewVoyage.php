@@ -123,11 +123,6 @@ endif;
     </div>
 </div>
 <script>
-    moment.updateLocale('en', {
-        week: {
-            dow: 1
-        }
-    });
     var trajets = []
     var typeChargements = []
     var qteChargements = []

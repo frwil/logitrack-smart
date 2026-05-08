@@ -1,6 +1,7 @@
 import './js/jquery-global.js'
 import './js/helpers.js'
 window.moment = require('moment')
+window.moment.updateLocale('en', { week: { dow: 1 } })
 window.XLSX = require('xlsx')
 
 import 'bootstrap/dist/css/bootstrap.min.css'

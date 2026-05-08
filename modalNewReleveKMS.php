@@ -72,11 +72,6 @@ endif;
         }, 3000)
 
     <?php endif; ?>
-    moment.updateLocale('en', {
-        week: {
-            dow: 1
-        }
-    });
 
     function getWeeksOfMonthWithMoment(year, month) {
         const startOfMonth = moment([year, month - 1]).startOf('month');
