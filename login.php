@@ -4,7 +4,7 @@ if (isset($_POST['name-user'])):
     while ($r = mysqli_fetch_array($q)):
         $user = $r;
     endwhile;
-    if (mysqli_num_rows($q) > 0):
+    if (mysqli_num_rows($q) > 0 && password_verify($_POST['pass-user'], $user['pass_user'])):
         $regions = explode(',', $user['users_region']);
         $q = db_select($con, "select * from region where sha1(concat(id_region,nom_region))=?", [$_POST['region-user']]);
         while($r=mysqli_fetch_array($q)) $region=$r;
@@ -16,20 +16,17 @@ if (isset($_POST['name-user'])):
             $user['region-sel']=$region[0];
             $user['region-sel-name']=$region[1];
             $user['region-sel-admin']=$region['is_admin'];
-            if (password_verify($_POST['pass-user'], $user['pass_user'])) {
-                $q = db_select($con, "select * from users_rights where id_user=?", [(int)$user['id_user']]);
-                $rights = array();
-                while ($r = mysqli_fetch_array($q)) :
-                    array_push($rights, $r);
-                endwhile;
-                $user['users-rights'] = $rights;
-                unset($user['pass_user']);
-                $_SESSION['usr-con'] = $user;
-                session_regenerate_id(true);
-                die("%%%%%%1");
-            } else {
-                die("%%%%%%2");
-            }
+            $q = db_select($con, "select * from users_rights where id_user=?", [(int)$user['id_user']]);
+            $rights = array();
+            while ($r = mysqli_fetch_array($q)) :
+                array_push($rights, $r);
+            endwhile;
+            $user['users-rights'] = $rights;
+            unset($user['pass_user']);
+            $_SESSION['usr-con'] = $user;
+            session_regenerate_id(true);
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+            die("%%%%%%1");
         else :
             die("%%%%%%3");
         endif;
@@ -103,7 +100,7 @@ endif;
             if (v == '1') {
                 location = 'index.php'
             } else if (v == '0') {
-                showError("Cet utilisateur n'existe pas")
+                showError("Nom d'utilisateur ou mot de passe incorrect")
             } else if (v == '3') {
                 showError("Vous n'avez pas le droit de vous connecter à cette région")
             } else {

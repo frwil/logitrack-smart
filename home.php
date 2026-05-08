@@ -59,8 +59,7 @@ endif;
 </script>
 <div class="container-fluid d-flex">
     <ul class="nav nav-underline bg-primary navbar-expand-lg" style="padding:15px;width:100%">
-        <?php //echo password_hash('Fidele24',PASSWORD_DEFAULT); 
-        $rights_vehicule = array();
+        <?php $rights_vehicule = array();
         if (isRightObjectAllowed('vehicules', $user_rights) != false): $rights_vehicule = explode(',', isRightObjectAllowed('vehicules', $user_rights)); ?>
             <li class="nav-item">
                 <a class="nav-link <?php if (!isset($_GET['page']) || $_GET['page'] == 'vehicules') echo "active"; ?> text-white" aria-current="page" href="?page=vehicules">Véhicules</a>

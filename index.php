@@ -9,8 +9,11 @@ if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
 <?php if (!isset($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); ?>
 <?php if (isset($_GET['logout'])): unset($_SESSION['usr-con']);
 endif; ?>
-<?php //print_r($_SESSION); 
+<?php //print_r($_SESSION);
 ?>
+<?php require_once __DIR__ . '/env_loader.php'; ?>
+<?php require_once __DIR__ . '/db.php'; ?>
+<?php require_once __DIR__ . '/sanitize.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -52,9 +55,6 @@ endif; ?>
             return false;
     }
     ?>
-    <?php require_once __DIR__ . '/env_loader.php'; ?>
-    <?php require_once __DIR__ . '/db.php'; ?>
-    <?php require_once __DIR__ . '/sanitize.php'; ?>
 <?php if ($_SERVER['REQUEST_METHOD'] === 'POST'):
     $csrf_token = $_POST['csrf_token'] ?? null;
     if ($csrf_token === null):
