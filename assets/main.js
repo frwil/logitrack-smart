@@ -1,7 +1,4 @@
-const _jq = require('jquery')
-const $ = _jq.default || _jq
-window.$ = window.jQuery = $
-
+import './js/jquery-global.js'
 import './js/helpers.js'
 window.moment = require('moment')
 window.XLSX = require('xlsx')
