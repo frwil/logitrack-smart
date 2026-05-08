@@ -69,3 +69,14 @@ function notify(msg, type) {
 window.showSuccess = function(msg) { notify(msg, 'success'); };
 window.showError   = function(msg) { notify(msg, 'error'); };
 window.showWarning = function(msg) { notify(msg, 'warning'); };
+
+// Backward-compat shim for old notifyjs calls: $(el).notify(msg, {position:'top'})
+// All 68 legacy call sites now route through showWarning / showError
+$.fn.notify = function(msg, opts) {
+    if (msg && msg.indexOf('Erreur') !== -1) {
+        showError(msg);
+    } else {
+        showWarning(msg);
+    }
+    return this;
+};
