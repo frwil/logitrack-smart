@@ -26,7 +26,7 @@
 
                     </div>
                     <div class="input-group mb-3">
-                        <div class="mb-3">
+                        <div>
 
                             <label for="folder-doc">Document</label>
 

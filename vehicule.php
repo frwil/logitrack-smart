@@ -34,7 +34,7 @@
                         </div>
                         <div class="col-6">
                             <div class="input-group mb-3">
-                                <div class="mb-3">
+                                <div>
 
                                     <label for="marque-vh-upd">Marque</label>
 
@@ -52,7 +52,7 @@
                         </div>
                         <div class="col-6">
                             <div class="input-group mb-3">
-                                <div class="mb-3">
+                                <div>
 
                                     <label for="modele-vh-upd">Modele</label>
 
@@ -88,7 +88,8 @@
                             <input type="number" id="capacite-vh-upd" name="capacite-vh-upd" required class="form-control">
                             <label for="capacite-vh-upd">Capacité</label>
                         </div>
-                        <div class="form-floating mb-3 col-6">
+                        <div class="mb-3 col-6">
+                            <label for="nbplace-vh-upd">Nb. places</label>
                             <select id="nbplace-vh-upd" name="nbplace-vh-upd" required>
                                 <option value="1">1</option>
                                 <option value="2">2</option>
@@ -96,17 +97,17 @@
                                 <option value="5">5</option>
                                 <option value="7">7</option>
                             </select>
-                            <label for="nbplace-vh-upd">Nb. places</label>
                         </div>
-                        <div class="form-floating mb-3 col-6">
+                        <div class="mb-3 col-6">
+                            <label for="tcarb-vh-upd">Type de carburant</label>
                             <select id="tcarb-vh-upd" name="tcarb-vh-upd" required>
                                 <option value="GASOIL">Gasoil</option>
                                 <option value="SUPER">Super</option>
                             </select>
-                            <label for="tcarb-vh-upd">Type de carburant</label>
                         </div>
                         <hr>
-                        <div class="form-floating mb-3 col-6">
+                        <div class="mb-3 col-6">
+                            <label for="qualif-permis-upd">Qualification de permis</label>
                             <select id="qualif-permis-upd" name="qualif-permis-upd" required>
                                 <?php $configRepo = new ConfigRepository($con);
                                 foreach ($configRepo->findAllTypePermis() as $r):
@@ -114,7 +115,6 @@
                                 endforeach;
                                 ?>
                             </select>
-                            <label for="qualif-permis-upd">Qualification de permis</label>
                         </div>
                     </div>
                 </form>

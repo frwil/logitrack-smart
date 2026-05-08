@@ -66,7 +66,7 @@ endif;
                     </div>
                     <div class="col-6">
                         <div class="input-group mb-3">
-                            <div class="mb-3">
+                            <div>
 
                                 <label for="prestataire-br">Prestataire</label>
 
@@ -132,7 +132,7 @@ endif;
                     </div>
                     <div class="col-6">
                         <div class="input-group mb-3">
-                            <div class="mb-3">
+                            <div>
 
                                 <label for="centrecout-br">Centre de coûts</label>
 

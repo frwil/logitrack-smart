@@ -99,7 +99,7 @@ endif;
                         </div>
                         <div class="col-12">
                             <div class="input-group mb-3">
-                                <div class="mb-3">
+                                <div>
 
                                     <label for="trajet-list-vg">Trajet</label>
 
