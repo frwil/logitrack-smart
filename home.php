@@ -92,7 +92,7 @@ if(!isset($user_rights)) $user_rights = [];
         <div class="lt-sidebar-title">Navigation</div>
         <?php if ((isset($_GET['page']) && $_GET['page'] == 'vehicules') || !isset($_GET['page']) && in_array('view', $rights_vehicule)) : ?>
             <?php if (in_array('save', $rights_vehicule)): ?>
-                <a class="lt-sidebar-link new-item" href="?page=vehicules" data-bs-toggle="modal" data-bs-target="#modal-new-vehicule"><i class="fa fa-plus-circle"></i> Nouveau véhicule</a>
+                <a class="lt-sidebar-link new-item" href="#" onclick="openModalVehicule()"><i class="fa fa-plus-circle"></i> Nouveau véhicule</a>
             <?php endif; ?>
             <?php if (isset($_GET['subpage'])) : ?>
                 <a class="lt-sidebar-link" href="?page=<?php echo h($_GET['page'] != '' ? $_GET['page'] : 'vehicules'); ?>"><i class="fa fa-list"></i> Liste des véhicules</a>

@@ -98,11 +98,9 @@ endif;
                             <hr>
                         </div>
                         <div class="col-12">
-                            <div class="input-group mb-3">
-                                <div>
-
-                                    <label for="trajet-list-vg">Trajet</label>
-
+                            <div class="mb-3">
+                                <label for="trajet-list-vg">Trajet</label>
+                                <div class="input-group">
                                     <select id="trajet-list-vg" role="trajet">
                                         <?php $trajetRepo = new TrajetRepository($con);
                                         foreach ($trajetRepo->findAll() as $r):
@@ -110,9 +108,8 @@ endif;
                                         endforeach;
                                         ?>
                                     </select>
-
+                                    <button class="btn btn-primary" onclick="addTrajet()" type="button">Ajouter le trajet</button>
                                 </div>
-                                <button class="btn btn-primary" onclick="addTrajet()" type="button">Ajouter le trajet</button>
                             </div>
                         </div>
                         <hr>

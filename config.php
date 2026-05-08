@@ -353,28 +353,25 @@ function getTableauFolder()
                                     </select>
 
                                 </div>
-                                <div class="input-group mb-3">
-                                    <div>
-
-                                        <label for="folder-doc">Document</label>
-
+                                <div class="mb-3">
+                                    <label for="folder-doc">Document</label>
+                                    <div class="input-group">
                                         <select id="folder-doc">
                                             <?php foreach ($configRepo->findAllDocuments() as $r):
                                                 echo "<option value='" . $r['id_document'] . "'>" . h($r['nom_document']) . "</option>";
                                             endforeach;
                                             ?>
                                         </select>
-
+                                        <div class="form-floating">
+                                            <input type="date" id="date-expiry" class="form-control" value="<?php date('Y-m-d'); ?>">
+                                            <label for="date-expiry">Date expiration</label>
+                                        </div>
+                                        <div class="form-floating">
+                                            <input type="text" id="ref-doc" class="form-control">
+                                            <label for="ref-doc">Réf. document</label>
+                                        </div>
+                                        <button class="btn btn-primary" type="button" title="Ajouter au dossier" onclick="addToFolder($('#folder-doc').val(),$('#date-expiry').val(),$('#ref-doc').val())"><i class="fa fa-plus-circle"></i></button>
                                     </div>
-                                    <div class="form-floating">
-                                        <input type="date" id="date-expiry" class="form-control" value="<?php date('Y-m-d'); ?>">
-                                        <label for="date-expiry">Date expiration</label>
-                                    </div>
-                                    <div class="form-floating">
-                                        <input type="text" id="ref-doc" class="form-control">
-                                        <label for="ref-doc">Réf. document</label>
-                                    </div>
-                                    <button class="btn btn-primary" type="button" title="Ajouter au dossier" onclick="addToFolder($('#folder-doc').val(),$('#date-expiry').val(),$('#ref-doc').val())"><i class="fa fa-plus-circle"></i></button>
                                 </div>
                                 <hr>
                                 <div id="doc-list">

@@ -14,11 +14,9 @@
                             <label for="immat-vh">Immatriculation</label>
                         </div>
                         <div class="col-6">
-                            <div class="input-group mb-3">
-                                <div>
-
-                                    <label for="marque-vh">Marque</label>
-
+                            <div class="mb-3">
+                                <label for="marque-vh">Marque</label>
+                                <div class="input-group">
                                     <select type="text" id="marque-vh" name="marque-vh" required>
                                         <?php $marqueRepo = new MarqueRepository($con);
                                         foreach ($marqueRepo->findAll() as $r):
@@ -26,17 +24,14 @@
                                         endforeach;
                                         ?>
                                     </select>
-
+                                    <button class="btn btn-primary" type="button" title="Ajouter une marque" onclick="openModalMarque()"><i class="fa fa-plus"></i></button>
                                 </div>
-                                <button class="btn btn-primary" type="button" title="Ajouter une marque" onclick="openModalMarque()"><i class="fa fa-plus"></i></button>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="input-group mb-3">
-                                <div>
-
-                                    <label for="modele-vh">Modele</label>
-
+                            <div class="mb-3">
+                                <label for="modele-vh">Modele</label>
+                                <div class="input-group">
                                     <select type="text" id="modele-vh" name="modele-vh" required>
                                         <?php $modeleRepo = new ModeleRepository($con);
                                         foreach ($modeleRepo->findAll() as $r):
@@ -44,9 +39,8 @@
                                         endforeach;
                                         ?>
                                     </select>
-
+                                    <button class="btn btn-primary" type="button" title="Ajouter un modèle de véhicule" onclick="openModalModele()"><i class="fa fa-plus"></i></button>
                                 </div>
-                                <button class="btn btn-primary" type="button" title="Ajouter un modèle de véhicule" onclick="openModalModele()"><i class="fa fa-plus"></i></button>
                             </div>
                         </div>
                         <div class="form-floating mb-3 col-6">
@@ -108,6 +102,10 @@
     </div>
 </div>
 <script>
+    function openModalVehicule() {
+        $('#modal-new-vehicule').modal('show')
+    }
+
     function saveVehicule() {
         var valid = true
         $('#form-new-vehicule *[required]').each((e, el) => {
