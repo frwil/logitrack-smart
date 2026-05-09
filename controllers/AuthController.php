@@ -22,8 +22,9 @@ class AuthController extends BaseController
         $passUser = $this->post('pass-user');
         $regionIds = $this->post('region-user');
         $entiteIds = $this->post('entite-user');
+        $role = $this->post('role-user');
 
-        if (!$nameUser || !$passUser || !$regionIds) {
+        if (!$nameUser || !$entiteIds || !$regionIds || !$role) {
             $this->jsonError('Tous les champs sont obligatoires');
         }
 

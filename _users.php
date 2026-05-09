@@ -111,7 +111,7 @@ function getTableauUsers()
                         </div>
                         <div class="mb-3 col-md-6">
                             <label for="role-user">Rôle</label>
-                            <select id="role-user" name="role-user" class="form-select">
+                            <select id="role-user" required name="role-user" class="form-select">
                                 <option value="user">Utilisateur</option>
                                 <?php if ($isSuperadmin): ?>
                                 <option value="admin">Administrateur</option>
@@ -123,7 +123,7 @@ function getTableauUsers()
                     <div class="row">
                         <div class="mb-3 col-md-6">
                             <label for="region-user">Régions</label>
-                            <select id="region-user" name="region-user[]" multiple>
+                            <select id="region-user" required name="region-user[]" multiple>
                                 <?php
                                 $regionRepo = new RegionRepository($con);
                                 foreach ($regionRepo->findAll() as $r):
@@ -134,7 +134,7 @@ function getTableauUsers()
                         </div>
                         <div class="mb-3 col-md-6">
                             <label for="entite-user">Entités</label>
-                            <select id="entite-user" name="entite-user[]" multiple>
+                            <select id="entite-user" required name="entite-user[]" multiple>
                                 <?php
                                 $entiteRepo = new EntiteRepository($con);
                                 foreach ($entiteRepo->findAll() as $e):
@@ -346,11 +346,9 @@ function saveUser() {
     var valid = true;
 
     $('#form-user [required]').each(function() {
-        alert($(this).val());
         if ($(this).val() === '') {
             valid = false;
             $(this).addClass('is-invalid');
-            alert('Veuillez remplir le champ : ' + $(this).prev('label').text());
         }
     });
 
