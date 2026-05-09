@@ -475,7 +475,10 @@ if (!$renderPartial):
         switchTimer = setTimeout(function() {
             var regionIds = getCheckedContext('region');
             var entiteIds = getCheckedContext('entite');
-            if (regionIds.length === 0 || entiteIds.length === 0) return;
+            if (regionIds.length === 0 || entiteIds.length === 0) {
+                showWarning('Veuillez sélectionner au moins une région et une entité');
+                return;
+            }
             $.ajax({
                 type: 'post',
                 contentType: 'application/json',
@@ -492,6 +495,8 @@ if (!$renderPartial):
                 } else {
                     showWarning(e.error || "Erreur lors du changement de contexte");
                 }
+            }).fail(function() {
+                showWarning('Erreur réseau lors du changement de contexte');
             });
         }, 500);
     }
