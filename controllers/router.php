@@ -39,6 +39,7 @@ $marqueCtrl = new MarqueController($marqueRepo);
 $modeleCtrl = new ModeleController($modeleRepo);
 $trajetCtrl = new TrajetController($trajetRepo);
 $objectifCtrl = new ObjectifController($objectifRepo);
+$userCtrl = new UserController($userRepo, $regionRepo, $entiteRepo);
 
 $routes = [
     // Auth
@@ -122,6 +123,13 @@ $routes = [
     'id-objectif-forModal' => [$objectifCtrl, 'fetchByHash'],
     'id-objectif'         => [$objectifCtrl, 'update'],
     'id-objectif-forDel'  => [$objectifCtrl, 'delete'],
+
+    // Users
+    'new-user'             => [$userCtrl, 'create'],
+    'id-user-forModal'     => [$userCtrl, 'fetchByHash'],
+    'id-user-upd'          => [$userCtrl, 'update'],
+    'id-user-forDel'       => [$userCtrl, 'delete'],
+    'id-user-active'       => [$userCtrl, 'toggleActive'],
 ];
 
 // Dispatch: check if any POST key matches a route.

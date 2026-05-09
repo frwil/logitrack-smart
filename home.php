@@ -273,6 +273,8 @@ if (!$renderPartial):
                 <?php endif; ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'configuration') :  ?>
                 <?php include("config.php"); ?>
+            <?php elseif (isset($_GET['page']) && $_GET['page'] == 'users') :  ?>
+                <?php include("users.php"); ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'reports') :  ?>
                 <?php include("reporting.php"); ?>
             <?php endif; ?>
