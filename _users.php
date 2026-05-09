@@ -194,8 +194,9 @@ function getTableauUsers()
 </div>
 
 <script>
-// TomSelect instances
+// TomSelect instances — lazy-initialized on first modal open
 var regionSelect, entiteSelect;
+var tomSelectsReady = false;
 
 function makeSelectDropdown() {
     return '<div class="ts-dropdown-content"><div class="ts-select-all"><a href="#" class="select-all-link">Tout sélectionner</a> &middot; <a href="#" class="deselect-all-link">Tout désélectionner</a></div></div>';
@@ -236,15 +237,25 @@ function initTomSelects() {
     bindSelectAll(entiteSelect);
 }
 
-initTomSelects();
+function ensureTomSelects() {
+    if (!tomSelectsReady) {
+        tomSelectsReady = true;
+        initTomSelects();
+    }
+}
 
-// Re-init TomSelect when modal is shown (fixes rendering inside hidden modal)
+// Lazy-init: only create TomSelect instances when the modal is about to be shown
+$('#modal-user').on('show.bs.modal', function() {
+    ensureTomSelects();
+});
+
 $('#modal-user').on('shown.bs.modal', function() {
     if (regionSelect) regionSelect.sync();
     if (entiteSelect) entiteSelect.sync();
 });
 
 function openModalUser() {
+    ensureTomSelects();
     $('#form-user')[0].reset();
     $('#id-user').val('');
     $('#is-active-user').val('1');
@@ -281,6 +292,7 @@ function showModalUpdateUser(id) {
             $('#pass-user').val('');
             $('#pass-user-confirm').val('');
 
+            ensureTomSelects();
             if (regionSelect) { regionSelect.clear(); regionSelect.sync(); }
             if (entiteSelect) { entiteSelect.clear(); entiteSelect.sync(); }
 
