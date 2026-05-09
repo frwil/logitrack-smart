@@ -74,7 +74,7 @@ function getTableauUsers()
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="form-user">
+                <form id="form-user" novalidate>
                     <input type="hidden" id="id-user" name="id-user">
                     <input type="hidden" id="is-active-user" name="is-active-user" value="1">
 
@@ -82,10 +82,12 @@ function getTableauUsers()
                         <div class="form-floating mb-3 col-md-6">
                             <input type="text" class="form-control" required id="name-user" name="name-user">
                             <label for="name-user">Nom d'utilisateur</label>
+                            <div class="invalid-feedback">Ce champ est obligatoire</div>
                         </div>
                         <div class="form-floating mb-3 col-md-6">
                             <input type="email" class="form-control" required id="email-user" name="email-user">
                             <label for="email-user">E-mail</label>
+                            <div class="invalid-feedback">Ce champ est obligatoire</div>
                         </div>
                     </div>
 
@@ -93,10 +95,12 @@ function getTableauUsers()
                         <div class="form-floating mb-3 col-md-6">
                             <input type="password" class="form-control" id="pass-user" name="pass-user" placeholder=" ">
                             <label for="pass-user">Mot de passe</label>
+                            <div class="invalid-feedback">Ce champ est obligatoire</div>
                         </div>
                         <div class="form-floating mb-3 col-md-6">
                             <input type="password" class="form-control" id="pass-user-confirm" name="pass-user-confirm" placeholder=" ">
                             <label for="pass-user-confirm">Confirmer le mot de passe</label>
+                            <div class="invalid-feedback">Les mots de passe ne correspondent pas</div>
                         </div>
                     </div>
 
@@ -194,23 +198,30 @@ function getTableauUsers()
 </div>
 
 <script>
-// TomSelect instances — lazy-initialized on first modal open
+// TomSelect instances — initialized on shown.bs.modal when visible
 var regionSelect, entiteSelect;
-var tomSelectsReady = false;
+var pendingRegions = null;
+var pendingEntites = null;
 
 function bindSelectAll(ts) {
     ts.on('dropdown_open', function() {
-        var $dd = $(ts.dropdown_content);
-        // Inject select-all links at the top of the dropdown (preserves options list)
-        if (!$dd.children('.ts-select-all').length) {
-            $dd.prepend('<div class="ts-select-all"><a href="#" class="select-all-link">Tout sélectionner</a> &middot; <a href="#" class="deselect-all-link">Tout désélectionner</a></div>');
-        }
-        $dd.find('.select-all-link').off('click').on('click', function(e) {
+        var dd = ts.dropdown_content;
+        if (!dd || dd.querySelector('.ts-select-all')) return;
+
+        var div = document.createElement('div');
+        div.className = 'ts-select-all';
+        div.innerHTML = '<a href="#" class="select-all-link">Tout sélectionner</a> &middot; <a href="#" class="deselect-all-link">Tout désélectionner</a>';
+        dd.insertBefore(div, dd.firstChild);
+
+        div.querySelector('.select-all-link').addEventListener('click', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             ts.setValue(Object.keys(ts.options).map(function(k) { return ts.options[k].value; }));
         });
-        $dd.find('.deselect-all-link').off('click').on('click', function(e) {
+
+        div.querySelector('.deselect-all-link').addEventListener('click', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             ts.clear();
         });
     });
@@ -235,25 +246,25 @@ function initTomSelects() {
     bindSelectAll(entiteSelect);
 }
 
-function ensureTomSelects() {
-    if (!tomSelectsReady) {
-        tomSelectsReady = true;
-        initTomSelects();
+// Initialize TomSelect after modal is fully visible so elements have dimensions
+$('#modal-user').on('shown.bs.modal', function() {
+    initTomSelects();
+    if (pendingRegions !== null) {
+        if (pendingRegions.length) regionSelect.setValue(pendingRegions);
+        pendingRegions = null;
     }
-}
-
-// Lazy-init: only create TomSelect instances when the modal is about to be shown
-$('#modal-user').on('show.bs.modal', function() {
-    ensureTomSelects();
+    if (pendingEntites !== null) {
+        if (pendingEntites.length) entiteSelect.setValue(pendingEntites);
+        pendingEntites = null;
+    }
 });
 
-$('#modal-user').on('shown.bs.modal', function() {
-    if (regionSelect) regionSelect.sync();
-    if (entiteSelect) entiteSelect.sync();
+$('#modal-user').on('hidden.bs.modal', function() {
+    pendingRegions = null;
+    pendingEntites = null;
 });
 
 function openModalUser() {
-    ensureTomSelects();
     $('#form-user')[0].reset();
     $('#id-user').val('');
     $('#is-active-user').val('1');
@@ -264,8 +275,10 @@ function openModalUser() {
     $('#role-user').val('user');
     <?php endif; ?>
     clearRights();
-    if (regionSelect) { regionSelect.clear(); regionSelect.sync(); }
-    if (entiteSelect) { entiteSelect.clear(); entiteSelect.sync(); }
+    // Clear any leftover validation state
+    $('#form-user .is-invalid').removeClass('is-invalid');
+    pendingRegions = [];
+    pendingEntites = [];
     $('#modal-user').modal('show');
 }
 
@@ -274,6 +287,8 @@ function showModalUpdateUser(id) {
     $('#pass-user, #pass-user-confirm').prop('required', false);
     $('#pass-user, #pass-user-confirm').attr('placeholder', 'Laisser vide pour ne pas changer');
     $('#id-user').val(id);
+    // Clear any leftover validation state
+    $('#form-user .is-invalid').removeClass('is-invalid');
 
     $.ajax({
         type: 'post',
@@ -290,16 +305,8 @@ function showModalUpdateUser(id) {
             $('#pass-user').val('');
             $('#pass-user-confirm').val('');
 
-            ensureTomSelects();
-            if (regionSelect) { regionSelect.clear(); regionSelect.sync(); }
-            if (entiteSelect) { entiteSelect.clear(); entiteSelect.sync(); }
-
-            if (v.regions && v.regions.length) {
-                regionSelect.setValue(v.regions.map(String));
-            }
-            if (v.entities && v.entities.length) {
-                entiteSelect.setValue(v.entities.map(String));
-            }
+            pendingRegions = v.regions ? v.regions.map(String) : [];
+            pendingEntites = v.entities ? v.entities.map(String) : [];
 
             clearRights();
             if (v.rights) {
@@ -336,15 +343,20 @@ function buildRightsJson() {
 }
 
 function saveUser() {
+    // Clear previous validation state
+    $('#form-user .is-invalid').removeClass('is-invalid');
+
     var valid = true;
-    $('#form-user *[required]').each(function() {
-        $(this).removeClass('is-invalid');
+
+    // Validate all required fields
+    $('#form-user [required]').each(function() {
         if ($(this).val() === '') {
             valid = false;
             $(this).addClass('is-invalid');
         }
     });
 
+    // Password confirmation check
     var pwd = $('#pass-user').val();
     var confirm = $('#pass-user-confirm').val();
     if (pwd !== '' && pwd !== confirm && confirm !== '') {
