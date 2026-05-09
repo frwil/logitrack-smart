@@ -354,7 +354,7 @@ function saveUser() {
 
     var pwd = $('#pass-user').val();
     var confirm = $('#pass-user-confirm').val();
-    if (pwd !== '' && pwd !== confirm && confirm !== '') {
+    if (pwd !== confirm) {
         showError('Les mots de passe ne correspondent pas');
         $('#pass-user, #pass-user-confirm').addClass('is-invalid');
         return;
