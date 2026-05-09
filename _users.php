@@ -346,6 +346,7 @@ function saveUser() {
     var valid = true;
 
     $('#form-user [required]').each(function() {
+        alert($(this).val());
         if ($(this).val() === '') {
             valid = false;
             $(this).addClass('is-invalid');
