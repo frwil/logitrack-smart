@@ -48,7 +48,7 @@ class BaseRepository
     }
 
     /** Wrap a callable in a transaction. */
-    protected function transactional(callable $fn): mixed
+    public function transactional(callable $fn): mixed
     {
         mysqli_begin_transaction($this->con);
         try {
