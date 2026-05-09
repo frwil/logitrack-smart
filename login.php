@@ -10,6 +10,7 @@
             <p>Gestion de flotte — Groupe NJS</p>
         </div>
         <form action="index.php" method="post" id="login-form">
+            <input type="hidden" name="login" value="1">
             <div class="login-error" id="login-error"></div>
             <div class="login-field">
                 <label for="name-user">Identifiant</label>

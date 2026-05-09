@@ -43,7 +43,7 @@ $userCtrl = new UserController($userRepo, $regionRepo, $entiteRepo);
 
 $routes = [
     // Auth
-    'name-user'           => [$authCtrl, 'login'],
+    'login'               => [$authCtrl, 'login'],
     'nContext'            => [$authCtrl, 'switchContext'],
 
     // Vehicule
