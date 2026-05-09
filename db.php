@@ -65,10 +65,6 @@ function db_in(array $values): array
 
 function db_context_filter(array $regionIds, array $entiteIds): array
 {
-    // Superadmin sees all data — no filter
-    if ($_SESSION['usr-con']['is-superadmin'] ?? false) {
-        return ['1', []];
-    }
     $parts = [];
     $params = [];
     if (!empty($regionIds)) {
