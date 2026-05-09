@@ -264,6 +264,7 @@ function openModalUser() {
     $('#id-user').val('');
     $('#is-active-user').val('1');
     $('#modal-user-label').text('Nouvel utilisateur');
+    $('#name-user').prop('readonly', false).removeClass('bg-light');
     $('#pass-user, #pass-user-confirm').prop('required', true);
     $('#pass-user, #pass-user-confirm').attr('placeholder', ' ');
     <?php if (!$isSuperadmin): ?>
@@ -278,6 +279,7 @@ function openModalUser() {
 
 function showModalUpdateUser(id) {
     $('#modal-user-label').text('Modifier l\'utilisateur');
+    $('#name-user').prop('readonly', true).addClass('bg-light');
     $('#pass-user, #pass-user-confirm').prop('required', false);
     $('#pass-user, #pass-user-confirm').attr('placeholder', 'Laisser vide pour ne pas changer');
     $('#id-user').val(id);

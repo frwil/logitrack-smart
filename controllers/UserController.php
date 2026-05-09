@@ -151,7 +151,6 @@ class UserController extends BaseController
         $this->requireAdmin();
 
         $id = (int)$this->post('id-user');
-        $name = $this->post('name-user');
         $pass = $this->post('pass-user');
         $fullname = $this->post('fullname-user') ?: null;
         $email = $this->post('email-user');
@@ -208,11 +207,8 @@ class UserController extends BaseController
             }
         }
 
-        // Check name uniqueness (excluding current user)
-        $existing = $this->repo->findByName($name);
-        if ($existing && (int)$existing['id_user'] !== $id) {
-            $this->jsonError('Ce nom d\'utilisateur est déjà pris');
-        }
+        // Name is immutable — keep the existing one
+        $name = $target['name_user'];
 
         try {
             $this->repo->transactional(function () use ($id, $name, $pass, $fullname, $email, $role, $isActive, $regionIds, $entiteIds, $rights) {
