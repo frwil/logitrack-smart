@@ -198,10 +198,9 @@ function getTableauUsers()
 </div>
 
 <script>
-// TomSelect instances — initialized on shown.bs.modal when visible
+// TomSelect instances — lazy-initialized on first modal open
 var regionSelect, entiteSelect;
-var pendingRegions = null;
-var pendingEntites = null;
+var tomSelectsReady = false;
 
 function bindSelectAll(ts) {
     ts.on('dropdown_open', function() {
@@ -242,25 +241,24 @@ function initTomSelects() {
     bindSelectAll(entiteSelect);
 }
 
-// Initialize TomSelect after modal is fully visible so elements have dimensions
-$('#modal-user').on('shown.bs.modal', function() {
-    initTomSelects();
-    if (pendingRegions !== null) {
-        if (pendingRegions.length) regionSelect.setValue(pendingRegions);
-        pendingRegions = null;
+function ensureTomSelects() {
+    if (!tomSelectsReady) {
+        tomSelectsReady = true;
+        initTomSelects();
     }
-    if (pendingEntites !== null) {
-        if (pendingEntites.length) entiteSelect.setValue(pendingEntites);
-        pendingEntites = null;
-    }
+}
+
+$('#modal-user').on('show.bs.modal', function() {
+    ensureTomSelects();
 });
 
-$('#modal-user').on('hidden.bs.modal', function() {
-    pendingRegions = null;
-    pendingEntites = null;
+$('#modal-user').on('shown.bs.modal', function() {
+    if (regionSelect) regionSelect.sync();
+    if (entiteSelect) entiteSelect.sync();
 });
 
 function openModalUser() {
+    ensureTomSelects();
     $('#form-user')[0].reset();
     $('#id-user').val('');
     $('#is-active-user').val('1');
@@ -271,10 +269,9 @@ function openModalUser() {
     $('#role-user').val('user');
     <?php endif; ?>
     clearRights();
-    // Clear any leftover validation state
     $('#form-user .is-invalid').removeClass('is-invalid');
-    pendingRegions = [];
-    pendingEntites = [];
+    if (regionSelect) { regionSelect.clear(); regionSelect.sync(); }
+    if (entiteSelect) { entiteSelect.clear(); entiteSelect.sync(); }
     $('#modal-user').modal('show');
 }
 
@@ -283,7 +280,6 @@ function showModalUpdateUser(id) {
     $('#pass-user, #pass-user-confirm').prop('required', false);
     $('#pass-user, #pass-user-confirm').attr('placeholder', 'Laisser vide pour ne pas changer');
     $('#id-user').val(id);
-    // Clear any leftover validation state
     $('#form-user .is-invalid').removeClass('is-invalid');
 
     $.ajax({
@@ -301,8 +297,16 @@ function showModalUpdateUser(id) {
             $('#pass-user').val('');
             $('#pass-user-confirm').val('');
 
-            pendingRegions = v.regions ? v.regions.map(String) : [];
-            pendingEntites = v.entities ? v.entities.map(String) : [];
+            ensureTomSelects();
+            if (regionSelect) { regionSelect.clear(); regionSelect.sync(); }
+            if (entiteSelect) { entiteSelect.clear(); entiteSelect.sync(); }
+
+            if (v.regions && v.regions.length) {
+                regionSelect.setValue(v.regions.map(String));
+            }
+            if (v.entities && v.entities.length) {
+                entiteSelect.setValue(v.entities.map(String));
+            }
 
             clearRights();
             if (v.rights) {
@@ -339,12 +343,10 @@ function buildRightsJson() {
 }
 
 function saveUser() {
-    // Clear previous validation state
     $('#form-user .is-invalid').removeClass('is-invalid');
 
     var valid = true;
 
-    // Validate all required fields
     $('#form-user [required]').each(function() {
         if ($(this).val() === '') {
             valid = false;
@@ -352,7 +354,6 @@ function saveUser() {
         }
     });
 
-    // Password confirmation check
     var pwd = $('#pass-user').val();
     var confirm = $('#pass-user-confirm').val();
     if (pwd !== '' && pwd !== confirm && confirm !== '') {
