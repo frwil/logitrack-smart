@@ -57,10 +57,12 @@ function getTableauUsers()
         // Edit button
         $tableau .= "<button class='btn btn-primary btn-sm' onclick='showModalUpdateUser($id)' title='Modifier'><i class='fa fa-pencil-alt'></i></button>";
 
-        // Toggle active button
+        // Toggle active button (superadmins can never be deactivated)
+        if ($role !== 'superadmin'):
         $toggleIcon = $isActive ? 'fa-toggle-off' : 'fa-toggle-on';
         $toggleTitle = $isActive ? 'Désactiver' : 'Activer';
         $tableau .= "<button class='btn btn-warning btn-sm' onclick='toggleUserActive($id, $isActive)' title='$toggleTitle'><i class='fa $toggleIcon'></i></button>";
+        endif;
 
         // Delete button
         $tableau .= "<button class='btn btn-danger btn-sm' onclick='deleteUser($id)' title='Supprimer'><i class='fa fa-times'></i></button>";

@@ -184,6 +184,11 @@ class UserController extends BaseController
             $this->jsonError('Vous ne pouvez pas modifier votre propre rôle');
         }
 
+        // Superadmin can never be deactivated
+        if ($target['role'] === 'superadmin' && !$isActive) {
+            $this->jsonError('Un superadmin ne peut pas être désactivé');
+        }
+
         if (!is_array($regionIds)) $regionIds = $regionIds ? [$regionIds] : [];
         if (!is_array($entiteIds)) $entiteIds = $entiteIds ? [$entiteIds] : [];
         $regionIds = array_map('intval', $regionIds);
@@ -273,9 +278,14 @@ class UserController extends BaseController
             $this->jsonError('Accès non autorisé', 403);
         }
 
+        // Superadmin can never be deactivated
+        if ($target['role'] === 'superadmin' && !$val) {
+            $this->jsonError('Un superadmin ne peut pas être désactivé');
+        }
+
         // Prevent self-deactivation
         if ($id === (int)($_SESSION['usr-con']['id_user'] ?? 0)) {
-            $this->jsonError('Vous ne pouvez pas désactiver votre propre compte');
+            $this->jsonError('Vous ne pouvez pas modifier votre propre statut');
         }
 
         try {

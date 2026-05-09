@@ -178,6 +178,8 @@ if (!$renderPartial):
             <a class="lt-sidebar-link <?php if ($_GET['subpage'] == 'suiviVidanges') echo 'active'; ?>" href="?page=maintenances&subpage=suiviVidanges"><i class="fa fa-oil-can"></i> Suivi vidanges</a>
             <a class="lt-sidebar-link <?php if ($_GET['subpage'] == 'centreCouts') echo 'active'; ?>" href="?page=maintenances&subpage=centreCouts"><i class="fa fa-euro-sign"></i> Centre de coûts</a>
             <a class="lt-sidebar-link <?php if ($_GET['subpage'] == 'suiviBonsReparation') echo 'active'; ?>" href="?page=maintenances&subpage=suiviBonsReparation"><i class="fa fa-tools"></i> Bons de réparation</a>
+        <?php elseif (isset($_GET['page']) && $_GET['page'] == 'users' && in_array('view', $rights_user)): ?>
+            <a class="lt-sidebar-link new-item" href="#" onclick="openModalUser()"><i class="fa fa-plus-circle"></i> Nouvel utilisateur</a>
         <?php endif; ?>
     </div>
 <?php endif; ?>
