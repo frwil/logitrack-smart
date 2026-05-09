@@ -514,6 +514,11 @@ th .ts-wrapper .ts-control {
 }
 
 /* ── Form validation ── */
+.ts-wrapper.is-invalid .ts-control {
+  border-color: var(--lt-danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
 .form-control.is-invalid,
 .form-select.is-invalid,
 .was-validated .form-control:invalid,

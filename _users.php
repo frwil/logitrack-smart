@@ -345,15 +345,27 @@ function buildRightsJson() {
 
 function saveUser() {
     $('#form-user .is-invalid').removeClass('is-invalid');
+    if (regionSelect) regionSelect.wrapper.classList.remove('is-invalid');
+    if (entiteSelect) entiteSelect.wrapper.classList.remove('is-invalid');
 
     var valid = true;
 
     $('#form-user [required]').each(function() {
+        if ($(this).is('#region-user') || $(this).is('#entite-user')) return;
         if ($(this).val() === '') {
             valid = false;
             $(this).addClass('is-invalid');
         }
     });
+
+    if (regionSelect && regionSelect.getValue().length === 0) {
+        valid = false;
+        regionSelect.wrapper.classList.add('is-invalid');
+    }
+    if (entiteSelect && entiteSelect.getValue().length === 0) {
+        valid = false;
+        entiteSelect.wrapper.classList.add('is-invalid');
+    }
 
     var pwd = $('#pass-user').val();
     var confirm = $('#pass-user-confirm').val();
