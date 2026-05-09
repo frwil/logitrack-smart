@@ -206,7 +206,7 @@ function bindSelectAll(ts) {
     ts.on('dropdown_open', function() {
         var $dd = $(ts.dropdown_content);
         if (!$dd.length || $dd.children('.ts-select-all').length) return;
-
+alert('ok');
         $dd.prepend('<div class="ts-select-all"><a href="#" class="select-all-link">Tout sélectionner</a> &middot; <a href="#" class="deselect-all-link">Tout désélectionner</a></div>');
 
         $dd.find('.select-all-link').off('click').on('click', function(e) {
