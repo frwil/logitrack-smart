@@ -1,5 +1,5 @@
 <?php
-if (!in_array('view', $rights_maintenance)) : echo "<script>location='index.php'</script>'";
+if (!in_array('view', $rights_maintenance)) : echo "<script>location='index.php'</script>";
 endif;
 function getTableauReleveKMS()
 {
@@ -128,7 +128,7 @@ function getPremiereSemaineDuMois($date)
 
 /* POST handled by MaintenanceController — see controllers/router.php */
 ?>
-<?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'releveKms' || !isset($_GET['subpage'])) : ?>
+<?php if ((isset($_GET['subpage']) && $_GET['subpage'] == 'releveKms') || !isset($_GET['subpage'])) : ?>
     <?php if (isset($_GET['action']) && $_GET['action'] == 'new' && in_array("saveReleveKms", $rights_maintenance)): ?>
         <script>
             setTimeout(() => {
@@ -195,27 +195,29 @@ function getPremiereSemaineDuMois($date)
             })
         }
         $(function() {
-            google.load("visualization", "1", {
+            google.charts.load("current", {
                 packages: ["corechart", "charteditor"]
             });
-            var tpl = $.pivotUtilities.aggregatorTemplates;
-            var derivers = $.pivotUtilities.derivers;
-            var renderers = $.extend($.pivotUtilities.renderers,
-                $.pivotUtilities.gchart_renderers);
-            $("#output").pivotUI($("#table-releve-kms"), {
-                rows: ["Véhicule", "Région"],
-                cols: ["Date Relevé"],
-                aggregators: {
-                    "Kms": function() {
-                        return tpl.sum()(["Kms"])
+            google.charts.setOnLoadCallback(function() {
+                var tpl = $.pivotUtilities.aggregatorTemplates;
+                var derivers = $.pivotUtilities.derivers;
+                var renderers = $.extend($.pivotUtilities.renderers,
+                    $.pivotUtilities.gchart_renderers);
+                $("#output").pivotUI($("#table-releve-kms"), {
+                    rows: ["Véhicule", "Région"],
+                    cols: ["Date Relevé"],
+                    aggregators: {
+                        "Kms": function() {
+                            return tpl.sum()(["Kms"])
+                        }
+                    },
+                    renderers: renderers,
+                    rendererName: "Table Barchart",
+                    filter: (e) => {
+                        var selNames = <?php echo json_encode($_SESSION['usr-con']['region-sel-names'] ?? []); ?>;
+                        return selNames.some(function(n) { return e["Région"].toLowerCase() == n.toLowerCase(); })
                     }
-                },
-                renderers: renderers,
-                rendererName: "Table Barchart",
-                filter: (e) => {
-                    var selNames = <?php echo json_encode($_SESSION['usr-con']['region-sel-names'] ?? []); ?>;
-                    return selNames.some(function(n) { return e["Région"].toLowerCase() == n.toLowerCase(); })
-                }
+                });
             });
         });
 
@@ -662,7 +664,7 @@ function getPremiereSemaineDuMois($date)
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="form-upd-pt">
+                    <form id="form-upd-cc">
                         <div class="form-floating mb-3">
                             <input type="text" id="nom-upd-cc" name="nom-upd-cc" required class="form-control">
                             <input type="hidden" id="id-upd-cc" name="id-upd-cc">

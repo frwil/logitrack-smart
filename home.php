@@ -193,9 +193,9 @@ if (!$renderPartial):
             <?php endif; ?>
         <?php elseif (isset($_GET['page']) && $_GET['page'] == 'maintenances' && in_array('view', $rights_maintenance)): ?>
             <a class="lt-sidebar-link <?php if (!isset($_GET['subpage']) || $_GET['subpage'] == 'releveKms') echo 'active'; ?>" href="?page=maintenances&subpage=releveKms"><i class="fa fa-tachometer-alt"></i> Relevés kilométrage</a>
-            <a class="lt-sidebar-link <?php if ($_GET['subpage'] == 'suiviVidanges') echo 'active'; ?>" href="?page=maintenances&subpage=suiviVidanges"><i class="fa fa-oil-can"></i> Suivi vidanges</a>
-            <a class="lt-sidebar-link <?php if ($_GET['subpage'] == 'centreCouts') echo 'active'; ?>" href="?page=maintenances&subpage=centreCouts"><i class="fa fa-euro-sign"></i> Centre de coûts</a>
-            <a class="lt-sidebar-link <?php if ($_GET['subpage'] == 'suiviBonsReparation') echo 'active'; ?>" href="?page=maintenances&subpage=suiviBonsReparation"><i class="fa fa-tools"></i> Bons de réparation</a>
+            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviVidanges') echo 'active'; ?>" href="?page=maintenances&subpage=suiviVidanges"><i class="fa fa-oil-can"></i> Suivi vidanges</a>
+            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'centreCouts') echo 'active'; ?>" href="?page=maintenances&subpage=centreCouts"><i class="fa fa-euro-sign"></i> Centre de coûts</a>
+            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviBonsReparation') echo 'active'; ?>" href="?page=maintenances&subpage=suiviBonsReparation"><i class="fa fa-tools"></i> Bons de réparation</a>
         <?php elseif (isset($_GET['page']) && $_GET['page'] == 'users' && in_array('view', $rights_user)): ?>
             <?php if (in_array('save', $rights_user)): ?>
                 <a class="lt-sidebar-link new-item" href="#" onclick="openModalUser()"><i class="fa fa-plus-circle"></i> Nouvel utilisateur</a>
@@ -276,19 +276,19 @@ if (!$renderPartial):
                     <div class="lt-page-title">Relevés de kilométrages</div>
                     <hr>
                     <?php echo getTableauReleveKMS(); ?>
-                <?php elseif ($_GET['subpage'] == 'suiviVidanges'):  ?>
+                <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviVidanges'):  ?>
                     <div class="lt-page-title">Suivi des vidanges</div>
                     <hr>
                     <?php echo getTableauVidange(); ?>
-                <?php elseif ($_GET['subpage'] == 'prestataire'):  ?>
+                <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'prestataire'):  ?>
                     <div class="lt-page-title">Liste des prestataires</div>
                     <hr>
                     <?php echo getTableauPrestataire(); ?>
-                <?php elseif ($_GET['subpage'] == 'centreCouts'):  ?>
+                <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'centreCouts'):  ?>
                     <div class="lt-page-title">Liste des Centres de coûts</div>
                     <hr>
                     <?php echo getTableauCentreCout(); ?>
-                <?php elseif ($_GET['subpage'] == 'suiviBonsReparation'):  ?>
+                <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviBonsReparation'):  ?>
                     <div class="lt-page-title">Suivi des bons de réparation</div>
                     <hr>
                     <?php echo getTableauBonsReparation(); ?>
@@ -311,6 +311,12 @@ if (!$renderPartial):
                 <?php endif; ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'reports') :  ?>
                 <?php include("reporting.php"); ?>
+            <?php elseif (isset($_GET['page']) && $_GET['page'] == 'reporting') :  ?>
+                <?php include("reporting.php"); ?>
+            <?php elseif (isset($_GET['page']) && $_GET['page'] == 'import') :  ?>
+                <?php include("import.php"); ?>
+            <?php elseif (isset($_GET['page']) && $_GET['page'] == 'userRegistration') :  ?>
+                <?php include("userRegistration.php"); ?>
             <?php endif; ?>
     </div>
 </div>

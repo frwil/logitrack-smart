@@ -85,6 +85,8 @@ $routes = [
     'del-pt-id'           => [$maintenanceCtrl, 'deletePrestataire'],
 
     // Maintenance — Centre coûts
+    'nom-cc'              => [$maintenanceCtrl, 'createCentreCout'],
+    'id-upd-cc'           => [$maintenanceCtrl, 'updateCentreCout'],
     'c-cc-s'              => [$maintenanceCtrl, 'fetchCentreCout'],
     'del-cc-id'           => [$maintenanceCtrl, 'deleteCentreCout'],
 

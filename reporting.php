@@ -38,9 +38,7 @@
         <thead>
           <tr>
             <th>Véhicule</th>
-            <th>Véhicule</th>
             <th>Date</th>
-            <th>Type de chargement</th>
             <th>Type de chargement</th>
             <th>Qté de chargement</th>
             <th>Kms parcourus</th>
@@ -78,16 +76,17 @@
               $sum_conso[$id_vehicule][$row2['id_type_chargement']] += $row2['qte_carburant'];
             }
             foreach ($voyages as $row2) {
-              $table .= "<tr><td>" . h($row['immatriculation_vehicule']) . " (" . $countVoyages . " Voyages)" . "</td><td>".h($row['immatriculation_vehicule'])."</td>";
-              $table .= "<td>".($row2['date_voyage'] ? date('d/m/Y',strtotime($row2['date_voyage'])) : '')."</td><td>".h($row['immatriculation_vehicule'])." - ".h($row2['lib_type_chargement']). " (".$sum_chargement[$id_vehicule][$row2['id_type_chargement']]." - ". $sum_kms[$id_vehicule][$row2['id_type_chargement']]."kms - " .$sum_conso[$id_vehicule][$row2['id_type_chargement']]."Litres)"."</td><td>".h($row2['lib_type_chargement'])."</td><td>" . h($row2['qte_chargement']) . "</td><td>".h($row2['distance_destination'])."</td><td>".h($row2['qte_carburant'])."</td></tr>";
+              $table .= "<tr><td>" . h($row['immatriculation_vehicule']) . " (" . $countVoyages . " Voyages)" . "</td>";
+              $table .= "<td>".($row2['date_voyage'] ? date('d/m/Y',strtotime($row2['date_voyage'])) : '')."</td><td>".h($row['immatriculation_vehicule'])." - ".h($row2['lib_type_chargement']). " (".$sum_chargement[$id_vehicule][$row2['id_type_chargement']]." - ". $sum_kms[$id_vehicule][$row2['id_type_chargement']]."kms - " .$sum_conso[$id_vehicule][$row2['id_type_chargement']]."Litres)"."</td><td>" . h($row2['qte_chargement']) . "</td><td>".h($row2['distance_destination'])."</td><td>".h($row2['qte_carburant'])."</td></tr>";
             }
             if ($countVoyages == 0) {
-              $table .= "<tr><td>" . h($row['immatriculation_vehicule']) . " (0)" . "</td><td>Aucun voyage trouvé</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
+              $table .= "<tr><td>" . h($row['immatriculation_vehicule']) . " (0)" . "</td><td></td><td>Aucun voyage trouvé</td><td></td><td></td><td></td></tr>";
             }
           }
           echo $table;
           ?>
         </tbody>
+      </table>
     </div>
     <div class="tab-pane fade p-3" id="remplissage" role="tabpanel" aria-labelledby="remplissage-tab">
       <!-- Contenu Taux de remplissage des camions -->

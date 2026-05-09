@@ -310,6 +310,22 @@ class MaintenanceRepository extends BaseRepository
         );
     }
 
+    public function insertCentreCout(string $nom): int
+    {
+        return (int)$this->insertGetId(
+            "INSERT INTO centre_couts (nom_centre_cout) VALUES (?)",
+            [$nom]
+        );
+    }
+
+    public function updateCentreCout(int $id, string $nom): bool
+    {
+        return $this->exec(
+            "UPDATE centre_couts SET nom_centre_cout = ? WHERE id_centre_cout = ?",
+            [$nom, $id]
+        );
+    }
+
     public function deleteCentreCoutById(int $id): bool
     {
         return $this->exec(

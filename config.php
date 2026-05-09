@@ -372,7 +372,7 @@ function getTableauFolder()
                                             ?>
                                         </select>
                                         <div class="form-floating">
-                                            <input type="date" id="date-expiry" class="form-control" value="<?php date('Y-m-d'); ?>">
+                                            <input type="date" id="date-expiry" class="form-control" value="<?php echo date('Y-m-d'); ?>">
                                             <label for="date-expiry">Date expiration</label>
                                         </div>
                                         <div class="form-floating">

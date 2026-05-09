@@ -122,6 +122,45 @@ class MaintenanceController extends BaseController
 
     // ---- Centre de coûts ----
 
+    public function createCentreCout(): never
+    {
+        $nom = $this->post('nom-cc');
+        if (!$nom) {
+            $this->jsonError('La désignation est obligatoire');
+        }
+        try {
+            $id = $this->maintenanceRepo->transactional(function () use ($nom) {
+                return $this->maintenanceRepo->insertCentreCout($nom);
+            });
+            $this->json(['data' => ['id' => $id]]);
+        } catch (\mysqli_sql_exception $e) {
+            if ($e->getCode() == 1062) {
+                $this->jsonError('Ce centre de coût existe déjà');
+            }
+            $this->jsonError('Erreur lors de la création');
+        }
+    }
+
+    public function updateCentreCout(): never
+    {
+        $id = (int)$this->post('id-upd-cc');
+        $nom = $this->post('nom-upd-cc');
+        if (!$id || !$nom) {
+            $this->jsonError('Tous les champs sont obligatoires');
+        }
+        try {
+            $this->maintenanceRepo->transactional(function () use ($id, $nom) {
+                $this->maintenanceRepo->updateCentreCout($id, $nom);
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            if ($e->getCode() == 1062) {
+                $this->jsonError('Ce centre de coût existe déjà');
+            }
+            $this->jsonError('Erreur lors de la modification');
+        }
+    }
+
     public function fetchCentreCout(): never
     {
         $row = $this->maintenanceRepo->findCentreCoutById((int)$this->post('c-cc-s'));
