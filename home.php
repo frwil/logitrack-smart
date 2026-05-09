@@ -1,5 +1,9 @@
-<?php /* POST /switchRegion handled by AuthController — see controllers/router.php */
+﻿<?php
+global $partial;
+$renderPartial = !empty($partial);
+/* POST /switchRegion handled by AuthController — see controllers/router.php */
 if(!isset($user_rights)) $user_rights = [];
+if (!$renderPartial):
 ?>
 <script>
     function exportTableToExcel(tableId, filename = '') {
@@ -71,34 +75,60 @@ if(!isset($user_rights)) $user_rights = [];
         <span class="lt-navbar-user">
             <?php echo h($_SESSION['usr-con']['name_user'] != "" ? strtoupper($_SESSION['usr-con']['name_user']) : ""); ?>
         </span>
-        <select id="context-region" multiple class="context-select" style="width:180px">
-            <?php
-            $regionRepo = new RegionRepository($con);
-            $regionIds = explode(',', $_SESSION['usr-con']['users_region']);
-            $selectedRegions = $_SESSION['usr-con']['region-sel'] ?? [];
-            foreach ($regionIds as $rid):
-                $r = $regionRepo->findById((int)$rid);
-                if ($r):
-            ?>
-                <option value="<?php echo $r['id_region']; ?>" <?php echo in_array((int)$r['id_region'], $selectedRegions) ? 'selected' : ''; ?>>
+        <?php
+        $regionRepo = new RegionRepository($con);
+        $regionIds = explode(',', $_SESSION['usr-con']['users_region']);
+        $selectedRegions = $_SESSION['usr-con']['region-sel'] ?? [];
+        $entiteRepo = new EntiteRepository($con);
+        $userEntityIds = $_SESSION['usr-con']['users-entite'] ?? [];
+        $selectedEntities = $_SESSION['usr-con']['entite-sel'] ?? [];
+        ?>
+        <div class="dropdown context-dropdown">
+            <button class="btn context-dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" title="Filtrer par région">
+                <i class="fa fa-map-marker-alt"></i>
+                Régions <span class="badge context-badge" id="ctx-region-count"><?php echo count($selectedRegions); ?></span>
+            </button>
+            <div class="dropdown-menu context-dropdown-menu">
+                <div class="context-dropdown-actions">
+                    <a href="#" class="select-all-link" data-context="region">Tout sélectionner</a>
+                    <span>&middot;</span>
+                    <a href="#" class="deselect-all-link" data-context="region">Tout désélectionner</a>
+                </div>
+                <div class="dropdown-divider"></div>
+                <?php foreach ($regionIds as $rid):
+                    $r = $regionRepo->findById((int)$rid);
+                    if ($r): ?>
+                <label class="dropdown-item context-check-item">
+                    <input class="form-check-input context-cb" type="checkbox" value="<?php echo $r['id_region']; ?>" data-context="region"
+                        <?php echo in_array((int)$r['id_region'], $selectedRegions) ? 'checked' : ''; ?>>
                     <?php echo h($r['nom_region']); ?>
-                </option>
-            <?php endif; endforeach; ?>
-        </select>
-        <select id="context-entite" multiple class="context-select" style="width:180px">
-            <?php
-            $entiteRepo = new EntiteRepository($con);
-            $userEntityIds = $_SESSION['usr-con']['users-entite'] ?? [];
-            $selectedEntities = $_SESSION['usr-con']['entite-sel'] ?? [];
-            foreach ($userEntityIds as $eid):
-                $e = $entiteRepo->findById((int)$eid);
-                if ($e):
-            ?>
-                <option value="<?php echo $e['id_entite']; ?>" <?php echo in_array((int)$e['id_entite'], $selectedEntities) ? 'selected' : ''; ?>>
+                </label>
+                <?php endif; endforeach; ?>
+            </div>
+        </div>
+        <div class="dropdown context-dropdown">
+            <button class="btn context-dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" title="Filtrer par entité">
+                <i class="fa fa-building"></i>
+                Entités <span class="badge context-badge" id="ctx-entite-count"><?php echo count($selectedEntities); ?></span>
+            </button>
+            <div class="dropdown-menu context-dropdown-menu">
+                <div class="context-dropdown-actions">
+                    <a href="#" class="select-all-link" data-context="entite">Tout sélectionner</a>
+                    <span>&middot;</span>
+                    <a href="#" class="deselect-all-link" data-context="entite">Tout désélectionner</a>
+                </div>
+                <div class="dropdown-divider"></div>
+                <?php foreach ($userEntityIds as $eid):
+                    $e = $entiteRepo->findById((int)$eid);
+                    if ($e): ?>
+                <label class="dropdown-item context-check-item">
+                    <input class="form-check-input context-cb" type="checkbox" value="<?php echo $e['id_entite']; ?>" data-context="entite"
+                        <?php echo in_array((int)$e['id_entite'], $selectedEntities) ? 'checked' : ''; ?>>
                     <?php echo h($e['nom_entite']); ?>
-                </option>
-            <?php endif; endforeach; ?>
-        </select>
+                </label>
+                <?php endif; endforeach; ?>
+            </div>
+        </div>
         <a class="btn-logout" href="?logout" title="Déconnexion"><i class="fa fa-power-off"></i></a>
     </div>
 </div>
@@ -150,6 +180,7 @@ if(!isset($user_rights)) $user_rights = [];
             <a class="lt-sidebar-link <?php if ($_GET['subpage'] == 'suiviBonsReparation') echo 'active'; ?>" href="?page=maintenances&subpage=suiviBonsReparation"><i class="fa fa-tools"></i> Bons de réparation</a>
         <?php endif; ?>
     </div>
+<?php endif; ?>
     <div class="lt-content">
             <?php if (!isset($_GET['page']) || ($_GET['page'] == 'vehicules' || $_GET['page'] == '')) : ?>
                 <?php include("vehicule.php"); ?>
@@ -247,6 +278,7 @@ if(!isset($user_rights)) $user_rights = [];
             <?php endif; ?>
     </div>
 </div>
+<?php if (!$renderPartial): ?>
 <script>
     function cbDropdown(column) {
         return $('<ul>', {
@@ -255,7 +287,8 @@ if(!isset($user_rights)) $user_rights = [];
             'class': 'cb-dropdown-wrap'
         }).appendTo(column));
     }
-    table = $('table:not(".no-datatable")').DataTable({
+    function initDataTable() {
+        window.table = $('table:not(".no-datatable")').DataTable({
         columnDefs: [{ targets: 0, searchable: false, orderable: false }],
         initComplete: function() {
             this.api().columns().every(function() {
@@ -357,7 +390,9 @@ if(!isset($user_rights)) $user_rights = [];
         scrollCollapse: true,
         scrollY: 300";
         endif; ?>
-    })
+        });
+    }
+    initDataTable();
 
     function createCellPos(n) {
         var ordA = 'A'.charCodeAt(0);
@@ -373,43 +408,56 @@ if(!isset($user_rights)) $user_rights = [];
         return s;
     }
 
-    var contextRegionSelect, contextEntiteSelect;
-    function makeContextSelect(selector, onChange) {
-        if (!$(selector).length || $(selector)[0].tomselect) return;
-        var ts = new TomSelect(selector, {
-            maxItems: null,
-            plugins: ['remove_button'],
-            render: {
-                no_results: function() { return '<div class="no-results">Aucune</div>'; },
-                dropdown: function() {
-                    return '<div class="ts-dropdown-content"><div class="ts-select-all"><a href="#" class="select-all-link">Tout sélectionner</a> &middot; <a href="#" class="deselect-all-link">Tout désélectionner</a></div></div>';
-                }
-            },
-            onChange: onChange
-        });
-        ts.on('dropdown_open', function() {
-            var $dd = $(ts.dropdown_content);
-            $dd.find('.select-all-link').off('click').on('click', function(e) {
-                e.preventDefault();
-                ts.setValue(Object.keys(ts.options).map(function(k) { return ts.options[k].value; }));
-            });
-            $dd.find('.deselect-all-link').off('click').on('click', function(e) {
-                e.preventDefault();
-                ts.clear();
-            });
-        });
-        return ts;
+    // Context checkbox dropdowns — read / update / sync
+    function updateContextBadge(type) {
+        var count = $('.context-cb[data-context="' + type + '"]:checked').length;
+        var $badge = $('#ctx-' + type + '-count');
+        $badge.text(count);
+        // Dim the dropdown toggle when nothing is selected
+        var $toggle = $badge.closest('.context-dropdown').find('.context-dropdown-toggle');
+        $toggle.toggleClass('context-empty', count === 0);
     }
-    function initContextSelects() {
-        contextRegionSelect = makeContextSelect('#context-region', debouncedSwitchContext);
-        contextEntiteSelect = makeContextSelect('#context-entite', debouncedSwitchContext);
+
+    function getCheckedContext(type) {
+        return $('.context-cb[data-context="' + type + '"]:checked').map(function() {
+            return $(this).val();
+        }).get();
     }
+
+    // Prevent dropdown from closing when clicking inside it
+    $(document).on('click', '.context-dropdown-menu .context-check-item, .context-dropdown-menu .select-all-link, .context-dropdown-menu .deselect-all-link', function(e) {
+        e.stopPropagation();
+    });
+
+    // Select all / deselect all links
+    $(document).on('click', '.context-dropdown-menu .select-all-link', function(e) {
+        e.preventDefault();
+        var type = $(this).data('context');
+        $('.context-cb[data-context="' + type + '"]').prop('checked', true);
+        updateContextBadge(type);
+        debouncedSwitchContext();
+    });
+
+    $(document).on('click', '.context-dropdown-menu .deselect-all-link', function(e) {
+        e.preventDefault();
+        var type = $(this).data('context');
+        $('.context-cb[data-context="' + type + '"]').prop('checked', false);
+        updateContextBadge(type);
+        debouncedSwitchContext();
+    });
+
+    // Checkbox change triggers debounced context switch
+    $(document).on('change', '.context-cb', function() {
+        updateContextBadge($(this).data('context'));
+        debouncedSwitchContext();
+    });
+
     var switchTimer;
     function debouncedSwitchContext() {
         clearTimeout(switchTimer);
         switchTimer = setTimeout(function() {
-            var regionIds = contextRegionSelect.getValue();
-            var entiteIds = contextEntiteSelect.getValue();
+            var regionIds = getCheckedContext('region');
+            var entiteIds = getCheckedContext('entite');
             if (regionIds.length === 0 || entiteIds.length === 0) return;
             $.ajax({
                 type: 'post',
@@ -422,12 +470,39 @@ if(!isset($user_rights)) $user_rights = [];
                 }),
                 dataType: 'json'
             }).done(function(e) {
-                if (e.success) { location.reload(); }
-                else { showWarning(e.error||"Erreur lors du changement de contexte"); }
+                if (e.success) {
+                    reloadPageContent();
+                } else {
+                    showWarning(e.error || "Erreur lors du changement de contexte");
+                }
             });
         }, 500);
     }
-    initContextSelects();
+
+    function reloadPageContent() {
+        var url = window.location.href.split('?')[0];
+        var params = new URLSearchParams(window.location.search);
+        params.set('_partial', '1');
+        $.ajax({
+            type: 'get',
+            url: url + '?' + params.toString(),
+            dataType: 'html'
+        }).done(function(html) {
+            if (window.table) {
+                window.table.destroy();
+                window.table = null;
+            }
+            destroyTomSelect('.mymsel');
+            $('.lt-content').html(html);
+            initDataTable();
+        }).fail(function() {
+            location.reload();
+        });
+    }
+
+    // Initialize badge counts on page load
+    updateContextBadge('region');
+    updateContextBadge('entite');
     <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'evaluationVoyages'): ?>
     table.destroy()
     destroyTomSelect('.mymsel')
@@ -517,4 +592,74 @@ if(!isset($user_rights)) $user_rights = [];
     .ts-wrapper {
         display: block;
     }
+
+    /* Context checkbox dropdowns */
+    .context-dropdown-toggle {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,.15);
+        color: rgba(255,255,255,.85);
+        font-size: 0.78rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 0.35rem;
+    }
+    .context-dropdown-toggle:hover,
+    .context-dropdown-toggle:focus,
+    .context-dropdown-toggle.show {
+        background: rgba(255,255,255,.1);
+        color: #fff;
+        border-color: rgba(255,255,255,.3);
+    }
+    .context-dropdown-toggle .fa {
+        margin-right: 0.2rem;
+        font-size: 0.7rem;
+    }
+    .context-badge {
+        background: rgba(255,255,255,.2);
+        color: #fff;
+        font-size: 0.65rem;
+        padding: 0.15em 0.4em;
+        margin-left: 0.2rem;
+    }
+    .context-dropdown-toggle.context-empty {
+        border-color: rgba(255,100,100,.4);
+        color: rgba(255,255,255,.55);
+    }
+    .context-dropdown-toggle.context-empty .context-badge {
+        background: rgba(255,100,100,.35);
+    }
+
+    .context-dropdown-menu {
+        max-height: 260px;
+        overflow-y: auto;
+        min-width: 220px;
+        padding: 0.25rem 0;
+    }
+    .context-dropdown-actions {
+        padding: 0.3rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    .context-dropdown-actions a {
+        color: #5D54A4;
+        text-decoration: none;
+    }
+    .context-dropdown-actions a:hover {
+        text-decoration: underline;
+    }
+
+    .context-check-item {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .context-check-item:hover {
+        background: #f5f3ff;
+    }
+    .context-check-item .form-check-input {
+        margin: 0;
+        flex-shrink: 0;
+    }
 </style>
+<?php endif; ?>

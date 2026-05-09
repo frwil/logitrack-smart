@@ -47,7 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'):
 endif;
 
 $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME'));
+$partial = isset($_GET['_partial']) && isset($_SESSION['usr-con']);
 ?>
+<?php if (!$partial): ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -81,6 +83,7 @@ $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), g
             }
         });
     </script>
+<?php endif; ?>
     <?php function isRightObjectAllowed($r_objet, $rights)
     {
         for ($i = 0; $i < count($rights); $i++) {
@@ -152,6 +155,8 @@ $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), g
             include("home.php");
         endif; ?>
     <?php endif; ?>
+<?php if (!$partial): ?>
 </body>
 
 </html>
+<?php endif; ?>
