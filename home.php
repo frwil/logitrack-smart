@@ -3,6 +3,24 @@ global $partial;
 $renderPartial = !empty($partial);
 /* POST /switchRegion handled by AuthController — see controllers/router.php */
 if(!isset($user_rights)) $user_rights = [];
+
+// Initialize rights arrays — must be outside the !$renderPartial block
+// because partial AJAX reloads skip the navbar where these are also set.
+$rights_vehicule = array();
+if (isRightObjectAllowed('vehicules', $user_rights) != false) $rights_vehicule = explode(',', isRightObjectAllowed('vehicules', $user_rights));
+$rights_voyage = array();
+if (isRightObjectAllowed('voyages', $user_rights) != false) $rights_voyage = explode(',', isRightObjectAllowed('voyages', $user_rights));
+$rights_affectation = array();
+if (isRightObjectAllowed('affectationVehicules', $user_rights) != false) $rights_affectation = explode(',', isRightObjectAllowed('affectationVehicules', $user_rights));
+$rights_maintenance = array();
+if (isRightObjectAllowed('maintenances', $user_rights) != false) $rights_maintenance = explode(',', isRightObjectAllowed('maintenances', $user_rights));
+$rights_user = array();
+if (isRightObjectAllowed('users', $user_rights) != false) $rights_user = explode(',', isRightObjectAllowed('users', $user_rights));
+$rights_config = array();
+if (isRightObjectAllowed('config', $user_rights) != false) $rights_config = explode(',', isRightObjectAllowed('config', $user_rights));
+$rights_report = array();
+if (isRightObjectAllowed('report', $user_rights) != false) $rights_report = explode(',', isRightObjectAllowed('report', $user_rights));
+
 if (!$renderPartial):
 ?>
 <script>
