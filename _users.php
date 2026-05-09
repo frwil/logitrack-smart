@@ -221,6 +221,7 @@ function bindSelectAll(ts) {
             ts.clear();
         });
     });
+}
 
 function initTomSelects() {
     if (regionSelect) regionSelect.destroy();
