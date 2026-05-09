@@ -205,9 +205,10 @@ var tomSelectsReady = false;
 function bindSelectAll(ts) {
     ts.on('dropdown_open', function() {
         var $dd = $(ts.dropdown_content);
+        alert('dd.length=' + $dd.length + ' children=' + $dd.children('.ts-select-all').length);
         if (!$dd.length || $dd.children('.ts-select-all').length) return;
-alert('ok');
         $dd.prepend('<div class="ts-select-all"><a href="#" class="select-all-link">Tout sélectionner</a> &middot; <a href="#" class="deselect-all-link">Tout désélectionner</a></div>');
+        alert('prepend done');
 
         $dd.find('.select-all-link').off('click').on('click', function(e) {
             e.preventDefault();
@@ -220,7 +221,6 @@ alert('ok');
             ts.clear();
         });
     });
-}
 
 function initTomSelects() {
     if (regionSelect) regionSelect.destroy();
