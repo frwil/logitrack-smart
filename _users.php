@@ -198,13 +198,13 @@ function getTableauUsers()
 var regionSelect, entiteSelect;
 var tomSelectsReady = false;
 
-function makeSelectDropdown() {
-    return '<div class="ts-dropdown-content"><div class="ts-select-all"><a href="#" class="select-all-link">Tout sélectionner</a> &middot; <a href="#" class="deselect-all-link">Tout désélectionner</a></div></div>';
-}
-
 function bindSelectAll(ts) {
     ts.on('dropdown_open', function() {
         var $dd = $(ts.dropdown_content);
+        // Inject select-all links at the top of the dropdown (preserves options list)
+        if (!$dd.children('.ts-select-all').length) {
+            $dd.prepend('<div class="ts-select-all"><a href="#" class="select-all-link">Tout sélectionner</a> &middot; <a href="#" class="deselect-all-link">Tout désélectionner</a></div>');
+        }
         $dd.find('.select-all-link').off('click').on('click', function(e) {
             e.preventDefault();
             ts.setValue(Object.keys(ts.options).map(function(k) { return ts.options[k].value; }));
@@ -223,16 +223,14 @@ function initTomSelects() {
     regionSelect = new TomSelect('#region-user', {
         plugins: ['remove_button'],
         maxItems: null,
-        placeholder: 'Sélectionner les régions...',
-        render: { dropdown: makeSelectDropdown }
+        placeholder: 'Sélectionner les régions...'
     });
     bindSelectAll(regionSelect);
 
     entiteSelect = new TomSelect('#entite-user', {
         plugins: ['remove_button'],
         maxItems: null,
-        placeholder: 'Sélectionner les entités...',
-        render: { dropdown: makeSelectDropdown }
+        placeholder: 'Sélectionner les entités...'
     });
     bindSelectAll(entiteSelect);
 }
