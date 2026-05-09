@@ -111,12 +111,13 @@ function getTableauUsers()
                         </div>
                         <div class="mb-3 col-md-6">
                             <label for="role-user">Rôle</label>
-                            <select id="role-user" required name="role-user" class="form-select">
+                            <select id="role-user" required name="role-user">
                                 <option value="user">Utilisateur</option>
                                 <?php if ($isSuperadmin): ?>
                                 <option value="admin">Administrateur</option>
                                 <?php endif; ?>
                             </select>
+                            <div class="invalid-feedback">Ce champ est obligatoire</div>
                         </div>
                     </div>
 
@@ -131,6 +132,7 @@ function getTableauUsers()
                                 endforeach;
                                 ?>
                             </select>
+                            <div class="invalid-feedback">Ce champ est obligatoire</div>
                         </div>
                         <div class="mb-3 col-md-6">
                             <label for="entite-user">Entités</label>
@@ -142,6 +144,7 @@ function getTableauUsers()
                                 endforeach;
                                 ?>
                             </select>
+                            <div class="invalid-feedback">Ce champ est obligatoire</div>
                         </div>
                     </div>
 
