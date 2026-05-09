@@ -112,8 +112,10 @@ $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), g
             $user['region-sel-names'] = $_SESSION['usr-con']['region-sel-names'] ?? [];
         }
 
-        $isAdmin = $_SESSION['usr-con']['is-admin'] ?? ($_SESSION['usr-con']['region-sel-admin'] ?? '') == '1';
+        $isAdmin = $_SESSION['usr-con']['is-admin'] ?? false;
+        $isSuperadmin = $_SESSION['usr-con']['is-superadmin'] ?? false;
         $user['is-admin'] = $isAdmin;
+        $user['is-superadmin'] = $isSuperadmin;
 
         $user['entite-sel'] = $_SESSION['usr-con']['entite-sel'] ?? [];
         $user['entite-sel-names'] = $_SESSION['usr-con']['entite-sel-names'] ?? [];

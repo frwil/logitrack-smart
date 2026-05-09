@@ -82,17 +82,41 @@
         if ($ts.length) $ts.find('.ts-control').css({borderColor: '', boxShadow: ''});
     }
 
+    // Shared dropdown template with select-all / deselect-all links
+    function makeSelectDropdown() {
+        return '<div class="ts-dropdown-content"><div class="ts-select-all"><a href="#" class="select-all-link">Tout selectionner</a> &middot; <a href="#" class="deselect-all-link">Tout desélectionner</a></div></div>';
+    }
+
+    function bindSelectAll(ts) {
+        ts.on('dropdown_open', function() {
+            var $dd = $(ts.dropdown_content);
+            $dd.find('.select-all-link').off('click').on('click', function(e) {
+                e.preventDefault();
+                ts.setValue(Object.keys(ts.options).map(function(k) { return ts.options[k].value; }));
+            });
+            $dd.find('.deselect-all-link').off('click').on('click', function(e) {
+                e.preventDefault();
+                ts.clear();
+            });
+        });
+    }
+
     // Initialize Tom Select on multi-select fields
     var regionSelect = new TomSelect('#region-user', {
         plugins: ['remove_button'],
         maxItems: null,
-        placeholder: 'Selectionner une ou plusieurs regions...'
+        placeholder: 'Selectionner une ou plusieurs regions...',
+        render: { dropdown: makeSelectDropdown }
     });
+    bindSelectAll(regionSelect);
+
     var entiteSelect = new TomSelect('#entite-user', {
         plugins: ['remove_button'],
         maxItems: null,
-        placeholder: 'Selectionner une ou plusieurs entites...'
+        placeholder: 'Selectionner une ou plusieurs entites...',
+        render: { dropdown: makeSelectDropdown }
     });
+    bindSelectAll(entiteSelect);
 
     $('#login-form').on('submit', function(e) {
         e.preventDefault();

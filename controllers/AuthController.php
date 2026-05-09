@@ -35,21 +35,30 @@ class AuthController extends BaseController
             $this->jsonError('Nom d\'utilisateur ou mot de passe incorrect', 401);
         }
 
+        $role = $user['role'] ?? 'user';
+        $isAdmin = $role === 'admin' || $role === 'superadmin';
+        $isSuperadmin = $role === 'superadmin';
+
         $userRegions = explode(',', $user['users_region']);
         $regionNames = [];
-        $isAdmin = false;
-        foreach ($regionIds as $rid) {
-            if (!in_array((string)$rid, $userRegions)) {
-                $this->jsonError('Région non autorisée', 403);
-            }
-            $reg = $this->regionRepo->findById((int)$rid);
-            if ($reg) {
-                $regionNames[] = $reg['nom_region'];
-                if ($reg['is_admin']) $isAdmin = true;
+
+        if ($isSuperadmin) {
+            // Superadmin gets all regions automatically
+            $allRegions = $this->regionRepo->findAll();
+            $regionIds = array_map('intval', array_column($allRegions, 'id_region'));
+            $regionNames = array_column($allRegions, 'nom_region');
+        } else {
+            foreach ($regionIds as $rid) {
+                if (!in_array((string)$rid, $userRegions)) {
+                    $this->jsonError('Région non autorisée', 403);
+                }
+                $reg = $this->regionRepo->findById((int)$rid);
+                if ($reg) {
+                    $regionNames[] = $reg['nom_region'];
+                }
             }
         }
 
-        // Validate and collect entity names
         $entiteNames = [];
         if ($isAdmin) {
             $allEntites = $this->entiteRepo->findAll();
@@ -71,6 +80,7 @@ class AuthController extends BaseController
         $user['region-sel'] = array_map('intval', $regionIds);
         $user['region-sel-names'] = $regionNames;
         $user['is-admin'] = $isAdmin;
+        $user['is-superadmin'] = $isSuperadmin;
         $user['entite-sel'] = array_map('intval', $entiteIds);
         $user['entite-sel-names'] = $entiteNames;
         $user['users-rights'] = $this->userRepo->findRights((int)$user['id_user']);
@@ -95,26 +105,42 @@ class AuthController extends BaseController
             $this->jsonError('Régions et entités requises');
         }
 
+        $isSuperadmin = ($_SESSION['usr-con']['is-superadmin'] ?? false) === true;
+
         // Validate regions
         $userRegions = explode(',', $_SESSION['usr-con']['users_region']);
         $regionNames = [];
-        foreach ($regionIds as $rid) {
-            if (!in_array((string)$rid, $userRegions)) {
-                $this->jsonError('Accès non autorisé à cette région', 403);
+        if ($isSuperadmin) {
+            foreach ($regionIds as $rid) {
+                $reg = $this->regionRepo->findById((int)$rid);
+                if ($reg) $regionNames[] = $reg['nom_region'];
             }
-            $reg = $this->regionRepo->findById((int)$rid);
-            if ($reg) $regionNames[] = $reg['nom_region'];
+        } else {
+            foreach ($regionIds as $rid) {
+                if (!in_array((string)$rid, $userRegions)) {
+                    $this->jsonError('Accès non autorisé à cette région', 403);
+                }
+                $reg = $this->regionRepo->findById((int)$rid);
+                if ($reg) $regionNames[] = $reg['nom_region'];
+            }
         }
 
         // Validate entities
         $userEntityIds = $_SESSION['usr-con']['users-entite'] ?? [];
         $entiteNames = [];
-        foreach ($entiteIds as $eid) {
-            if (!in_array((int)$eid, $userEntityIds)) {
-                $this->jsonError('Accès non autorisé à cette entité', 403);
+        if ($isSuperadmin) {
+            foreach ($entiteIds as $eid) {
+                $ent = $this->entiteRepo->findById((int)$eid);
+                if ($ent) $entiteNames[] = $ent['nom_entite'];
             }
-            $ent = $this->entiteRepo->findById((int)$eid);
-            if ($ent) $entiteNames[] = $ent['nom_entite'];
+        } else {
+            foreach ($entiteIds as $eid) {
+                if (!in_array((int)$eid, $userEntityIds)) {
+                    $this->jsonError('Accès non autorisé à cette entité', 403);
+                }
+                $ent = $this->entiteRepo->findById((int)$eid);
+                if ($ent) $entiteNames[] = $ent['nom_entite'];
+            }
         }
 
         $_SESSION['usr-con']['region-sel'] = array_map('intval', $regionIds);

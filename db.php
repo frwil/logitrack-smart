@@ -65,6 +65,10 @@ function db_in(array $values): array
 
 function db_context_filter(array $regionIds, array $entiteIds): array
 {
+    // Superadmin sees all data — no filter
+    if ($_SESSION['usr-con']['is-superadmin'] ?? false) {
+        return ['1', []];
+    }
     $parts = [];
     $params = [];
     if (!empty($regionIds)) {
@@ -83,6 +87,13 @@ function db_context_filter(array $regionIds, array $entiteIds): array
 
 function getContextRegions(): array
 {
+    if ($_SESSION['usr-con']['is-superadmin'] ?? false) {
+        $con = $GLOBALS['con'] ?? null;
+        if ($con) {
+            $repo = new RegionRepository($con);
+            return array_map('intval', array_column($repo->findAll(), 'id_region'));
+        }
+    }
     $sel = $_SESSION['usr-con']['region-sel'] ?? [];
     if (empty($sel)) {
         return array_map('intval', explode(',', $_SESSION['usr-con']['users_region'] ?? ''));
@@ -92,6 +103,13 @@ function getContextRegions(): array
 
 function getContextEntities(): array
 {
+    if ($_SESSION['usr-con']['is-superadmin'] ?? false) {
+        $con = $GLOBALS['con'] ?? null;
+        if ($con) {
+            $repo = new EntiteRepository($con);
+            return array_map('intval', array_column($repo->findAll(), 'id_entite'));
+        }
+    }
     $sel = $_SESSION['usr-con']['entite-sel'] ?? [];
     if (empty($sel)) {
         return $_SESSION['usr-con']['users-entite'] ?? [];
