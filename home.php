@@ -476,14 +476,27 @@ if (!$renderPartial):
     $(document).on('click', '.context-dropdown-menu .deselect-all-link', function(e) {
         e.preventDefault();
         var type = $(this).data('context');
-        $('.context-cb[data-context="' + type + '"]').prop('checked', false);
+        var $cbs = $('.context-cb[data-context="' + type + '"]');
+        // Leave at least one checked — uncheck all except the first
+        $cbs.prop('checked', false);
+        if ($cbs.length > 0) {
+            $cbs.first().prop('checked', true);
+        }
         updateContextBadge(type);
         debouncedSwitchContext();
     });
 
-    // Checkbox change triggers debounced context switch
+    // Checkbox change — prevent deselecting the last item
     $(document).on('change', '.context-cb', function() {
-        updateContextBadge($(this).data('context'));
+        var type = $(this).data('context');
+        var $checked = $('.context-cb[data-context="' + type + '"]:checked');
+        if ($checked.length === 0) {
+            // Re-check this one — at least one must stay selected
+            $(this).prop('checked', true);
+            showWarning('Au moins une ' + (type === 'region' ? 'région' : 'entité') + ' doit être sélectionnée');
+            return;
+        }
+        updateContextBadge(type);
         debouncedSwitchContext();
     });
 
