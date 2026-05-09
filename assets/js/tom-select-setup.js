@@ -3,7 +3,7 @@ import TomSelect from 'tom-select'
 window.TomSelect = TomSelect
 
 window.initTomSelect = function (selector, opts = {}) {
-  return $(selector).each(function () {
+  return $(selector).filter('select').each(function () {
     if (this.tomselect) return
 
     new TomSelect(this, {

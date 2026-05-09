@@ -144,7 +144,7 @@ function getTableauUsers()
                     <div class="mb-3">
                         <label>Droits d'accès</label>
                         <div class="table-responsive">
-                            <table class="table table-sm table-bordered" id="rights-table">
+                            <table class="table table-sm table-bordered no-datatable" id="rights-table">
                                 <thead>
                                     <tr>
                                         <th>Module</th>
