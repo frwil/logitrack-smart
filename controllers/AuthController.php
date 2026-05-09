@@ -83,7 +83,20 @@ class AuthController extends BaseController
         $user['is-superadmin'] = $isSuperadmin;
         $user['entite-sel'] = array_map('intval', $entiteIds);
         $user['entite-sel-names'] = $entiteNames;
-        $user['users-rights'] = $this->userRepo->findRights((int)$user['id_user']);
+        if ($isSuperadmin) {
+            // Superadmin gets all module rights automatically
+            $user['users-rights'] = [
+                ['users_rights_objet' => 'vehicules', 'users_rights_valeur' => 'view,save,upd,del,print'],
+                ['users_rights_objet' => 'voyages', 'users_rights_valeur' => 'view,save,upd,del,report,savetrajet'],
+                ['users_rights_objet' => 'affectationVehicules', 'users_rights_valeur' => 'view,save,upd,del,print'],
+                ['users_rights_objet' => 'maintenances', 'users_rights_valeur' => 'view,save,upd,del,print,updPrestataire,viewCentreCout,viewPrestataire,viewVidange,delPrestataire,updCentreCout,delCentreCout,viewBonsReparation,savePrestataire,saveBonsReparation,updBonsReparation,viewReleveKms,saveReleveKms,saveCentreCout,delVidange'],
+                ['users_rights_objet' => 'users', 'users_rights_valeur' => 'view,save,upd,del'],
+                ['users_rights_objet' => 'config', 'users_rights_valeur' => 'view,save,upd,del'],
+                ['users_rights_objet' => 'report', 'users_rights_valeur' => 'view'],
+            ];
+        } else {
+            $user['users-rights'] = $this->userRepo->findRights((int)$user['id_user']);
+        }
         $user['users-entite'] = array_map('intval', $userEntityIds);
         unset($user['pass_user']);
 
