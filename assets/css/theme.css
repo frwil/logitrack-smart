@@ -132,6 +132,51 @@ table, .table {
   color: #fff;
 }
 
+.lt-navbar .ts-wrapper {
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.lt-navbar .ts-wrapper .ts-control {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: var(--lt-font-sm);
+  border-radius: var(--lt-radius-sm);
+  min-height: 32px;
+  padding: 2px 4px;
+}
+
+.lt-navbar .ts-wrapper.multi .ts-control > div {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-radius: 3px;
+  font-size: var(--lt-font-xs);
+}
+
+.lt-navbar .ts-wrapper .ts-dropdown {
+  color: var(--lt-text);
+  font-size: var(--lt-font-sm);
+}
+
+.ts-select-all {
+  padding: 0.375rem 0.75rem;
+  border-bottom: 1px solid var(--lt-border);
+  font-size: var(--lt-font-xs);
+  text-align: center;
+  background: #fafafc;
+}
+
+.ts-select-all a {
+  color: var(--lt-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.ts-select-all a:hover {
+  text-decoration: underline;
+}
+
 .lt-navbar .btn-logout {
   color: rgba(255, 255, 255, 0.7);
   padding: 0.5rem 0.75rem;

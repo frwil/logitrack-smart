@@ -8,9 +8,9 @@ function getTableauReleveKMS()
     if (in_array('viewReleveKms', $rights_maintenance)):
         $repo = new MaintenanceRepository($con);
         if (isset($_POST['date-f'])) {
-            $rows = $repo->findReleveKms($_POST['date-f'], $_POST['date-t']);
+            $rows = $repo->findReleveKmsByContext(getContextRegions(), getContextEntities(), $_POST['date-f'], $_POST['date-t']);
         } else {
-            $rows = $repo->findReleveKms();
+            $rows = $repo->findReleveKmsByContext(getContextRegions(), getContextEntities());
         }
         $table = "<table id='table-releve-kms' class='no-datatable' style='display:none'><thead><tr><th>Véhicule</th><th>Région</th><th>Date Relevé</th><th>Kms</th></tr></thead><tbody>";
         foreach ($rows as $r):
@@ -29,7 +29,7 @@ function getTableauVidange()
     global $rights_maintenance;
     if (in_array('viewVidange', $rights_maintenance)):
         $repo = new MaintenanceRepository($con);
-        $rows = $repo->findVidangesByRegion((int)$_SESSION['usr-con']['region-sel']);
+        $rows = $repo->findVidangesByContext(getContextRegions(), getContextEntities());
         $table = "<table id='table-suivi-vidanges' class='table table-striped'><thead><tr><th>Véhicule</th><th>Date dernière vidange</th><th>Kms (avant vidange)</th><th>Kms (prochaine vidange)</th><th>Kms actuel (dernier relevé)</th><th>Statut</th><th></th></tr></thead><tbody>";
         $danger = 0;
         $success = 0;
@@ -88,7 +88,7 @@ function getTableauBonsReparation()
     global $rights_maintenance;
     if (in_array("viewBonsReparation", $rights_maintenance)):
         $repo = new MaintenanceRepository($con);
-        $rows = $repo->findAllBonsReparation();
+        $rows = $repo->findAllBonsReparationByContext(getContextRegions(), getContextEntities());
         $table = "<table id='table-centrecouts' class='table table-striped responsive'><thead><tr><th>N°</th><th>Véhicule</th><th>Date d'entrée</th><th>Diagnostic</th><th>Type d'exécution</th><th>Prestataire</th><th>Montant</th><th>Opération additionnelle</th><th>Montant opération</th><th>Montant réel</th><th>Destination</th><th>Durée réparation</th><th>Date de justification</th><th>Centre de coûts</th><th>Date prévue de sortie</th><th>Date effective de fin des travaux</th><th>Observations</th><th></th></tr></thead><tbody>";
         foreach ($rows as $r):
             $hash = $r['id_bon_reparation'];
@@ -165,7 +165,7 @@ function getPremiereSemaineDuMois($date)
 
                             <select required id="vh-upd-releve-kms" name="vh-upd-releve-kms" onchange="getKmsPeriode(this.value,$('#per-upd-releve-kms').val())">
                                 <?php $affRepo = new AffectationRepository($con);
-                                foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
+                                foreach ($affRepo->findActiveByContext(getContextRegions(), getContextEntities()) as $r):
                                     $affHash = $r['id_affectation'];
                                     echo "<option value='" . $affHash . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $affHash ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                                 endforeach;
@@ -213,7 +213,8 @@ function getPremiereSemaineDuMois($date)
                 renderers: renderers,
                 rendererName: "Table Barchart",
                 filter: (e) => {
-                    return e["Région"].toLowerCase() == (<?php echo j($_SESSION['usr-con']['region-sel-name']); ?>).toLowerCase()
+                    var selNames = <?php echo json_encode($_SESSION['usr-con']['region-sel-names'] ?? []); ?>;
+                    return selNames.some(function(n) { return e["Région"].toLowerCase() == n.toLowerCase(); })
                 }
             });
         });
@@ -448,7 +449,7 @@ function getPremiereSemaineDuMois($date)
 
                             <select id="vh-upd-vd" name="vh-upd-vd">
                                 <?php $affRepo = new AffectationRepository($con);
-                                foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
+                                foreach ($affRepo->findActiveByContext(getContextRegions(), getContextEntities()) as $r):
                                     $affHash = $r['id_affectation'];
                                     echo "<option value='" . $affHash . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $affHash ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                                 endforeach;

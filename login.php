@@ -26,13 +26,26 @@
                 </div>
             </div>
             <div class="login-field">
-                <label for="region-user">Région</label>
+                <label for="region-user">Région(s)</label>
                 <div class="login-input-wrapper">
                     <i class="icon fas fa-map-marker-alt"></i>
-                    <select class="login-select" id="region-user" name="region-user">
+                    <select class="login-select login-multi" id="region-user" name="region-user[]" multiple>
                         <?php $regionRepo = new RegionRepository($con);
                         foreach ($regionRepo->findAll() as $r):
                             echo "<option value='" . $r['id_region'] . "'>{$r['nom_region']}</option>";
+                        endforeach;
+                        ?>
+                    </select>
+                </div>
+            </div>
+            <div class="login-field">
+                <label for="entite-user">Entité(s)</label>
+                <div class="login-input-wrapper">
+                    <i class="icon fas fa-building"></i>
+                    <select class="login-select login-multi" id="entite-user" name="entite-user[]" multiple>
+                        <?php $entiteRepo = new EntiteRepository($con);
+                        foreach ($entiteRepo->findAll() as $e):
+                            echo "<option value='" . $e['id_entite'] . "'>" . h($e['nom_entite']) . "</option>";
                         endforeach;
                         ?>
                     </select>
@@ -61,11 +74,11 @@
         e.preventDefault();
         clearLoginError();
 
-        var $inputs = $('.login-input');
+        var $inputs = $('.login-input, .login-multi');
         var valid = true;
         $inputs.each(function() {
             $(this).removeClass('is-invalid').css({borderColor: '', boxShadow: ''});
-            if ($(this).val() === '') {
+            if ($(this).val() === '' || $(this).val() === null || ($(this).is('select[multiple]') && $(this).val().length === 0)) {
                 valid = false;
                 $(this).addClass('is-invalid').css({borderColor: '#ef4444', boxShadow: '0 0 0 3px rgba(239,68,68,.15)'});
             }

@@ -16,7 +16,7 @@
     $date_range = new DatePeriod($debut, $interval, $fin->add($interval));
     $vehiculeRepo = new VehiculeRepository($con);
     $voyageRepo = new VoyageRepository($con);
-    $activeVehicles = $vehiculeRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']);
+    $activeVehicles = $vehiculeRepo->findActiveByContext(getContextRegions(), getContextEntities());
     $tableau = "<table class='table table-striped'><thead><tr><th>Immatriculation</th>";
     foreach ($date_range as $date) :
         $tableau .= "<th>{$date->format('d M Y')}</th>";
@@ -433,7 +433,7 @@ function getTableauEvaluationVoyages()
 
                             <select id="id-upd-vh-voyage" name="id-upd-vh-voyage">
                                 <?php $affRepo = new AffectationRepository($con);
-                                foreach ($affRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
+                                foreach ($affRepo->findActiveByContext(getContextRegions(), getContextEntities()) as $r):
                                     echo "<option value='" . $r['id_affectation'] . "'>" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                                 endforeach;
                                 ?>

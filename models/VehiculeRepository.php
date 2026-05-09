@@ -136,6 +136,18 @@ class VehiculeRepository extends BaseRepository
         );
     }
 
+    /** Active vehicles in region + entity context (non-ferme). */
+    public function findActiveByContext(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT * FROM vehicule
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_vehicule = vehicule.id_vehicule
+             WHERE is_ferme = 0 AND $where",
+            $params
+        );
+    }
+
     /** All vehicles with chauffeur name (for voyage tables). */
     public function findAllWithChauffeur(): array
     {

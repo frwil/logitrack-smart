@@ -13,11 +13,32 @@ class ObjectifRepository extends BaseRepository
         );
     }
 
+    public function findByDateRangeAndRegions(string $dateFrom, string $dateTo, array $regionIds): array
+    {
+        [$ph, $p] = db_in($regionIds);
+        $params = array_merge([$dateFrom, $dateTo], $p);
+        return $this->select(
+            "SELECT * FROM objectif_periode_region
+             WHERE date_objectif_periode BETWEEN ? AND ? AND id_region IN ($ph)",
+            $params
+        );
+    }
+
     public function findByDateAndRegion(string $date, int $regionId): array
     {
         return $this->select(
             "SELECT * FROM objectif_periode_region WHERE date_objectif_periode = ? AND id_region = ?",
             [$date, $regionId]
+        );
+    }
+
+    public function findByDateAndRegions(string $date, array $regionIds): array
+    {
+        [$ph, $p] = db_in($regionIds);
+        $params = array_merge([$date], $p);
+        return $this->select(
+            "SELECT * FROM objectif_periode_region WHERE date_objectif_periode = ? AND id_region IN ($ph)",
+            $params
         );
     }
 

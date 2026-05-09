@@ -62,3 +62,39 @@ function db_in(array $values): array
         array_values($values),
     ];
 }
+
+function db_context_filter(array $regionIds, array $entiteIds): array
+{
+    $parts = [];
+    $params = [];
+    if (!empty($regionIds)) {
+        [$ph, $p] = db_in($regionIds);
+        $parts[] = "affectation_vehicule.id_region IN ($ph)";
+        $params = array_merge($params, $p);
+    }
+    if (!empty($entiteIds)) {
+        [$ph, $p] = db_in($entiteIds);
+        $parts[] = "affectation_vehicule.id_entite IN ($ph)";
+        $params = array_merge($params, $p);
+    }
+    $where = empty($parts) ? '1' : implode(' AND ', $parts);
+    return [$where, $params];
+}
+
+function getContextRegions(): array
+{
+    $sel = $_SESSION['usr-con']['region-sel'] ?? [];
+    if (empty($sel)) {
+        return array_map('intval', explode(',', $_SESSION['usr-con']['users_region'] ?? ''));
+    }
+    return $sel;
+}
+
+function getContextEntities(): array
+{
+    $sel = $_SESSION['usr-con']['entite-sel'] ?? [];
+    if (empty($sel)) {
+        return $_SESSION['usr-con']['users-entite'] ?? [];
+    }
+    return $sel;
+}

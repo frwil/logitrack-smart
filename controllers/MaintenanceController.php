@@ -59,8 +59,7 @@ class MaintenanceController extends BaseController
     public function historiqueVidange(): never
     {
         $code = $this->post('cd-vd-hist');
-        $regionSel = (int)$_SESSION['usr-con']['region-sel'];
-        $rows = $this->maintenanceRepo->findHistoriqueVidange($code, $regionSel);
+        $rows = $this->maintenanceRepo->findHistoriqueVidangeByContext($code, getContextRegions(), getContextEntities());
 
         // Build HTML table (legacy — could be moved to view layer later)
         ob_start();

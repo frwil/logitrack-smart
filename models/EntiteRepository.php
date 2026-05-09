@@ -16,4 +16,19 @@ class EntiteRepository extends BaseRepository
             [$nom]
         );
     }
+
+    public function findById(int $id): ?array
+    {
+        return $this->selectOne("SELECT * FROM entite WHERE id_entite = ?", [$id]);
+    }
+
+    public function findByUser(int $userId): array
+    {
+        return $this->select(
+            "SELECT e.* FROM entite e
+             INNER JOIN users_entite ue ON ue.id_entite = e.id_entite
+             WHERE ue.id_user = ? AND ue.is_active = 1",
+            [$userId]
+        );
+    }
 }

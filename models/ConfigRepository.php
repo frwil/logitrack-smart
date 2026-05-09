@@ -93,6 +93,25 @@ class ConfigRepository extends BaseRepository
         );
     }
 
+    /** All active vehicle folders filtered by region + entity context. */
+    public function findAllFoldersByContext(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT *,
+             (SELECT id_dossier_vehicule_document FROM dossier_vehicule_document
+              WHERE dossier_vehicule_document.id_vehicule = vehicule.id_vehicule LIMIT 1) AS id_v
+             FROM vehicule
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_vehicule = vehicule.id_vehicule
+             LEFT JOIN chauffeur c ON c.id_chauffeur = affectation_vehicule.id_chauffeur
+             LEFT JOIN marque_vehicule ON marque_vehicule.id_marque = vehicule.id_marque
+             LEFT JOIN entite ON entite.id_entite = vehicule.id_entite
+             WHERE is_ferme = 0 AND $where
+             ORDER BY immatriculation_vehicule",
+            $params
+        );
+    }
+
     /** Single folder document for a vehicle. */
     public function findFolderDocument(int $vehiculeId, int $documentId): ?array
     {

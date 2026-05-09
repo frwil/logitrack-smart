@@ -143,6 +143,23 @@ class VoyageRepository extends BaseRepository
         );
     }
 
+    /** Reporting: voyages for a vehicle filtered by region + entity context. */
+    public function findForReportingByContext(int $vehiculeId, string $dateFrom, string $dateTo, array $regionIds, array $entiteIds): array
+    {
+        [$where, $ctxParams] = db_context_filter($regionIds, $entiteIds);
+        $params = array_merge([$vehiculeId, $dateFrom, $dateTo], $ctxParams);
+        return $this->select(
+            "SELECT * FROM voyage
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
+             LEFT JOIN type_chargement_voyage ON type_chargement_voyage.id_type_chargement = voyage.id_type_chargement
+             LEFT JOIN voyage_vehicule ON voyage_vehicule.id_voyage = voyage.id_voyage
+             LEFT JOIN destination_voyage ON destination_voyage.id_destination = voyage_vehicule.id_destination
+             WHERE id_vehicule = ? AND date_voyage BETWEEN ? AND ? AND is_ferme = 0 AND $where
+             ORDER BY type_chargement_voyage.id_type_chargement, date_voyage",
+            $params
+        );
+    }
+
     /** Voyages by date and region (for evaluation). */
     public function countByDateAndRegion(string $date, int $regionId): array
     {
@@ -159,6 +176,27 @@ class VoyageRepository extends BaseRepository
                )
              )",
             [$date, $regionId]
+        );
+    }
+
+    /** Voyages by date and context (for evaluation). */
+    public function countByDateAndContext(string $date, array $regionIds, array $entiteIds): array
+    {
+        [$where, $ctxParams] = db_context_filter($regionIds, $entiteIds);
+        $params = array_merge([$date], $ctxParams);
+        return $this->select(
+            "SELECT *,
+             (SELECT SUM(distance_destination) FROM destination_voyage WHERE id_destination IN (
+               SELECT id_destination FROM voyage_vehicule WHERE id_voyage = voyage.id_voyage
+             )) AS total_dest
+             FROM voyage
+             WHERE date_voyage = ?
+             AND id_voyage IN (
+               SELECT id_voyage FROM voyage_vehicule WHERE id_affectation IN (
+                 SELECT id_affectation FROM affectation_vehicule WHERE $where
+               )
+             )",
+            $params
         );
     }
 }

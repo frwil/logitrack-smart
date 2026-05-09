@@ -5,8 +5,7 @@
     $repo = new ObjectifRepository($con);
     $dateFrom = isset($_POST['date-f']) ? $_POST['date-f'] : date('Y-m-01');
     $dateTo = isset($_POST['date-t']) ? $_POST['date-t'] : date('Y-m-t');
-    $regionId = (int)$_SESSION['usr-con']['region-sel'];
-    $rows = $repo->findByDateRange($dateFrom, $dateTo, $regionId);
+    $rows = $repo->findByDateRangeAndRegions($dateFrom, $dateTo, getContextRegions());
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Date</th><th>Objectif voyages</th><th></th></tr></thead><tbody>";
     $i = 1;
     foreach ($rows as $r):

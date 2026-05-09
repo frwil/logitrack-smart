@@ -41,7 +41,7 @@ function getTableauFolder()
     global $con;
     global $rights_config;
     $configRepo = new ConfigRepository($con);
-    $folderRows = $configRepo->findAllFoldersByRegion((int)$_SESSION['usr-con']['region-sel']);
+    $folderRows = $configRepo->findAllFoldersByContext(getContextRegions(), getContextEntities());
     $tableau = "<table style='font-size:0.8125rem' class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-folder' ><thead><tr><th>Chassis</th><th>Véhicule</th><th>Marque</th><th>1ère mise en circulation</th><th>Entité</th><th>Places assises</th><th>Source d'énergie</th>";
     $docs = $configRepo->findAllDocuments();
     foreach ($docs as $doc):
@@ -345,7 +345,7 @@ function getTableauFolder()
                                     <select id="vh-folder" name="vh-folder-upd">
                                         <?php
                                         $affRepo = new AffectationRepository($con);
-                                        $affRows = $affRepo->findActiveByVehiculeAndRegion((int)$folder[0]['id_vehicule'], (int)$_SESSION['usr-con']['region-sel']);
+                                        $affRows = $affRepo->findActiveByVehiculeAndContext((int)$folder[0]['id_vehicule'], getContextRegions(), getContextEntities());
                                         foreach ($affRows as $r):
                                             echo "<option value='" . $r['id_affectation'] . "' " . ($folder[0]['id_vehicule'] == $r['id_vehicule'] ? 'selected' : '') . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                                         endforeach;

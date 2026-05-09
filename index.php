@@ -67,6 +67,7 @@ $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), g
     <script>
         $.ajaxPrefilter(function(options, originalOptions) {
             if (options.type && options.type.toLowerCase() === 'post') {
+                if (options.contentType && options.contentType.indexOf('application/json') !== -1) return;
                 options.data = options.data || '';
                 if (typeof options.data === 'string') {
                     options.data += (options.data ? '&' : '') + 'csrf_token=' + encodeURIComponent(window.CSRF_TOKEN);
@@ -96,11 +97,39 @@ $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), g
     else : ?>
         <?php
         $userRepo = new UserRepository($con);
+        $entiteRepo = new EntiteRepository($con);
         $user = $userRepo->findById((int)$_SESSION['usr-con']['id_user']);
         unset($user['pass_user']);
-        $user['region-sel'] = (isset($_SESSION['usr-con']['region-sel']) ? $_SESSION['usr-con']['region-sel'] : '');
-        $user['region-sel-name'] = (isset($_SESSION['usr-con']['region-sel-name']) ? $_SESSION['usr-con']['region-sel-name'] : '');
-        $user['region-sel-admin'] = (isset($_SESSION['usr-con']['region-sel-admin']) ? $_SESSION['usr-con']['region-sel-admin'] : '');
+
+        // Migrate old scalar region-sel to array format
+        $oldRegion = $_SESSION['usr-con']['region-sel'] ?? '';
+        if ($oldRegion !== '' && !is_array($oldRegion)) {
+            $user['region-sel'] = $oldRegion ? [(int)$oldRegion] : [];
+            $user['region-sel-names'] = [$_SESSION['usr-con']['region-sel-name'] ?? ''];
+            $user['region-sel-admin'] = $_SESSION['usr-con']['region-sel-admin'] ?? '';
+        } else {
+            $user['region-sel'] = $_SESSION['usr-con']['region-sel'] ?? [];
+            $user['region-sel-names'] = $_SESSION['usr-con']['region-sel-names'] ?? [];
+        }
+
+        $isAdmin = $_SESSION['usr-con']['is-admin'] ?? ($_SESSION['usr-con']['region-sel-admin'] ?? '') == '1';
+        $user['is-admin'] = $isAdmin;
+
+        $user['entite-sel'] = $_SESSION['usr-con']['entite-sel'] ?? [];
+        $user['entite-sel-names'] = $_SESSION['usr-con']['entite-sel-names'] ?? [];
+
+        if ($isAdmin) {
+            $allEntites = $entiteRepo->findAll();
+            $user['users-entite'] = array_map('intval', array_column($allEntites, 'id_entite'));
+            if (empty($user['entite-sel'])) {
+                $user['entite-sel'] = $user['users-entite'];
+                $user['entite-sel-names'] = array_column($allEntites, 'nom_entite');
+            }
+        } else {
+            $userEntites = $entiteRepo->findByUser((int)$user['id_user']);
+            $user['users-entite'] = array_map('intval', array_column($userEntites, 'id_entite'));
+        }
+
         $_SESSION['usr-con'] = $user;
         $_SESSION['usr-con']['users-rights'] = $userRepo->findRights((int)$_SESSION['usr-con']['id_user']);
         ?>

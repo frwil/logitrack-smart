@@ -24,6 +24,26 @@ class AffectationRepository extends BaseRepository
         );
     }
 
+    /** All affectations filtered by region + entity context. */
+    public function findAllByContext(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT * FROM affectation_vehicule
+             LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
+             LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
+             LEFT JOIN region ON region.id_region = affectation_vehicule.id_region
+             LEFT JOIN entite ON entite.id_entite = affectation_vehicule.id_entite
+             LEFT JOIN type_utilisation_vehicule ON type_utilisation_vehicule.id_type_utilisation = affectation_vehicule.id_type_utilisation
+             LEFT JOIN mode_utilisation_vehicule ON mode_utilisation_vehicule.id_mode_utilisation = affectation_vehicule.id_mode_utilisation
+             LEFT JOIN marque_vehicule ON marque_vehicule.id_marque = vehicule.id_marque
+             LEFT JOIN modele_vehicule ON modele_vehicule.id_modele_vehicule = vehicule.id_modele_vehicule
+             WHERE $where AND is_ferme = 0
+             ORDER BY date_affectation DESC",
+            $params
+        );
+    }
+
     /** Single affectation by ID. */
     public function findById(int $id): ?array
     {
@@ -59,6 +79,20 @@ class AffectationRepository extends BaseRepository
         );
     }
 
+    /** Active affectations for region + entity context (non-ferme). */
+    public function findActiveByContext(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT * FROM affectation_vehicule
+             LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
+             LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
+             LEFT JOIN region ON affectation_vehicule.id_region = region.id_region
+             WHERE is_ferme = 0 AND $where",
+            $params
+        );
+    }
+
     public function findActiveByVehiculeAndRegion(int $vehiculeId, int $regionId): array
     {
         return $this->select(
@@ -68,6 +102,20 @@ class AffectationRepository extends BaseRepository
              LEFT JOIN region ON affectation_vehicule.id_region = region.id_region
              WHERE is_ferme = 0 AND vehicule.id_vehicule = ? AND affectation_vehicule.id_region = ?",
             [$vehiculeId, $regionId]
+        );
+    }
+
+    public function findActiveByVehiculeAndContext(int $vehiculeId, array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $params[] = $vehiculeId;
+        return $this->select(
+            "SELECT * FROM affectation_vehicule
+             LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
+             LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
+             LEFT JOIN region ON affectation_vehicule.id_region = region.id_region
+             WHERE is_ferme = 0 AND $where AND vehicule.id_vehicule = ?",
+            $params
         );
     }
 

@@ -71,19 +71,34 @@ if(!isset($user_rights)) $user_rights = [];
         <span class="lt-navbar-user">
             <?php echo h($_SESSION['usr-con']['name_user'] != "" ? strtoupper($_SESSION['usr-con']['name_user']) : ""); ?>
         </span>
-        <a class="dropdown-toggle text-decoration-none" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false"><?php echo h($_SESSION['usr-con']['region-sel-name']); ?></a>
-        <ul class="dropdown-menu">
-            <?php $regionRepo = new RegionRepository($con);
-            $uright = explode(',', $_SESSION['usr-con']['users_region']);
-            for ($i = 0; $i < count($uright); $i++):
-                if ($uright[$i] != $_SESSION['usr-con']['region-sel']): ?>
-                    <?php $r = $regionRepo->findById((int)$uright[$i]); ?>
-                    <?php if ($r): ?>
-                        <li><a class="dropdown-item" href="#" onclick="changeSessionRegion('<?php echo $r['id_region']; ?>')"><?php echo $r['nom_region']; ?></a></li>
-                    <?php endif; ?>
-            <?php endif;
-            endfor; ?>
-        </ul>
+        <select id="context-region" multiple class="context-select" style="width:180px">
+            <?php
+            $regionRepo = new RegionRepository($con);
+            $regionIds = explode(',', $_SESSION['usr-con']['users_region']);
+            $selectedRegions = $_SESSION['usr-con']['region-sel'] ?? [];
+            foreach ($regionIds as $rid):
+                $r = $regionRepo->findById((int)$rid);
+                if ($r):
+            ?>
+                <option value="<?php echo $r['id_region']; ?>" <?php echo in_array((int)$r['id_region'], $selectedRegions) ? 'selected' : ''; ?>>
+                    <?php echo h($r['nom_region']); ?>
+                </option>
+            <?php endif; endforeach; ?>
+        </select>
+        <select id="context-entite" multiple class="context-select" style="width:180px">
+            <?php
+            $entiteRepo = new EntiteRepository($con);
+            $userEntityIds = $_SESSION['usr-con']['users-entite'] ?? [];
+            $selectedEntities = $_SESSION['usr-con']['entite-sel'] ?? [];
+            foreach ($userEntityIds as $eid):
+                $e = $entiteRepo->findById((int)$eid);
+                if ($e):
+            ?>
+                <option value="<?php echo $e['id_entite']; ?>" <?php echo in_array((int)$e['id_entite'], $selectedEntities) ? 'selected' : ''; ?>>
+                    <?php echo h($e['nom_entite']); ?>
+                </option>
+            <?php endif; endforeach; ?>
+        </select>
         <a class="btn-logout" href="?logout" title="Déconnexion"><i class="fa fa-power-off"></i></a>
     </div>
 </div>
@@ -358,21 +373,61 @@ if(!isset($user_rights)) $user_rights = [];
         return s;
     }
 
-    function changeSessionRegion(id) {
-        if (confirm("Etes-vous sûr de vouloir changer de région ?")) {
+    var contextRegionSelect, contextEntiteSelect;
+    function makeContextSelect(selector, onChange) {
+        if (!$(selector).length || $(selector)[0].tomselect) return;
+        var ts = new TomSelect(selector, {
+            maxItems: null,
+            plugins: ['remove_button'],
+            render: {
+                no_results: function() { return '<div class="no-results">Aucune</div>'; },
+                dropdown: function() {
+                    return '<div class="ts-dropdown-content"><div class="ts-select-all"><a href="#" class="select-all-link">Tout sélectionner</a> &middot; <a href="#" class="deselect-all-link">Tout désélectionner</a></div></div>';
+                }
+            },
+            onChange: onChange
+        });
+        ts.on('dropdown_open', function() {
+            var $dd = $(ts.dropdown_content);
+            $dd.find('.select-all-link').off('click').on('click', function(e) {
+                e.preventDefault();
+                ts.setValue(Object.keys(ts.options).map(function(k) { return ts.options[k].value; }));
+            });
+            $dd.find('.deselect-all-link').off('click').on('click', function(e) {
+                e.preventDefault();
+                ts.clear();
+            });
+        });
+        return ts;
+    }
+    function initContextSelects() {
+        contextRegionSelect = makeContextSelect('#context-region', debouncedSwitchContext);
+        contextEntiteSelect = makeContextSelect('#context-entite', debouncedSwitchContext);
+    }
+    var switchTimer;
+    function debouncedSwitchContext() {
+        clearTimeout(switchTimer);
+        switchTimer = setTimeout(function() {
+            var regionIds = contextRegionSelect.getValue();
+            var entiteIds = contextEntiteSelect.getValue();
+            if (regionIds.length === 0 || entiteIds.length === 0) return;
             $.ajax({
                 type: 'post',
-                data: 'nSess=' + id,
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    nContext: 1,
+                    regionIds: regionIds,
+                    entiteIds: entiteIds,
+                    csrf_token: window.CSRF_TOKEN
+                }),
                 dataType: 'json'
-            }).done((e) => {
-                if (e.success) {
-                    location.reload();
-                } else {
-                    showWarning(e.error||"Erreur lors du changement de région")
-                }
-            })
-        }
+            }).done(function(e) {
+                if (e.success) { location.reload(); }
+                else { showWarning(e.error||"Erreur lors du changement de contexte"); }
+            });
+        }, 500);
     }
+    initContextSelects();
     <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'evaluationVoyages'): ?>
     table.destroy()
     destroyTomSelect('.mymsel')

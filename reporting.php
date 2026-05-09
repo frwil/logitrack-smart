@@ -62,7 +62,7 @@
           $sum_conso = array();
           foreach ($vehicules as $row) {
             $id_vehicule = $row['id_vehicule'];
-            $voyages = $voyageRepo->findForReporting((int)$id_vehicule, $_POST['date_debut'], $_POST['date_fin'], (int)$_SESSION['usr-con']['region-sel']);
+            $voyages = $voyageRepo->findForReportingByContext((int)$id_vehicule, $_POST['date_debut'], $_POST['date_fin'], getContextRegions(), getContextEntities());
             $countVoyages = count($voyages);
             $sum_chargement[$id_vehicule] = array();
             $sum_kms[$id_vehicule] = array();

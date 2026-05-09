@@ -7,8 +7,9 @@ if(isset($entityBody['chrelevekms'])):
 endif;
 if(isset($_POST['dateV'])):
     $objectifRepo = new ObjectifRepository($con);
-    $regionId = $_SESSION['usr-con']['region-sel'] != '' ? (int)$_SESSION['usr-con']['region-sel'] : null;
-    $count = $objectifRepo->countByDate($regionId, $_POST['dateV']);
+    $regionIds = getContextRegions();
+    $rows = $objectifRepo->findByDateAndRegions($_POST['dateV'], $regionIds);
+    $count = count($rows);
     die(json_encode(['success' => true, 'count' => $count]));
 endif;
 if (isset($_POST['trajets'])):
@@ -52,7 +53,7 @@ endif;
 
                                 <select id="id-vehicule-vg" name="id-vehicule-vg">
                                     <?php $affectationRepo = new AffectationRepository($con);
-                                    foreach ($affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
+                                    foreach ($affectationRepo->findActiveByContext(getContextRegions(), getContextEntities()) as $r):
                                         echo "<option value='" . $r['id_affectation'] . "'>" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                                     endforeach;
                                     ?>

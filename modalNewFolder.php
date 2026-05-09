@@ -18,7 +18,7 @@
 
                         <select id="vh-folder" name="vh-folder">
                             <?php $configRepo = new ConfigRepository($con);
-                            foreach ($configRepo->findAllFoldersByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
+                            foreach ($configRepo->findAllFoldersByContext(getContextRegions(), getContextEntities()) as $r):
                                 echo "<option value='" . $r['id_affectation'] . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $r['id_affectation'] ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                             endforeach;
                             ?>

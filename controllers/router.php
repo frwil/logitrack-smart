@@ -14,6 +14,7 @@ if (!isset($con)) return;
 
 $userRepo = new UserRepository($con);
 $regionRepo = new RegionRepository($con);
+$entiteRepo = new EntiteRepository($con);
 $vehiculeRepo = new VehiculeRepository($con);
 $marqueRepo = new MarqueRepository($con);
 $modeleRepo = new ModeleRepository($con);
@@ -26,7 +27,7 @@ $configRepo = new ConfigRepository($con);
 $trajetRepo = new TrajetRepository($con);
 $objectifRepo = new ObjectifRepository($con);
 
-$authCtrl = new AuthController($userRepo, $regionRepo);
+$authCtrl = new AuthController($userRepo, $regionRepo, $entiteRepo);
 $vehiculeCtrl = new VehiculeController($vehiculeRepo);
 $chauffeurCtrl = new ChauffeurController($chauffeurRepo);
 $convoyeurCtrl = new ConvoyeurController($convoyeurRepo);
@@ -42,7 +43,7 @@ $objectifCtrl = new ObjectifController($objectifRepo);
 $routes = [
     // Auth
     'name-user'           => [$authCtrl, 'login'],
-    'nSess'               => [$authCtrl, 'switchRegion'],
+    'nContext'            => [$authCtrl, 'switchContext'],
 
     // Vehicule
     'im-vh-upd'           => [$vehiculeCtrl, 'fetchByHash'],

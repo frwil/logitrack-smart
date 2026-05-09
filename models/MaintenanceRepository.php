@@ -30,6 +30,32 @@ class MaintenanceRepository extends BaseRepository
         return $this->select($sql, $params);
     }
 
+    public function findReleveKmsByContext(array $regionIds, array $entiteIds, ?string $dateFrom = null, ?string $dateTo = null): array
+    {
+        [$ctxWhere, $ctxParams] = db_context_filter($regionIds, $entiteIds);
+        $sql = "SELECT * FROM releve_kms_vehicule, affectation_vehicule, vehicule, chauffeur, region
+                WHERE affectation_vehicule.id_vehicule = vehicule.id_vehicule
+                AND affectation_vehicule.id_affectation = releve_kms_vehicule.id_affectation_vehicule
+                AND chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
+                AND affectation_vehicule.id_region = region.id_region
+                AND $ctxWhere ";
+        $params = $ctxParams;
+
+        if ($dateFrom !== null) {
+            $sql .= "AND semaine_annee >= WEEKOFYEAR(?) AND semaine_annee <= WEEKOFYEAR(?) AND date_releve >= ?";
+            $params[] = date('Y-m-01', strtotime($dateFrom));
+            $params[] = date('Y-m-t', strtotime($dateTo));
+            $params[] = date('Y-m-d', strtotime($dateFrom));
+        } else {
+            $sql .= "AND semaine_annee >= WEEKOFYEAR(?) AND date_releve >= ?";
+            $params[] = date('Y-m-01');
+            $params[] = date('Y-m-01');
+        }
+        $sql .= " ORDER BY vehicule.id_vehicule, date_releve, semaine_annee";
+
+        return $this->select($sql, $params);
+    }
+
     public function findPeriodesReleve(string $start, string $end): array
     {
         return $this->select(
@@ -119,6 +145,32 @@ class MaintenanceRepository extends BaseRepository
         );
     }
 
+    public function findVidangesByContext(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT *,
+             (SELECT km_releve FROM releve_kms_vehicule
+              WHERE id_affectation_vehicule = vidange_vehicule.id_affectation_vehicule
+              AND date_fin_periode_releve = (
+                SELECT MAX(date_fin_periode_releve) FROM releve_kms_vehicule
+                WHERE id_affectation_vehicule = vidange_vehicule.id_affectation_vehicule
+              )) AS kms_actuel
+             FROM vidange_vehicule, affectation_vehicule, vehicule, chauffeur, region
+             WHERE affectation_vehicule.id_vehicule = vehicule.id_vehicule
+             AND affectation_vehicule.id_affectation = vidange_vehicule.id_affectation_vehicule
+             AND chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
+             AND affectation_vehicule.id_region = region.id_region
+             AND $where
+             AND date_vidange = (
+               SELECT MAX(date_vidange) FROM vidange_vehicule v
+               WHERE v.id_affectation_vehicule = affectation_vehicule.id_affectation
+             )
+             ORDER BY vehicule.id_vehicule",
+            $params
+        );
+    }
+
     public function findVidangeByCode(string $code): ?array
     {
         return $this->selectOne(
@@ -171,6 +223,33 @@ class MaintenanceRepository extends BaseRepository
              AND region.id_region = ?
              ORDER BY vehicule.id_vehicule",
             [$codeVidange, $regionId]
+        );
+    }
+
+    public function findHistoriqueVidangeByContext(string $codeVidange, array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $params[] = $codeVidange;
+        return $this->select(
+            "SELECT *,
+             (SELECT km_releve FROM releve_kms_vehicule
+              WHERE id_affectation_vehicule = vidange_vehicule.id_affectation_vehicule
+              AND date_fin_periode_releve = (
+                SELECT MAX(date_fin_periode_releve) FROM releve_kms_vehicule
+                WHERE id_affectation_vehicule = vidange_vehicule.id_affectation_vehicule
+              )) AS kms_actuel
+             FROM vidange_vehicule, affectation_vehicule, vehicule, chauffeur, region, prestataire_intervention
+             WHERE prestataire_intervention.id_prestataire = vidange_vehicule.id_prestataire
+             AND affectation_vehicule.id_vehicule = vehicule.id_vehicule
+             AND affectation_vehicule.id_affectation = vidange_vehicule.id_affectation_vehicule
+             AND chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
+             AND affectation_vehicule.id_region = region.id_region
+             AND $where
+             AND id_affectation_vehicule = (
+               SELECT id_affectation_vehicule FROM vidange_vehicule vv WHERE vv.code_vidange = ?
+             )
+             ORDER BY vehicule.id_vehicule",
+            $params
         );
     }
 
@@ -252,6 +331,22 @@ class MaintenanceRepository extends BaseRepository
              LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
              LEFT JOIN centre_couts ON centre_couts.id_centre_cout = bons_reparation.id_centre_cout",
             []
+        );
+    }
+
+    public function findAllBonsReparationByContext(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT * FROM bons_reparation
+             LEFT JOIN affectation_vehicule ON id_affectation_vehicule = id_affectation
+             LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
+             LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
+             LEFT JOIN prestataire_intervention ON prestataire_intervention.id_prestataire = bons_reparation.id_prestataire
+             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
+             LEFT JOIN centre_couts ON centre_couts.id_centre_cout = bons_reparation.id_centre_cout
+             WHERE $where",
+            $params
         );
     }
 

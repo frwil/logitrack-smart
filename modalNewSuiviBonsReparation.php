@@ -32,7 +32,7 @@ endif;
 
                             <select id="vh-br" name="vh-br">
                                 <?php $affectationRepo = new AffectationRepository($con);
-                                foreach ($affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel']) as $r):
+                                foreach ($affectationRepo->findActiveByContext(getContextRegions(), getContextEntities()) as $r):
                                     echo "<option value='" . $r['id_affectation'] . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $r['id_affectation'] ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                                 endforeach;
                                 ?>

@@ -32,9 +32,7 @@ endif;
 
                         <select required id="vh-releve-kms" name="vh-releve-kms" onchange="$('#date-releve-kms').change();">
                             <?php $affectationRepo = new AffectationRepository($con);
-                            $rows = $_SESSION['usr-con']['region-sel'] != ''
-                                ? $affectationRepo->findActiveByRegion((int)$_SESSION['usr-con']['region-sel'])
-                                : $affectationRepo->findAllActive();
+                            $rows = $affectationRepo->findActiveByContext(getContextRegions(), getContextEntities());
                             foreach ($rows as $r):
                                 $hash = $r['id_affectation'];
                                 echo "<option value='" . $hash . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $hash ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";

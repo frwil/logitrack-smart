@@ -152,6 +152,23 @@ body {
   background-size: 16px 12px;
 }
 
+.login-multi {
+  padding: 0.375rem 0.5rem 0.375rem 2.5rem;
+  min-height: 60px;
+  background-image: none;
+  overflow-y: auto;
+}
+
+.login-multi option {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.login-multi option:checked {
+  background: linear-gradient(135deg, #5D54A4, #3D3486);
+  color: #fff;
+}
+
 .login-submit {
   width: 100%;
   padding: 0.75rem;

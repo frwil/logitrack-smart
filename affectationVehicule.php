@@ -2,9 +2,8 @@
 {
     global $con;
     global $rights_affectation;
-    $regionIds = array_map('intval', explode(',', $_SESSION['usr-con']['users_region']));
     $repo = new AffectationRepository($con);
-    $rows = $repo->findAllByRegions($regionIds);
+    $rows = $repo->findAllByContext(getContextRegions(), getContextEntities());
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Immatriculation</th><th>Chauffeur</th><th>Région</th><th>Entité</th><th>Type d'utilisation</th><th>Mode d'utilisation</th><th>Objet d'affectation</th><th>Date début</th><th>Date fin</th><th>Clôturé</th><th></th></tr></thead><tbody>";
     $i = 1;
     //$user_rights = $_SESSION['usr-con']['users-rights'];
