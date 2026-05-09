@@ -323,7 +323,8 @@ if (!$renderPartial):
                             .search(vals.length > 0 ? '^(' + vals + ')$' : '', true, false)
                             .draw();
                     });
-                if ($(column.header()).children('.dt-column-title').html() == '') select.remove()
+                var colTitle = $(column.header()).children('.dt-column-title').html();
+                if (!colTitle || colTitle == '') select.remove()
 
                 column.data().unique().sort().each(function(d, j) {
                     select.append('<option value="' + $("<div>" + d + "</div>").text() + '">' + $("<div>" + d + "</div>").text() + '</option>')
