@@ -97,9 +97,10 @@ class AuthController extends BaseController
     /** Handle context switch POST (JSON). Returns JSON. */
     public function switchContext(): never
     {
-        $input = json_decode(file_get_contents('php://input'), true);
-        $regionIds = $input['regionIds'] ?? null;
-        $entiteIds = $input['entiteIds'] ?? null;
+        // Reuse $jsonPost decoded in index.php — php://input is single-read.
+        global $jsonPost;
+        $regionIds = $jsonPost['regionIds'] ?? $_POST['regionIds'] ?? null;
+        $entiteIds = $jsonPost['entiteIds'] ?? $_POST['entiteIds'] ?? null;
 
         if (!$regionIds || !$entiteIds) {
             $this->jsonError('Régions et entités requises');
