@@ -87,6 +87,11 @@ function db_context_filter(array $regionIds, array $entiteIds): array
 
 function getContextRegions(): array
 {
+    $sel = $_SESSION['usr-con']['region-sel'] ?? [];
+    if (!empty($sel)) {
+        return $sel;
+    }
+    // Fallback: all allowed regions (superadmin gets all, others get assigned)
     if ($_SESSION['usr-con']['is-superadmin'] ?? false) {
         $con = $GLOBALS['con'] ?? null;
         if ($con) {
@@ -94,15 +99,16 @@ function getContextRegions(): array
             return array_map('intval', array_column($repo->findAll(), 'id_region'));
         }
     }
-    $sel = $_SESSION['usr-con']['region-sel'] ?? [];
-    if (empty($sel)) {
-        return array_map('intval', explode(',', $_SESSION['usr-con']['users_region'] ?? ''));
-    }
-    return $sel;
+    return array_map('intval', explode(',', $_SESSION['usr-con']['users_region'] ?? ''));
 }
 
 function getContextEntities(): array
 {
+    $sel = $_SESSION['usr-con']['entite-sel'] ?? [];
+    if (!empty($sel)) {
+        return $sel;
+    }
+    // Fallback: all allowed entities (superadmin gets all, others get assigned)
     if ($_SESSION['usr-con']['is-superadmin'] ?? false) {
         $con = $GLOBALS['con'] ?? null;
         if ($con) {
@@ -110,9 +116,5 @@ function getContextEntities(): array
             return array_map('intval', array_column($repo->findAll(), 'id_entite'));
         }
     }
-    $sel = $_SESSION['usr-con']['entite-sel'] ?? [];
-    if (empty($sel)) {
-        return $_SESSION['usr-con']['users-entite'] ?? [];
-    }
-    return $sel;
+    return $_SESSION['usr-con']['users-entite'] ?? [];
 }
