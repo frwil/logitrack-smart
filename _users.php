@@ -204,18 +204,15 @@ var tomSelectsReady = false;
 
 function bindSelectAll(ts) {
     ts.on('dropdown_open', function() {
-        var $dd = $(ts.dropdown_content);
-        alert('dd.length=' + $dd.length + ' children=' + $dd.children('.ts-select-all').length);
-        if (!$dd.length || $dd.children('.ts-select-all').length) return;
-        $dd.prepend('<div class="ts-select-all"><a href="#" class="select-all-link">Tout sélectionner</a> &middot; <a href="#" class="deselect-all-link">Tout désélectionner</a></div>');
-        alert('prepend done');
-
-        $dd.find('.select-all-link').off('click').on('click', function(e) {
+        var $dropdown = $(ts.dropdown);
+        if (!$dropdown.length || $dropdown.children('.ts-select-all').length) return;
+        $dropdown.prepend('<div class="ts-select-all"><a href="#" class="select-all-link">Tout sélectionner</a> &middot; <a href="#" class="deselect-all-link">Tout désélectionner</a></div>');
+        $dropdown.find('.select-all-link').off('click').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             ts.setValue(Object.keys(ts.options).map(function(k) { return ts.options[k].value; }));
         });
-        $dd.find('.deselect-all-link').off('click').on('click', function(e) {
+        $dropdown.find('.deselect-all-link').off('click').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             ts.clear();
