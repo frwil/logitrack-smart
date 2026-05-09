@@ -70,19 +70,59 @@
         $('#login-error').removeClass('show').text('');
     }
 
+    function invalidateField($el) {
+        $el.addClass('is-invalid').css({borderColor: '#ef4444', boxShadow: '0 0 0 3px rgba(239,68,68,.15)'});
+        var $ts = $el.next('.ts-wrapper');
+        if ($ts.length) $ts.find('.ts-control').css({borderColor: '#ef4444', boxShadow: '0 0 0 3px rgba(239,68,68,.15)'});
+    }
+
+    function clearFieldError($el) {
+        $el.removeClass('is-invalid').css({borderColor: '', boxShadow: ''});
+        var $ts = $el.next('.ts-wrapper');
+        if ($ts.length) $ts.find('.ts-control').css({borderColor: '', boxShadow: ''});
+    }
+
+    // Initialize Tom Select on multi-select fields
+    var regionSelect = new TomSelect('#region-user', {
+        plugins: ['remove_button'],
+        maxItems: null,
+        placeholder: 'Selectionner une ou plusieurs regions...'
+    });
+    var entiteSelect = new TomSelect('#entite-user', {
+        plugins: ['remove_button'],
+        maxItems: null,
+        placeholder: 'Selectionner une ou plusieurs entites...'
+    });
+
     $('#login-form').on('submit', function(e) {
         e.preventDefault();
         clearLoginError();
 
-        var $inputs = $('.login-input, .login-multi');
         var valid = true;
-        $inputs.each(function() {
-            $(this).removeClass('is-invalid').css({borderColor: '', boxShadow: ''});
-            if ($(this).val() === '' || $(this).val() === null || ($(this).is('select[multiple]') && $(this).val().length === 0)) {
+
+        // Validate text inputs
+        $('.login-input').each(function() {
+            var v = $(this).val();
+            clearFieldError($(this));
+            if (v === '' || v === null) {
                 valid = false;
-                $(this).addClass('is-invalid').css({borderColor: '#ef4444', boxShadow: '0 0 0 3px rgba(239,68,68,.15)'});
+                invalidateField($(this));
             }
         });
+
+        // Validate Tom Select fields
+        if (regionSelect.getValue().length === 0) {
+            valid = false;
+            invalidateField($('#region-user'));
+        } else {
+            clearFieldError($('#region-user'));
+        }
+        if (entiteSelect.getValue().length === 0) {
+            valid = false;
+            invalidateField($('#entite-user'));
+        } else {
+            clearFieldError($('#entite-user'));
+        }
 
         if (!valid) {
             showLoginError("Tous les champs sont obligatoires");
