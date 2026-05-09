@@ -276,7 +276,20 @@ if (!$renderPartial):
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'configuration') :  ?>
                 <?php include("config.php"); ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'users') :  ?>
-                <?php include("users.php"); ?>
+                <?php
+                $currentRole = $_SESSION['usr-con']['role'] ?? 'user';
+                $isSuperadmin = $currentRole === 'superadmin';
+                $isAdmin = $isSuperadmin || $currentRole === 'admin';
+                include("users.php");
+                if ($isAdmin): ?>
+                    <div class="lt-page-title">Gestion des utilisateurs</div>
+                    <button class="btn btn-primary mb-3" onclick="openModalUser()"><i class="fa fa-plus-circle"></i> Nouvel utilisateur</button>
+                    <hr>
+                    <?php echo getTableauUsers(); ?>
+                <?php else: ?>
+                    <div class="lt-page-title">Accès non autorisé</div>
+                    <p>Vous n'avez pas les droits nécessaires pour accéder à cette page.</p>
+                <?php endif; ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'reports') :  ?>
                 <?php include("reporting.php"); ?>
             <?php endif; ?>

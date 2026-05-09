@@ -1,14 +1,4 @@
 <?php
-$currentRole = $_SESSION['usr-con']['role'] ?? 'user';
-$isSuperadmin = $currentRole === 'superadmin';
-$isAdmin = $isSuperadmin || $currentRole === 'admin';
-
-if (!$isAdmin) {
-    echo "<div class='lt-page-title'>Accès non autorisé</div>";
-    echo "<p>Vous n'avez pas les droits nécessaires pour accéder à cette page.</p>";
-    return;
-}
-
 function getTableauUsers()
 {
     global $con;
@@ -75,11 +65,6 @@ function getTableauUsers()
     return $tableau;
 }
 ?>
-
-<div class="lt-page-title">Gestion des utilisateurs</div>
-<button class="btn btn-primary mb-3" onclick="openModalUser()"><i class="fa fa-plus-circle"></i> Nouvel utilisateur</button>
-<hr>
-<?php echo getTableauUsers(); ?>
 
 <div class="modal fade" id="modal-user" tabindex="-1" aria-labelledby="modal-user-label" aria-hidden="true">
     <div class="modal-dialog modal-lg">
