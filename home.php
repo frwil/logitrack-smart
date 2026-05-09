@@ -280,7 +280,7 @@ if (!$renderPartial):
                 $currentRole = $_SESSION['usr-con']['role'] ?? 'user';
                 $isSuperadmin = $currentRole === 'superadmin';
                 $isAdmin = $isSuperadmin || $currentRole === 'admin';
-                include("users.php");
+                include("_users.php");
                 if ($isAdmin): ?>
                     <div class="lt-page-title">Gestion des utilisateurs</div>
                     <button class="btn btn-primary mb-3" onclick="openModalUser()"><i class="fa fa-plus-circle"></i> Nouvel utilisateur</button>
