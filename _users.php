@@ -205,21 +205,17 @@ var pendingEntites = null;
 
 function bindSelectAll(ts) {
     ts.on('dropdown_open', function() {
-        var dd = ts.dropdown_content;
-        if (!dd || dd.querySelector('.ts-select-all')) return;
+        var $dd = $(ts.dropdown_content);
+        if (!$dd.length || $dd.children('.ts-select-all').length) return;
 
-        var div = document.createElement('div');
-        div.className = 'ts-select-all';
-        div.innerHTML = '<a href="#" class="select-all-link">Tout sélectionner</a> &middot; <a href="#" class="deselect-all-link">Tout désélectionner</a>';
-        dd.insertBefore(div, dd.firstChild);
+        $dd.prepend('<div class="ts-select-all"><a href="#" class="select-all-link">Tout sélectionner</a> &middot; <a href="#" class="deselect-all-link">Tout désélectionner</a></div>');
 
-        div.querySelector('.select-all-link').addEventListener('click', function(e) {
+        $dd.find('.select-all-link').off('click').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             ts.setValue(Object.keys(ts.options).map(function(k) { return ts.options[k].value; }));
         });
-
-        div.querySelector('.deselect-all-link').addEventListener('click', function(e) {
+        $dd.find('.deselect-all-link').off('click').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             ts.clear();
