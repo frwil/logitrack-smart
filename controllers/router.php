@@ -132,12 +132,9 @@ $routes = [
     'id-user-active'       => [$userCtrl, 'toggleActive'],
 ];
 
-// For JSON requests, PHP does not populate $_POST — decode the raw body.
-$jsonPost = [];
-if (empty($_POST)) {
-    $decoded = json_decode(file_get_contents('php://input'), true);
-    if (is_array($decoded)) $jsonPost = $decoded;
-}
+// $jsonPost is already decoded in index.php (CSRF check reads php://input first).
+// php://input is single-read, so we reuse the saved value.
+if (!isset($jsonPost)) $jsonPost = [];
 
 // Dispatch: check if any POST key (form-encoded or JSON) matches a route.
 foreach ($routes as $key => [$controller, $method]) {

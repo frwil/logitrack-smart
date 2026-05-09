@@ -20,11 +20,13 @@ require_once __DIR__ . '/models/autoload.php';
 require_once __DIR__ . '/controllers/autoload.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST'):
-    // CSRF check
+    // CSRF check — also decode JSON body for reuse by the router.
+    // php://input can only be read once, so we save the decoded result.
     $csrf_token = $_POST['csrf_token'] ?? null;
+    $jsonPost = [];
     if ($csrf_token === null):
-        $json = json_decode(file_get_contents('php://input'), true);
-        $csrf_token = $json['csrf_token'] ?? null;
+        $jsonPost = json_decode(file_get_contents('php://input'), true) ?? [];
+        $csrf_token = $jsonPost['csrf_token'] ?? null;
     endif;
     if (!hash_equals($_SESSION['csrf_token'], (string)$csrf_token)):
         http_response_code(403);
