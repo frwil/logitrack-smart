@@ -71,7 +71,7 @@ function getTableauFolder()
 /* POST handled by ConfigController — see controllers/router.php */ ?>
 <?php if (!isset($_GET['subpage'])): ?>
     <div class="row g-3">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="lt-card text-center">
                 <a href="?page=configuration&subpage=drivelicence" class="text-decoration-none">
                     <i class="fa fa-id-card fa-3x mb-3" style="color:var(--lt-primary)"></i>
@@ -80,7 +80,7 @@ function getTableauFolder()
                 <p class="lt-page-subtitle">Enregistrez, mettez à jour les différentes catégories de permis de conduire applicables pour les véhicules</p>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="lt-card text-center">
                 <a href="?page=configuration&subpage=documentslist" class="text-decoration-none">
                     <i class="fa fa-file-alt fa-3x mb-3" style="color:var(--lt-primary)"></i>
@@ -89,13 +89,22 @@ function getTableauFolder()
                 <p class="lt-page-subtitle">Enregistrez, mettez à jour les différents documents utilisables dans un véhicule</p>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="lt-card text-center">
                 <a href="?page=configuration&subpage=folderdetails" class="text-decoration-none">
                     <i class="fa fa-folder-open fa-3x mb-3" style="color:var(--lt-primary)"></i>
                 </a>
                 <h5 class="lt-card-title">Dossier de véhicules</h5>
                 <p class="lt-page-subtitle">Enregistrez, mettez à jour les différents documents du dossier d'un véhicule</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="lt-card text-center">
+                <a href="?page=users" class="text-decoration-none">
+                    <i class="fa fa-users-cog fa-3x mb-3" style="color:var(--lt-primary)"></i>
+                </a>
+                <h5 class="lt-card-title">Utilisateurs</h5>
+                <p class="lt-page-subtitle">Gérez les utilisateurs, leurs rôles, permissions et affectations aux régions et entités</p>
             </div>
         </div>
     </div>
