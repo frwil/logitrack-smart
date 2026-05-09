@@ -349,6 +349,7 @@ function saveUser() {
         if ($(this).val() === '') {
             valid = false;
             $(this).addClass('is-invalid');
+            alert('Veuillez remplir le champ : ' + $(this).prev('label').text());
         }
     });
 
