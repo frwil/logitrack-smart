@@ -404,8 +404,8 @@ class VoyageRepository extends BaseRepository
              FROM voyage_vehicule vv
              LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
              LEFT JOIN voyage v ON v.id_voyage = vv.id_voyage
-             LEFT JOIN affectation_vehicule av ON av.id_affectation = v.id_affectation
-             WHERE av.is_deleted = 0 AND $where
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
              GROUP BY vv.id_destination, dv.lib_destination
              ORDER BY nb_voyages DESC
              LIMIT ?",
@@ -421,11 +421,11 @@ class VoyageRepository extends BaseRepository
                     SUM(v.qte_carburant) AS total_carburant,
                     SUM(dv.distance_destination) AS total_km
              FROM voyage v
-             LEFT JOIN affectation_vehicule av ON av.id_affectation = v.id_affectation
-             LEFT JOIN vehicule veh ON veh.id_vehicule = av.id_vehicule
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
+             LEFT JOIN vehicule veh ON veh.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN voyage_vehicule vv ON vv.id_voyage = v.id_voyage
              LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
-             WHERE av.is_deleted = 0 AND $where
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
              AND v.date_voyage BETWEEN ? AND ?
              GROUP BY veh.id_vehicule, veh.immatriculation_vehicule
              ORDER BY total_km DESC",
@@ -440,11 +440,11 @@ class VoyageRepository extends BaseRepository
             "SELECT veh.immatriculation_vehicule,
                     COALESCE(ch.nom_chauffeur, '—') AS nom_chauffeur,
                     MAX(v.date_voyage) AS derniere_date_voyage
-             FROM affectation_vehicule av
-             LEFT JOIN vehicule veh ON veh.id_vehicule = av.id_vehicule
-             LEFT JOIN chauffeur ch ON ch.id_chauffeur = av.id_chauffeur
-             LEFT JOIN voyage v ON v.id_affectation = av.id_affectation
-             WHERE av.is_deleted = 0 AND av.is_ferme = 0 AND $where
+             FROM affectation_vehicule
+             LEFT JOIN vehicule veh ON veh.id_vehicule = affectation_vehicule.id_vehicule
+             LEFT JOIN chauffeur ch ON ch.id_chauffeur = affectation_vehicule.id_chauffeur
+             LEFT JOIN voyage v ON v.id_affectation = affectation_vehicule.id_affectation
+             WHERE affectation_vehicule.is_deleted = 0 AND affectation_vehicule.is_ferme = 0 AND $where
              GROUP BY veh.id_vehicule, veh.immatriculation_vehicule, ch.nom_chauffeur
              HAVING MAX(v.date_voyage) IS NULL OR MAX(v.date_voyage) < DATE_SUB(CURDATE(), INTERVAL ? DAY)
              ORDER BY derniere_date_voyage ASC",
@@ -476,13 +476,13 @@ class VoyageRepository extends BaseRepository
                     COUNT(DISTINCT v.date_voyage) AS jours_avec_voyage,
                     COALESCE(SUM(dv.distance_destination), 0) AS total_km,
                     COALESCE(SUM(v.qte_carburant), 0) AS total_carburant
-             FROM affectation_vehicule av
-             LEFT JOIN vehicule veh ON veh.id_vehicule = av.id_vehicule
-             LEFT JOIN chauffeur ch ON ch.id_chauffeur = av.id_chauffeur
-             LEFT JOIN voyage v ON v.id_affectation = av.id_affectation AND v.date_voyage BETWEEN ? AND ?
+             FROM affectation_vehicule
+             LEFT JOIN vehicule veh ON veh.id_vehicule = affectation_vehicule.id_vehicule
+             LEFT JOIN chauffeur ch ON ch.id_chauffeur = affectation_vehicule.id_chauffeur
+             LEFT JOIN voyage v ON v.id_affectation = affectation_vehicule.id_affectation AND v.date_voyage BETWEEN ? AND ?
              LEFT JOIN voyage_vehicule vv ON vv.id_voyage = v.id_voyage
              LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
-             WHERE av.is_deleted = 0 AND av.is_ferme = 0 AND $where
+             WHERE affectation_vehicule.is_deleted = 0 AND affectation_vehicule.is_ferme = 0 AND $where
              GROUP BY veh.id_vehicule, veh.immatriculation_vehicule, ch.nom_chauffeur",
             array_merge($params, [$dateFrom, $dateTo])
         );

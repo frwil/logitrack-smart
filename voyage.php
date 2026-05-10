@@ -14,46 +14,38 @@
     $hasUpd = in_array('upd', $rights_voyage);
     $hasDel = in_array('del', $rights_voyage);
 
-    try {
-        $dateFrom = isset($_POST['date-f']) ? date('Y-m-d', strtotime($_POST['date-f'])) : date('Y-m-01');
-        $dateTo   = isset($_POST['date-t']) ? date('Y-m-d', strtotime($_POST['date-t'])) : date('Y-m-t');
+    $dateFrom = isset($_POST['date-f']) ? date('Y-m-d', strtotime($_POST['date-f'])) : date('Y-m-01');
+    $dateTo   = isset($_POST['date-t']) ? date('Y-m-d', strtotime($_POST['date-t'])) : date('Y-m-t');
 
-        // Build date list as plain arrays (avoid DatePeriod re-iteration issues)
-        $dates = [];
-        $dateCols = [];
-        $d = date_create($dateFrom);
-        $end = date_create($dateTo);
-        $end->modify('+1 day');
-        while ($d < $end) {
-            $dates[] = $d->format('Y-m-d');
-            $dateCols[] = $d->format('d M Y');
-            $d->modify('+1 day');
-        }
-        $jourCount = count($dates);
+    $dates = [];
+    $dateCols = [];
+    $d = date_create($dateFrom);
+    $end = date_create($dateTo);
+    $end->modify('+1 day');
+    while ($d < $end) {
+        $dates[] = $d->format('Y-m-d');
+        $dateCols[] = $d->format('d M Y');
+        $d->modify('+1 day');
+    }
 
-        $vehiculeRepo = new VehiculeRepository($con);
-        $voyageRepo = new VoyageRepository($con);
+    $vehiculeRepo = new VehiculeRepository($con);
+    $voyageRepo = new VoyageRepository($con);
 
-        $regionIds = getContextRegions();
-        $entiteIds = getContextEntities();
-        $activeVehicles = $vehiculeRepo->findActiveByContext($regionIds, $entiteIds);
+    $regionIds = getContextRegions();
+    $entiteIds = getContextEntities();
+    $activeVehicles = $vehiculeRepo->findActiveByContext($regionIds, $entiteIds);
 
-        // Single batch query instead of N vehicles × M days queries
-        $allVoyages = $voyageRepo->findBatchByDateRange($regionIds, $entiteIds, $dateFrom, $dateTo);
+    // Single batch query instead of N vehicles × M days queries
+    $allVoyages = $voyageRepo->findBatchByDateRange($regionIds, $entiteIds, $dateFrom, $dateTo);
 
-        // Index voyages by [vehicle_id][date] → list of rows
-        $byVehicle = [];
-        foreach ($allVoyages as $v) {
-            $vid = (int)$v['id_vehicule'];
-            $d = $v['date_voyage'];
-            if (!isset($byVehicle[$vid])) $byVehicle[$vid] = [];
-            if (!isset($byVehicle[$vid][$d])) $byVehicle[$vid][$d] = [];
-            $byVehicle[$vid][$d][] = $v;
-        }
-
-        $debug = '<!-- DEBUG: ' . count($activeVehicles) . ' vehicules, ' . count($allVoyages) . ' voyages, ' . $jourCount . ' jours, 2 requetes -->';
-    } catch (\Throwable $e) {
-        return '<!-- ERREUR getTableauVoyages: ' . h($e->getMessage()) . ' -->';
+    // Index voyages by [vehicle_id][date]
+    $byVehicle = [];
+    foreach ($allVoyages as $v) {
+        $vid = (int)$v['id_vehicule'];
+        $d = $v['date_voyage'];
+        if (!isset($byVehicle[$vid])) $byVehicle[$vid] = [];
+        if (!isset($byVehicle[$vid][$d])) $byVehicle[$vid][$d] = [];
+        $byVehicle[$vid][$d][] = $v;
     }
 
     $tableau = "<table class='table table-striped'><thead><tr><th>Immatriculation</th>";
