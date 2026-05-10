@@ -15,11 +15,15 @@ class BaseRepository
     /** Run SELECT and return all rows as associative array. */
     protected function select(string $sql, array $params = []): array
     {
-        $result = db_select($this->con, $sql, $params);
-        if ($result === false) {
+        try {
+            $result = db_select($this->con, $sql, $params);
+            if ($result === false) {
+                return [];
+            }
+            return mysqli_fetch_all($result, MYSQLI_ASSOC);
+        } catch (\mysqli_sql_exception $e) {
             return [];
         }
-        return mysqli_fetch_all($result, MYSQLI_ASSOC);
     }
 
     /** Run SELECT and return first row, or null. */
