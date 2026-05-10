@@ -36,6 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'):
         die(json_encode(['success' => false, 'error' => 'CSRF validation failed — reload the page']));
     endif;
 
+    // Merge JSON body into $_POST so controllers can read JSON-sent data via post()
+    if ($jsonPost) {
+        $_POST = array_merge($_POST, $jsonPost);
+    }
+
     // DB connection + route dispatch
     try {
         $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME'));

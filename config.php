@@ -572,7 +572,7 @@ function getTableauFolder()
             function saveDevise() {
                 var v = $('#devise-input').val().trim();
                 if (!v) { alert('Veuillez saisir une devise'); return; }
-                $.ajax({type:'post', data:JSON.stringify({'update-devise':v, csrf_token:window.CSRF_TOKEN}), dataType:'json'})
+                $.ajax({type:'post', contentType:'application/json', data:JSON.stringify({'update-devise':v, csrf_token:window.CSRF_TOKEN}), dataType:'json'})
                 .done(function(r) {
                     if (r.success) { alert('Devise enregistrée.'); } else { alert('Erreur.'); }
                 })

@@ -872,7 +872,7 @@ function getDashboardCharts()
             if (!e.data || !e.data.length) return;
             var dt = new google.visualization.DataTable();
             dt.addColumn("string", "Mois");
-            dt.addColumn("number", "Coût (F)");
+            dt.addColumn("number", "Coût (' . devise() . ')");
             e.data.forEach(function(r) { dt.addRow([r.mois, parseFloat(r.total)]); });
             var c = new google.visualization.LineChart(document.getElementById("chart-budget"));
             c.draw(dt, {title:"Évolution mensuelle des coûts", curveType:"function", legend:"none", colors:["#5D54A4"], chartArea:{width:"85%", height:"75%"}});
@@ -884,7 +884,7 @@ function getDashboardCharts()
             dt.addColumn("string", "Prestataire");
             dt.addColumn("number", "Nb réparations");
             dt.addColumn("number", "Durée moy (j)");
-            dt.addColumn("number", "Coût moyen (F)");
+            dt.addColumn("number", "Coût moyen (' . devise() . ')");
             e.data.forEach(function(r) { dt.addRow([r.nom_prestataire, parseInt(r.nb_reparations), parseFloat(r.duree_moyenne), parseFloat(r.cout_moyen)]); });
             var c = new google.visualization.ColumnChart(document.getElementById("chart-providers"));
             c.draw(dt, {title:"Performance par prestataire", colors:["#5D54A4","#7C78B8","#3D3486"], chartArea:{width:"80%", height:"70%"}});
@@ -894,9 +894,9 @@ function getDashboardCharts()
             if (!e.data || !e.data.length) return;
             var dt = new google.visualization.DataTable();
             dt.addColumn("string", "Véhicule");
-            dt.addColumn("number", "Coût total (F)");
+            dt.addColumn("number", "Coût total (' . devise() . ')");
             dt.addColumn("number", "Km parcourus");
-            dt.addColumn("number", "Coût/km (F)");
+            dt.addColumn("number", "Coût/km (' . devise() . ')");
             e.data.forEach(function(r) {
                 var km = parseFloat(r.km_max) - parseFloat(r.km_min);
                 var coutKm = km > 0 ? parseFloat(r.total_cout) / km : 0;
@@ -919,7 +919,7 @@ function getHealthScores()
     $html = '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title">Score de santé des véhicules</h2></div>';
     $html .= '<table id="table-health-scores" class="table table-striped no-datatable"><thead><tr>
         <th>Véhicule</th><th>Chauffeur</th><th>Km actuel</th><th>Proch. vidange</th>
-        <th>Pannes (6 mois)</th><th>Coût total (F)</th><th>Score</th><th>État</th></tr></thead><tbody>';
+        <th>Pannes (6 mois)</th><th>Coût total (' . devise() . ')</th><th>Score</th><th>État</th></tr></thead><tbody>';
     foreach ($rows as $r) {
         $score = (int)$r['score'];
         $color = $score >= 70 ? 'success' : ($score >= 40 ? 'warning' : 'danger');
