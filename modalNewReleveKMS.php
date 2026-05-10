@@ -130,9 +130,11 @@ endif;
         var valid = true
         $('#form-new-relevekms *[required]').each((e, el) => {
             $(el).removeClass('is-invalid')
+            $(el).closest('.ts-wrapper').removeClass('is-invalid')
             if ($(el).val() == '') {
                 valid = false
                 $(el).addClass('is-invalid')
+                $(el).closest('.ts-wrapper').addClass('is-invalid')
             }
         })
         if (!valid) {

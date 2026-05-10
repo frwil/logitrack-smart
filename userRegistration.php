@@ -66,13 +66,19 @@ if (isset($_POST['name-user'])) {
         </div>
     </div>
 <script>
+    $(document).ready(function() {
+        initTomSelect('#region-user');
+    });
+
     $('#btn-save-user').click((e)=>{
         var valid=true
         $('form *[required]').each((e,el)=>{
             $(el).removeClass('is-invalid')
+            $(el).closest('.ts-wrapper').removeClass('is-invalid')
             if($(el).val()==''){
                 valid=false
                 $(el).addClass('is-invalid')
+                $(el).closest('.ts-wrapper').addClass('is-invalid')
             }
         })
         $('#pass-user-confirm').removeClass('is-invalid')

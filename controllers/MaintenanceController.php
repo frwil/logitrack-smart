@@ -87,7 +87,7 @@ class MaintenanceController extends BaseController
         if (!$row) {
             $this->jsonError('Prestataire introuvable', 404);
         }
-        unset($row[0], $row['id_prestataire']);
+        unset($row[0]);
         $this->json(['data' => $row]);
     }
 
@@ -121,6 +121,16 @@ class MaintenanceController extends BaseController
     }
 
     // ---- Centre de coûts ----
+
+    public function fetchAllCentresCouts(): never
+    {
+        $rows = $this->maintenanceRepo->findAllCentresCouts();
+        $html = '';
+        foreach ($rows as $r) {
+            $html .= "<option value='{$r['id_centre_cout']}'>" . h($r['nom_centre_cout']) . "</option>";
+        }
+        $this->json(['html' => $html]);
+    }
 
     public function createCentreCout(): never
     {
@@ -217,5 +227,175 @@ class MaintenanceController extends BaseController
         } catch (\mysqli_sql_exception $e) {
             $this->jsonError('Erreur lors de la mise à jour');
         }
+    }
+
+    // ---- Prestataire create ----
+
+    public function createPrestataire(): never
+    {
+        $nom = trim($this->post('nom-pt'));
+        if ($nom === '') $this->jsonError('Le nom du prestataire est obligatoire');
+        try {
+            $this->maintenanceRepo->transactional(function () use ($nom) {
+                $this->maintenanceRepo->insertPrestataire(
+                    $nom,
+                    $this->post('contact-pt') ?: null,
+                    $this->post('localisation-pt') ?: null
+                );
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            if ($e->getCode() == 1062) $this->jsonError('Ce prestataire existe déjà');
+            $this->jsonError("Erreur lors de l'enregistrement");
+        }
+    }
+
+    // ---- Vidange create ----
+
+    public function createVidange(): never
+    {
+        try {
+            $this->maintenanceRepo->transactional(function () {
+                $this->maintenanceRepo->insertVidange(
+                    (int)$this->post('vh-vd'),
+                    $this->post('date-vd'),
+                    (int)$this->post('km-av-vd'),
+                    (int)$this->post('km-next-vd'),
+                    (int)$this->post('id-pt-vd'),
+                    $this->post('comment-vd') ?: null
+                );
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            $this->jsonError("Erreur lors de l'enregistrement");
+        }
+    }
+
+    // ---- Relevé KMS create ----
+
+    public function createReleveKms(): never
+    {
+        $km = (int)$this->post('val-releve-kms');
+        if ($km <= 0) $this->jsonError('La valeur du kilométrage est obligatoire');
+        try {
+            $this->maintenanceRepo->transactional(function () use ($km) {
+                $this->maintenanceRepo->insertReleveKms(
+                    (int)$this->post('vh-releve-kms'),
+                    $this->post('per-releve-kms'),
+                    $km,
+                    $this->post('start-per'),
+                    $this->post('end-per')
+                );
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            $this->jsonError("Erreur lors de l'enregistrement");
+        }
+    }
+
+    // ---- Bon de réparation ----
+
+    public function fetchBonReparation(): never
+    {
+        $row = $this->maintenanceRepo->findBonReparationById((int)$this->post('c-br-s'));
+        if (!$row) $this->jsonError('Bon de réparation introuvable', 404);
+        unset($row[0]);
+        $this->json(['data' => $row]);
+    }
+
+    public function deleteBonReparation(): never
+    {
+        try {
+            $this->maintenanceRepo->transactional(function () {
+                $this->maintenanceRepo->deleteBonReparationById((int)$this->post('del-br-id'));
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            $this->jsonError('Échec de la suppression');
+        }
+    }
+
+    public function updateBonReparation(): never
+    {
+        try {
+            $this->maintenanceRepo->transactional(function () {
+                $this->maintenanceRepo->updateBonReparation(
+                    (int)$this->post('id-upd-br'),
+                    $this->post('num-br-upd'),
+                    (int)$this->post('vh-br-upd'),
+                    $this->post('date-entree-br-upd'),
+                    $this->post('diagnostic-br-upd'),
+                    $this->post('type-execution-br-upd'),
+                    (int)$this->post('prestataire-br-upd'),
+                    (float)$this->post('montant-br-upd'),
+                    $this->post('plus-moins-br-upd') ? (int)$this->post('plus-moins-br-upd') : null,
+                    $this->post('plus-moins-val-br-upd') ? (float)$this->post('plus-moins-val-br-upd') : null,
+                    $this->post('destination-br-upd'),
+                    (int)$this->post('duree-br-upd'),
+                    $this->post('date-justif-br-upd'),
+                    (int)$this->post('centrecout-br-upd'),
+                    $this->post('date-prevue-br-upd'),
+                    $this->post('date-fin-br-upd'),
+                    $this->post('observation-br-upd')
+                );
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            $this->jsonError('Erreur lors de la mise à jour');
+        }
+    }
+
+    public function createBonReparation(): never
+    {
+        try {
+            $this->maintenanceRepo->transactional(function () {
+                $this->maintenanceRepo->insertBonReparation(
+                    $this->post('num-br'),
+                    (int)$this->post('vh-br'),
+                    $this->post('date-entree-br'),
+                    $this->post('diagnostic-br'),
+                    $this->post('type-execution-br'),
+                    (int)$this->post('prestataire-br'),
+                    (float)$this->post('montant-br'),
+                    $this->post('plus-moins-br') ? (int)$this->post('plus-moins-br') : null,
+                    $this->post('plus-moins-val-br') ? (float)$this->post('plus-moins-val-br') : null,
+                    $this->post('destination-br'),
+                    (int)$this->post('duree-br'),
+                    $this->post('date-justif-br'),
+                    (int)$this->post('centrecout-br'),
+                    $this->post('date-prevue-br'),
+                    $this->post('date-fin-br'),
+                    $this->post('observation-br')
+                );
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            $this->jsonError("Erreur lors de l'enregistrement");
+        }
+    }
+
+    // ---- Dashboard Analytics ----
+
+    public function budgetProjection(): never
+    {
+        $rows = $this->maintenanceRepo->monthlyCostHistory(12, getContextRegions(), getContextEntities());
+        $this->json(['data' => $rows]);
+    }
+
+    public function providerComparison(): never
+    {
+        $rows = $this->maintenanceRepo->providerComparison(getContextRegions(), getContextEntities());
+        $this->json(['data' => $rows]);
+    }
+
+    public function costPerKm(): never
+    {
+        $rows = $this->maintenanceRepo->costPerKm(
+            getContextRegions(),
+            getContextEntities(),
+            $this->post('dateFrom'),
+            $this->post('dateTo')
+        );
+        $this->json(['data' => $rows]);
     }
 }

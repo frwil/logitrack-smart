@@ -107,6 +107,15 @@ function getTableauFolder()
                 <p class="lt-page-subtitle">Gérez les utilisateurs, leurs rôles, permissions et affectations aux régions et entités</p>
             </div>
         </div>
+        <div class="col-md-3">
+            <div class="lt-card text-center">
+                <a href="?page=configuration&subpage=parametres" class="text-decoration-none">
+                    <i class="fa fa-cogs fa-3x mb-3" style="color:var(--lt-primary)"></i>
+                </a>
+                <h5 class="lt-card-title">Paramètres</h5>
+                <p class="lt-page-subtitle">Configurez les paramètres généraux de l'application (devise, etc.)</p>
+            </div>
+        </div>
     </div>
 <?php else : ?>
     <?php if ($_GET['subpage'] == 'drivelicence') : ?>
@@ -199,9 +208,11 @@ function getTableauFolder()
                 var valid = true
                 $('#form-upd-drivelicence *[required]').each((e, el) => {
                     $(el).removeClass('is-invalid')
+                    $(el).closest('.ts-wrapper').removeClass('is-invalid')
                     if ($(el).val() == '') {
                         valid = false
                         $(el).addClass('is-invalid')
+                        $(el).closest('.ts-wrapper').addClass('is-invalid')
                     }
                 })
                 if (!valid) {
@@ -236,6 +247,26 @@ function getTableauFolder()
         <a href="?page=configuration&subpage=documentslist&action=new" class="btn btn-primary">Nouveau document de véhicules</a>&nbsp;<a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-docs" class="btn btn-primary">Exporter</a>
         <hr>
         <?php echo getTableauDocs(); ?>
+        <script>
+            function delDoc(id) {
+                if (confirm("Etes-vous sûr de vouloir supprimer ?")) {
+                    $.ajax({
+                        type: 'post',
+                        data: 'id-doc-del=' + id,
+                        dataType: 'json'
+                    }).done((e) => {
+                        if (e.success) {
+                            showSuccess('Opération effectuée!')
+                            location.reload()
+                        } else {
+                            showError(e.error || "Echec de l'opération!")
+                        }
+                    }).fail((jqXHR) => {
+                        showError(jqXHR.responseJSON?.error || "Echec de l'opération!")
+                    })
+                }
+            }
+        </script>
         <?php if (isset($_GET['action']) && $_GET['action'] == 'upd' && isset($_GET['id']) && $_GET['id'] != "" && isset($con)): ?>
             <?php $configRepo = new ConfigRepository($con);
             $doc = $configRepo->findDocumentByHash($_GET['id']) ?? [];
@@ -276,9 +307,11 @@ function getTableauFolder()
                     var valid = true
                     $('#form-upd-doc *[required]').each((e, el) => {
                         $(el).removeClass('is-invalid')
+                        $(el).closest('.ts-wrapper').removeClass('is-invalid')
                         if ($(el).val() == '') {
                             valid = false
                             $(el).addClass('is-invalid')
+                            $(el).closest('.ts-wrapper').addClass('is-invalid')
                         }
                     })
                     if (!valid) {
@@ -351,7 +384,7 @@ function getTableauFolder()
 
                                     <label for="vh-folder">Véhicule</label>
 
-                                    <select id="vh-folder" name="vh-folder-upd">
+                                    <select id="vh-folder" name="vh-folder-upd" required>
                                         <?php
                                         $affRepo = new AffectationRepository($con);
                                         $affRows = $affRepo->findActiveByVehiculeAndContext((int)$folder[0]['id_vehicule'], getContextRegions(), getContextEntities());
@@ -462,9 +495,11 @@ function getTableauFolder()
                     var valid = true
                     $('#form-new-folder *[required]').each((e, el) => {
                         $(el).removeClass('is-invalid')
+                        $(el).closest('.ts-wrapper').removeClass('is-invalid')
                         if ($(el).val() == '') {
                             valid = false
                             $(el).addClass('is-invalid')
+                            $(el).closest('.ts-wrapper').addClass('is-invalid')
                         }
                     })
                     if (!valid) {
@@ -513,6 +548,37 @@ function getTableauFolder()
             </script>
 
         <?php endif; ?>
+        <?php elseif ($_GET['subpage'] == 'parametres') : ?>
+            <div class="lt-page-title">Paramètres généraux</div>
+            <hr>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="lt-card">
+                        <div class="lt-card-header"><h2 class="lt-card-title">Devise</h2></div>
+                        <div class="p-3">
+                            <form id="form-devise" onsubmit="return false;">
+                                <div class="mb-3">
+                                    <label for="devise-input" class="form-label">Symbole ou code de la devise</label>
+                                    <input type="text" id="devise-input" class="form-control" value="<?php echo h(devise()); ?>" maxlength="10" style="max-width:200px">
+                                    <div class="form-text">Ex: F, CFA, €, $, DH</div>
+                                </div>
+                                <button type="button" class="btn btn-primary" onclick="saveDevise()">Enregistrer</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script>
+            function saveDevise() {
+                var v = $('#devise-input').val().trim();
+                if (!v) { alert('Veuillez saisir une devise'); return; }
+                $.ajax({type:'post', data:JSON.stringify({'update-devise':v}), dataType:'json'})
+                .done(function(r) {
+                    if (r.success) { alert('Devise enregistrée.'); } else { alert('Erreur.'); }
+                })
+                .fail(function() { alert('Erreur réseau.'); });
+            }
+            </script>
     <?php endif; ?>
     <?php if (isset($_GET['action']) && $_GET['action'] == 'tableexport' && isset($_GET['id']) && $_GET['id'] != '') : ?>
         <!-- Inclure SheetJS -->

@@ -51,7 +51,7 @@ endif;
 
                                 <label for="id-vehicule-vg">Véhicule</label>
 
-                                <select id="id-vehicule-vg" name="id-vehicule-vg">
+                                <select id="id-vehicule-vg" name="id-vehicule-vg" required>
                                     <?php $affectationRepo = new AffectationRepository($con);
                                     foreach ($affectationRepo->findActiveByContext(getContextRegions(), getContextEntities()) as $r):
                                         echo "<option value='" . $r['id_affectation'] . "'>" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
@@ -78,7 +78,7 @@ endif;
 
                                 <label for="typechargement-vg">Type de chargement</label>
 
-                                <select id="typechargement-vg" name="typechargement-vg">
+                                <select id="typechargement-vg" name="typechargement-vg" required>
                                     <?php $voyageRepo = new VoyageRepository($con);
                                     foreach ($voyageRepo->findAllTypesChargement() as $r):
                                         echo "<option value='" . $r['id_type_chargement'] . "' val-min='" . h($r['valeur_min']) . "' val-max='" . h($r['valeur_max']) . "'>" . h($r['lib_type_chargement']) . "</option>";
@@ -102,7 +102,7 @@ endif;
                             <div class="mb-3">
                                 <label for="trajet-list-vg">Trajet</label>
                                 <div class="input-group">
-                                    <select id="trajet-list-vg" role="trajet">
+                                    <select id="trajet-list-vg" role="trajet" required>
                                         <?php $trajetRepo = new TrajetRepository($con);
                                         foreach ($trajetRepo->findAll() as $r):
                                             echo "<option value='" . $r['id_destination'] . "' dest-km='" . h($r['distance_destination']) . "'>" . h($r['lib_destination']) . " (" . h($r['distance_destination']) . " km)</option>";
@@ -204,9 +204,11 @@ endif;
         var valid = true
         $('#form-new-voyage *[required]').each((e, el) => {
             $(el).removeClass('is-invalid')
+            $(el).closest('.ts-wrapper').removeClass('is-invalid')
             if ($(el).val() == '') {
                 valid = false
                 $(el).addClass('is-invalid')
+                $(el).closest('.ts-wrapper').addClass('is-invalid')
             }
         })
         if (!valid) {

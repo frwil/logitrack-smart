@@ -143,7 +143,7 @@ class VehiculeRepository extends BaseRepository
         return $this->select(
             "SELECT * FROM vehicule
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_vehicule = vehicule.id_vehicule
-             WHERE is_ferme = 0 AND $where",
+             WHERE affectation_vehicule.is_ferme = 0 AND affectation_vehicule.is_deleted = 0 AND $where",
             $params
         );
     }

@@ -55,37 +55,23 @@ if (isset($_POST['lignes'])):
                 trim($row->{"Entité"})
             );
 
-            print_r($row);
         endfor;
         mysqli_commit($con);
         die(json_encode(['success' => true]));
     } catch (mysqli_sql_exception $e) {
         mysqli_rollback($con);
-        print_r($e);
         die(json_encode(['success' => false, 'error' => 'Erreur lors de l\'import']));
     }
 
 endif;
 ?>
-<html>
-
-<head></head>
-
-<body>
-    <form class="input-group col-4 mb-5">
-        <input type="file" class="form-control" id="myFile" />
-        <button class="btn ml-2" type="submit" id="upload-btn">
-            Upload
-        </button>
-    </form>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-    <script
-        src="https://cdn.jsdelivr.net/npm/xlsx@0.16.8/dist/xlsx.full.min.js"
-        integrity="sha256-Ic7HP804IrYks4vUqX1trFF1Nr33RjONeJESZnYxsOY="
-        crossorigin="anonymous">
-    </script>
-    <script>
+<form class="input-group col-4 mb-5">
+    <input type="file" class="form-control" id="myFile" />
+    <button class="btn ml-2" type="submit" id="upload-btn">
+        Upload
+    </button>
+</form>
+<script>
         let selectedFile;
 
         document.getElementById("myFile").addEventListener("change", (event) => {
@@ -132,6 +118,3 @@ endif;
             };
         });
     </script>
-</body>
-
-</html>

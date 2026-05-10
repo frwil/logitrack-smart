@@ -7,7 +7,7 @@
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Immatriculation</th><th>Marque</th><th>Modèle</th><th>Chassis</th><th>1ère utilisation</th><th>Expir. carte grise</th><th>Nb. places</th><th>Carburant</th><th>Puissance</th><th>Capacité</th><th></th></tr></thead><tbody>";
     $i = 1;
     foreach ($rows as $r):
-        $tableau .= "<tr><td>$i</td><td>" . h($r['immatriculation_vehicule']) . "</td><td>" . h($r['nom_marque']) . "</td><td>" . h($r['nom_modele_vehicule']) . "</td><td>" . h($r['chassis_vehicule']) . "</td><td>" . ($r['premiere_utilisation'] ? date('d M Y', strtotime($r['premiere_utilisation'])) : '') . "</td><td>" . ($r['expiration_carte_grise'] ? date('d M Y', strtotime($r['expiration_carte_grise'])) : '') . "</td><td>" . h($r['nb_place']) . "</td><td>" . h($r['type_carburant']) . "</td><td>" . h($r['puissance_vehicule']) . " CV</td><td>" . h($r['capacite_consommation_vehicule']) . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_vehicule) ? "<button class='btn btn-primary' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-vh' data-bs-immat='" . $r['id_vehicule'] . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array('del', $rights_vehicule) ? "<button class='btn btn-danger' title='Supprimer' onclick='delVehicule(\"" . h($r['immatriculation_vehicule']) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+        $tableau .= "<tr><td>$i</td><td>" . h($r['immatriculation_vehicule']) . "</td><td>" . h($r['nom_marque']) . "</td><td>" . h($r['nom_modele_vehicule']) . "</td><td>" . h($r['chassis_vehicule']) . "</td><td>" . ($r['premiere_utilisation'] ? date('d M Y', strtotime($r['premiere_utilisation'])) : '') . "</td><td>" . ($r['expiration_carte_grise'] ? date('d M Y', strtotime($r['expiration_carte_grise'])) : '') . "</td><td>" . h($r['nb_place']) . "</td><td>" . h($r['type_carburant']) . "</td><td>" . h($r['puissance_vehicule']) . " CV</td><td>" . h($r['capacite_consommation_vehicule']) . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_vehicule) ? "<button class='btn btn-primary' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-vh' data-bs-immat='" . h($r['immatriculation_vehicule']) . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array('del', $rights_vehicule) ? "<button class='btn btn-danger' title='Supprimer' onclick='delVehicule(\"" . h($r['immatriculation_vehicule']) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         $i++;
     endforeach;
     $tableau .= "</tbody></table>";
@@ -125,9 +125,11 @@
         var valid = true
         $('#form-upd-vehicule *[required]').each((e, el) => {
             $(el).removeClass('is-invalid')
+            $(el).closest('.ts-wrapper').removeClass('is-invalid')
             if ($(el).val() == '') {
                 valid = false
                 $(el).addClass('is-invalid')
+                $(el).closest('.ts-wrapper').addClass('is-invalid')
             }
         })
         if (!valid) {

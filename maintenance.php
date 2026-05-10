@@ -75,7 +75,7 @@ function getTableauCentreCout()
         $table = "<table id='table-centrecouts' class='table table-striped'><thead><tr><th>Centre de coûts</th><th></th></tr></thead><tbody>";
         foreach ($rows as $r):
             $hash = $r['id_centre_cout'];
-            $table .= "<tr><td>" . h($r['lib_centre_cout']) . "</td><td><div class='btn-group'>" . (in_array("updCentreCout", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le centre de coûts' data-bs-toggle='modal' data-bs-target='#modal-upd-centrecout' data-bs-id-cc='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delCentreCout", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delCentreCout(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div>";
+            $table .= "<tr><td>" . h($r['nom_centre_cout']) . "</td><td><div class='btn-group'>" . (in_array("updCentreCout", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le centre de coûts' data-bs-toggle='modal' data-bs-target='#modal-upd-centrecout' data-bs-id-cc='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delCentreCout", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delCentreCout(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div>";
         endforeach;
         return "<a class='btn btn-primary' href='?page=maintenances&subpage=centreCouts&action=new'>Nouveau Centre de coûts</a><hr>" . $table . "</tbody></table>";
     else :
@@ -89,15 +89,61 @@ function getTableauBonsReparation()
     if (in_array("viewBonsReparation", $rights_maintenance)):
         $repo = new MaintenanceRepository($con);
         $rows = $repo->findAllBonsReparationByContext(getContextRegions(), getContextEntities());
-        $table = "<table id='table-centrecouts' class='table table-striped responsive'><thead><tr><th>N°</th><th>Véhicule</th><th>Date d'entrée</th><th>Diagnostic</th><th>Type d'exécution</th><th>Prestataire</th><th>Montant</th><th>Opération additionnelle</th><th>Montant opération</th><th>Montant réel</th><th>Destination</th><th>Durée réparation</th><th>Date de justification</th><th>Centre de coûts</th><th>Date prévue de sortie</th><th>Date effective de fin des travaux</th><th>Observations</th><th></th></tr></thead><tbody>";
+        $table = "<table id='table-bons-reparation' class='table table-striped responsive'><thead><tr><th>N°</th><th>Véhicule</th><th>Date d'entrée</th><th>Diagnostic</th><th>Type d'exécution</th><th>Prestataire</th><th>Montant</th><th>Opération additionnelle</th><th>Montant opération</th><th>Montant réel</th><th>Destination</th><th>Durée réparation</th><th>Date de justification</th><th>Centre de coûts</th><th>Date prévue de sortie</th><th>Date effective de fin des travaux</th><th>Observations</th><th></th></tr></thead><tbody>";
         foreach ($rows as $r):
             $hash = $r['id_bon_reparation'];
-            $table .= "<tr><td>" . h($r['num_bon_reparation']) . "</td><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . ($r['date_entree'] ? date('d-m-Y', strtotime($r['date_entree'])) : '') . "</td><td>" . h($r['diagnostic']) . "</td><td>" . ($r['type_execution'] == '0' ? "Interne" : "Externe") . "</td><td>" . h($r['nom_prestataire']) . "</td><td>" . h($r['montant_reparation']) . "</td><td>" . h($r['lib_plus_ou_moins_value']) . "</td><td>" . h($r['plus_ou_moins_value_valeur']) . "</td><td>" . ($r['montant_reparation'] + $r['plus_ou_moins_value_valeur'] * ($r['type_plus_ou_moins_value'] == 0 ? 1 : -1)) . "</td><td>" . h($r['destination_bon']) . "</td><td>" . h($r['duree_reparation']) . "</td><td>" . ($r['date_justification'] == '' ? "" : date('d-m-Y', strtotime($r['date_justification']))) . "</td><td>" . h($r['lib_centre_cout']) . "</td><td>" . ($r['date_prevue_sortie'] == "" ? "" : date('d-m-Y', strtotime($r['date_prevue_sortie']))) . "</td><td>" . ($r['date_fin_reparation'] == "" ? "" : date('d-m-Y', strtotime($r['date_fin_reparation']))) . "</td><td>" . h($r['observations']) . "</td><td><div class='btn-group'>" . (in_array("updBonsReparation", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-bonsReparation' data-bs-id-cc='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delBonsReparation", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delBonsReparation(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+            $table .= "<tr><td>" . h($r['num_bon_reparation']) . "</td><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . ($r['date_entree'] ? date('d-m-Y', strtotime($r['date_entree'])) : '') . "</td><td>" . h($r['diagnostic']) . "</td><td>" . ($r['type_execution'] == '0' ? "Interne" : "Externe") . "</td><td>" . h($r['nom_prestataire']) . "</td><td>" . h($r['montant_reparation']) . "</td><td>" . h($r['lib_plus_ou_moins_value']) . "</td><td>" . h($r['plus_ou_moins_value_valeur']) . "</td><td>" . ($r['montant_reparation'] + $r['plus_ou_moins_value_valeur'] * ($r['type_plus_ou_moins_value'] == 0 ? 1 : -1)) . "</td><td>" . h($r['destination_bon']) . "</td><td>" . h($r['duree_reparation']) . "</td><td>" . ($r['date_justification'] == '' ? "" : date('d-m-Y', strtotime($r['date_justification']))) . "</td><td>" . h($r['nom_centre_cout']) . "</td><td>" . ($r['date_prevue_sortie'] == "" ? "" : date('d-m-Y', strtotime($r['date_prevue_sortie']))) . "</td><td>" . ($r['date_fin_reparation'] == "" ? "" : date('d-m-Y', strtotime($r['date_fin_reparation']))) . "</td><td>" . h($r['observations']) . "</td><td><div class='btn-group'>" . (in_array("updBonsReparation", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-bonsReparation' data-bs-id-br='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delBonsReparation", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delBonsReparation(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         endforeach;
         return "<a class='btn btn-primary' href='?page=maintenances&subpage=suiviBonsReparation&action=new'>Nouveau Bon de réparation</a><hr>" . $table . "<tfoot></tfoot></tbody></table>";
     else :
         return "<div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>";
     endif;
+}
+
+function getDashboardCards()
+{
+    global $con;
+    $repo = new MaintenanceRepository($con);
+    $regionIds = getContextRegions();
+    $entiteIds = getContextEntities();
+
+    $vidangeAlerts = $repo->countVidangeAlerts($regionIds, $entiteIds);
+    $activeRepairs = $repo->countActiveRepairs($regionIds, $entiteIds);
+    $monthlyCost = $repo->sumMonthlyCost($regionIds, $entiteIds);
+    $immobilized = $repo->countImmobilizedVehicles($regionIds, $entiteIds);
+
+    $html = '<div class="row g-3 mb-3">';
+
+    $alertClass = $vidangeAlerts['alertes'] > 0 ? 'lt-stat-danger' : 'lt-stat-success';
+    $html .= '<div class="col-md-3"><div class="lt-card lt-stat-card ' . $alertClass . '">';
+    $html .= '<div class="lt-stat-icon"><i class="fa fa-exclamation-triangle"></i></div>';
+    $html .= '<div class="lt-stat-value">' . $vidangeAlerts['alertes'] . ' / ' . $vidangeAlerts['total'] . '</div>';
+    $html .= '<div class="lt-stat-label">Alertes vidange</div>';
+    $html .= '</div></div>';
+
+    $repairClass = $activeRepairs > 0 ? 'lt-stat-warning' : 'lt-stat-success';
+    $html .= '<div class="col-md-3"><div class="lt-card lt-stat-card ' . $repairClass . '">';
+    $html .= '<div class="lt-stat-icon"><i class="fa fa-tools"></i></div>';
+    $html .= '<div class="lt-stat-value">' . $activeRepairs . '</div>';
+    $html .= '<div class="lt-stat-label">Bons de réparation ouverts</div>';
+    $html .= '</div></div>';
+
+    $html .= '<div class="col-md-3"><div class="lt-card lt-stat-card">';
+    $html .= '<div class="lt-stat-icon"><i class="fa fa-euro-sign"></i></div>';
+    $html .= '<div class="lt-stat-value">' . number_format($monthlyCost, 0, ',', ' ') . ' ' . devise() . '</div>';
+    $html .= '<div class="lt-stat-label">Coût maintenance (mois)</div>';
+    $html .= '</div></div>';
+
+    $rate = $immobilized['total'] > 0 ? round($immobilized['immobilises'] / $immobilized['total'] * 100) : 0;
+    $immobClass = $rate > 20 ? 'lt-stat-danger' : ($rate > 10 ? 'lt-stat-warning' : 'lt-stat-success');
+    $html .= '<div class="col-md-3"><div class="lt-card lt-stat-card ' . $immobClass . '">';
+    $html .= '<div class="lt-stat-icon"><i class="fa fa-truck"></i></div>';
+    $html .= '<div class="lt-stat-value">' . $immobilized['immobilises'] . ' / ' . $immobilized['total'] . '</div>';
+    $html .= '<div class="lt-stat-label">Véhicules immobilisés</div>';
+    $html .= '</div></div>';
+
+    $html .= '</div>';
+    return $html;
 }
 
 /* POST handled by MaintenanceController — see controllers/router.php */
@@ -257,9 +303,11 @@ function getPremiereSemaineDuMois($date)
             var valid = true
             $('#modal-upd-relevekms *[required]').each((e, el) => {
                 $(el).removeClass('is-invalid')
+                $(el).closest('.ts-wrapper').removeClass('is-invalid')
                 if ($(el).val() == '') {
                     valid = false
                     $(el).addClass('is-invalid')
+                    $(el).closest('.ts-wrapper').addClass('is-invalid')
                 }
             })
             if (!valid) {
@@ -346,7 +394,7 @@ function getPremiereSemaineDuMois($date)
                         $('#contact-upd-pt').val(v.contact_prestataire)
                         $('#localisation-upd-pt').val(v.localisation_prestataire)
                         $('#id-prestataire').html(v.nom_prestataire)
-                        $('#id-upd-pt').val(v.id_pt)
+                        $('#id-upd-pt').val(v.id_prestataire)
                     } else {
                         showError(e.error || "Erreur lors du chargement")
                     }
@@ -360,9 +408,11 @@ function getPremiereSemaineDuMois($date)
             var valid = true
             $('#form-upd-pt *[required]').each((e, el) => {
                 $(el).removeClass('is-invalid')
+                $(el).closest('.ts-wrapper').removeClass('is-invalid')
                 if ($(el).val() == '') {
                     valid = false
                     $(el).addClass('is-invalid')
+                    $(el).closest('.ts-wrapper').addClass('is-invalid')
                 }
             })
             if (!valid) {
@@ -449,7 +499,7 @@ function getPremiereSemaineDuMois($date)
 
                             <label for="vh-upd-vd">Véhicule</label>
 
-                            <select id="vh-upd-vd" name="vh-upd-vd">
+                            <select id="vh-upd-vd" name="vh-upd-vd" required>
                                 <?php $affRepo = new AffectationRepository($con);
                                 foreach ($affRepo->findActiveByContext(getContextRegions(), getContextEntities()) as $r):
                                     $affHash = $r['id_affectation'];
@@ -471,7 +521,7 @@ function getPremiereSemaineDuMois($date)
 
                             <label for="id-upd-pt-vd">Prestataire</label>
 
-                            <select id="id-upd-pt-vd" name="id-upd-pt-vd">
+                            <select id="id-upd-pt-vd" name="id-upd-pt-vd" required>
                                 <?php $ptRepo = new MaintenanceRepository($con);
                                 foreach ($ptRepo->findAllPrestataires() as $r):
                                     echo "<option value='" . $r['id_prestataire'] . "'>" . h($r['nom_prestataire']) . "</option>";
@@ -513,7 +563,7 @@ function getPremiereSemaineDuMois($date)
                         $('#km-upd-av-vd').val(v.km_vidange)
                         $('#km-upd-next-vd').val(v.km_prochaine_vidange)
                         $('#id-upd-pt-vd option[value="' + v.id_prestataire + '"]').prop('selected', true)
-                        $('#comment-upd-vd').html(v.commentaire_vidange)
+                        $('#comment-upd-vd').val(v.commentaire_vidange)
                     } else {
                         showError(e.error || "Erreur lors du chargement")
                     }
@@ -528,9 +578,11 @@ function getPremiereSemaineDuMois($date)
             var valid = true
             $('#form-upd-vidange *[required]').each((e, el) => {
                 $(el).removeClass('is-invalid')
+                $(el).closest('.ts-wrapper').removeClass('is-invalid')
                 if ($(el).val() == '') {
                     valid = false
                     $(el).addClass('is-invalid')
+                    $(el).closest('.ts-wrapper').addClass('is-invalid')
                 }
             })
             if (!valid) {
@@ -684,9 +736,11 @@ function getPremiereSemaineDuMois($date)
             var valid = true
             $('#form-upd-cc *[required]').each((e, el) => {
                 $(el).removeClass('is-invalid')
+                $(el).closest('.ts-wrapper').removeClass('is-invalid')
                 if ($(el).val() == '') {
                     valid = false
                     $(el).addClass('is-invalid')
+                    $(el).closest('.ts-wrapper').addClass('is-invalid')
                 }
             })
             if (!valid) {
@@ -726,9 +780,9 @@ function getPremiereSemaineDuMois($date)
                 }).done((e) => {
                     if (e.success) {
                         let v = e.data
-                        $('#nom-upd-cc').val(v.lib_centre_cout)
-                        $('#id-prestataire').html(v.lib_centre_cout)
-                        $('#id-upd-cc').val(v.id_cc)
+                        $('#nom-upd-cc').val(v.nom_centre_cout)
+                        $('#id-centrecout').html(v.nom_centre_cout)
+                        $('#id-upd-cc').val(v.id_centre_cout)
                     } else {
                         showError(e.error || "Erreur lors du chargement")
                     }
@@ -757,9 +811,28 @@ function getPremiereSemaineDuMois($date)
             }
         }
     </script>
-    <?php elseif ($_GET['subpage'] == 'suiviBonsReparation') : include("modalNewSuiviBonsReparation.php");
-    if (isset($_GET['action']) && $_GET['action'] == 'new' && in_array("saveBonsReparation", $rights_maintenance)):
-    ?>
+    <?php elseif ($_GET['subpage'] == 'suiviBonsReparation') : include("modalNewSuiviBonsReparation.php"); include("modalUpdBonsReparation.php"); ?>
+        <script>
+            function delBonsReparation(id) {
+                if (confirm("Etes-vous sûr de vouloir supprimer ?")) {
+                    $.ajax({
+                        type: 'post',
+                        data: 'del-br-id=' + id,
+                        dataType: 'json'
+                    }).done((e) => {
+                        if (e.success) {
+                            showSuccess('Opération effectuée!')
+                            location.reload()
+                        } else {
+                            showError(e.error || "Echec de l'opération!")
+                        }
+                    }).fail((jqXHR) => {
+                        showError(jqXHR.responseJSON?.error || "Echec de l'opération!")
+                    })
+                }
+            }
+        </script>
+    <?php if (isset($_GET['action']) && $_GET['action'] == 'new' && in_array("saveBonsReparation", $rights_maintenance)): ?>
         <script>
             setTimeout(() => {
                 openModalSuiviBonsReparation()
@@ -780,3 +853,117 @@ function getPremiereSemaineDuMois($date)
         display: block
     }
 </style>
+<?php
+function getDashboardCharts()
+{
+    $html = '<div class="row g-3 mb-3">';
+    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Évolution des coûts (12 mois)</h2></div>';
+    $html .= '<div id="chart-budget" style="height: 350px;"></div></div></div>';
+    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Comparaison des prestataires</h2></div>';
+    $html .= '<div id="chart-providers" style="height: 350px;"></div></div></div>';
+    $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Coût au kilomètre par véhicule</h2></div>';
+    $html .= '<div id="chart-costkm"></div></div></div>';
+    $html .= '</div>';
+    $html .= '<script>
+    google.charts.load("current", {packages: ["corechart", "table"]});
+    google.charts.setOnLoadCallback(function() {
+        $.ajax({type:"post", data:"load-budget-projection=1", dataType:"json"})
+        .done(function(e) {
+            if (!e.data || !e.data.length) return;
+            var dt = new google.visualization.DataTable();
+            dt.addColumn("string", "Mois");
+            dt.addColumn("number", "Coût (F)");
+            e.data.forEach(function(r) { dt.addRow([r.mois, parseFloat(r.total)]); });
+            var c = new google.visualization.LineChart(document.getElementById("chart-budget"));
+            c.draw(dt, {title:"Évolution mensuelle des coûts", curveType:"function", legend:"none", colors:["#5D54A4"], chartArea:{width:"85%", height:"75%"}});
+        });
+        $.ajax({type:"post", data:"load-provider-comparison=1", dataType:"json"})
+        .done(function(e) {
+            if (!e.data || !e.data.length) return;
+            var dt = new google.visualization.DataTable();
+            dt.addColumn("string", "Prestataire");
+            dt.addColumn("number", "Nb réparations");
+            dt.addColumn("number", "Durée moy (j)");
+            dt.addColumn("number", "Coût moyen (F)");
+            e.data.forEach(function(r) { dt.addRow([r.nom_prestataire, parseInt(r.nb_reparations), parseFloat(r.duree_moyenne), parseFloat(r.cout_moyen)]); });
+            var c = new google.visualization.ColumnChart(document.getElementById("chart-providers"));
+            c.draw(dt, {title:"Performance par prestataire", colors:["#5D54A4","#7C78B8","#3D3486"], chartArea:{width:"80%", height:"70%"}});
+        });
+        $.ajax({type:"post", data:"load-cost-per-km=1&dateFrom=2024-01-01&dateTo=" + new Date().toISOString().slice(0,10), dataType:"json"})
+        .done(function(e) {
+            if (!e.data || !e.data.length) return;
+            var dt = new google.visualization.DataTable();
+            dt.addColumn("string", "Véhicule");
+            dt.addColumn("number", "Coût total (F)");
+            dt.addColumn("number", "Km parcourus");
+            dt.addColumn("number", "Coût/km (F)");
+            e.data.forEach(function(r) {
+                var km = parseFloat(r.km_max) - parseFloat(r.km_min);
+                var coutKm = km > 0 ? parseFloat(r.total_cout) / km : 0;
+                dt.addRow([r.immatriculation_vehicule, parseFloat(r.total_cout), km, coutKm]);
+            });
+            var t = new google.visualization.Table(document.getElementById("chart-costkm"));
+            t.draw(dt, {showRowNumber:true, width:"100%", height:"100%", page:"enable", pageSize:15});
+        });
+    });
+    </script>';
+    return $html;
+}
+function getHealthScores()
+{
+    global $con;
+    $repo = new MaintenanceRepository($con);
+    $rows = $repo->vehicleHealthScores(getContextRegions(), getContextEntities());
+    if (!count($rows)) return '<div class="alert alert-info">Aucun véhicule actif trouvé.</div>';
+
+    $html = '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title">Score de santé des véhicules</h2></div>';
+    $html .= '<table id="table-health-scores" class="table table-striped no-datatable"><thead><tr>
+        <th>Véhicule</th><th>Chauffeur</th><th>Km actuel</th><th>Proch. vidange</th>
+        <th>Pannes (6 mois)</th><th>Coût total (F)</th><th>Score</th><th>État</th></tr></thead><tbody>';
+    foreach ($rows as $r) {
+        $score = (int)$r['score'];
+        $color = $score >= 70 ? 'success' : ($score >= 40 ? 'warning' : 'danger');
+        $etat = $score >= 70 ? 'Bon' : ($score >= 40 ? 'Moyen' : 'Critique');
+        $html .= '<tr>
+            <td>' . h($r['immatriculation_vehicule']) . '</td>
+            <td>' . h($r['nom_chauffeur']) . '</td>
+            <td>' . ($r['km_actuel'] ?? '-') . '</td>
+            <td>' . ($r['km_prochaine_vidange'] ?? '-') . '</td>
+            <td>' . (int)($r['nb_pannes_6mois'] ?? 0) . '</td>
+            <td>' . number_format((float)($r['total_cout'] ?? 0), 0, ',', ' ') . '</td>
+            <td><span class="lt-badge lt-badge-' . $color . '">' . $score . '/100</span></td>
+            <td><span class="text-' . $color . ' fw-bold">' . $etat . '</span></td></tr>';
+    }
+    $html .= '</tbody></table></div>';
+    $html .= '<script>$("#table-health-scores").DataTable({order:[[6,"asc"]], pageLength:25, destroy:true});</script>';
+    return $html;
+}
+
+function getUpcomingVidanges()
+{
+    global $con;
+    $repo = new MaintenanceRepository($con);
+    $rows = $repo->upcomingVidanges(60, getContextRegions(), getContextEntities());
+    if (!count($rows)) return '<div class="alert alert-info">Aucune vidange à prévoir dans les 60 jours.</div>';
+
+    $html = '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title">Planification des vidanges à venir (60 jours)</h2></div>';
+    $html .= '<table id="table-upcoming-vidanges" class="table table-striped no-datatable"><thead><tr>
+        <th>Véhicule</th><th>Chauffeur</th><th>Km actuel</th><th>Proch. vidange</th>
+        <th>Km restants</th><th>Km/jour</th><th>Jours estimés</th><th>Urgence</th></tr></thead><tbody>';
+    foreach ($rows as $r) {
+        $urgenceClass = $r['urgence'] === 'Dépassée' ? 'danger' : ($r['urgence'] === 'Urgent' ? 'warning' : ($r['urgence'] === 'Bientôt' ? 'info' : 'success'));
+        $html .= '<tr>
+            <td>' . h($r['immatriculation_vehicule']) . '</td>
+            <td>' . h($r['nom_chauffeur']) . '</td>
+            <td>' . ($r['km_actuel'] ?? '-') . '</td>
+            <td>' . ($r['km_prochaine_vidange'] ?? '-') . '</td>
+            <td>' . (int)($r['km_restant'] ?? 0) . '</td>
+            <td>' . ($r['km_moyen_jour'] ?? '-') . '</td>
+            <td>' . (int)($r['jours_estimes'] ?? 0) . '</td>
+            <td><span class="lt-badge lt-badge-' . $urgenceClass . '">' . h($r['urgence']) . '</span></td></tr>';
+    }
+    $html .= '</tbody></table></div>';
+    $html .= '<script>$("#table-upcoming-vidanges").DataTable({order:[[6,"asc"]], pageLength:25, destroy:true});</script>';
+    return $html;
+}
+?>

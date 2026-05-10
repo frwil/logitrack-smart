@@ -4,7 +4,7 @@ if (isset($_POST['load-cc-br'])):
     $centresCouts = $maintenanceRepo->findAllCentresCouts();
     $options = "";
     foreach ($centresCouts as $r):
-        $options .= "<option value='" . $r['id_centre_cout'] . "'>" . h($r['lib_centre_cout']) . "</option>";
+        $options .= "<option value='" . $r['id_centre_cout'] . "'>" . h($r['nom_centre_cout']) . "</option>";
     endforeach;
     if (count($centresCouts) == 0) $options = "<option value=''></option>";
     die(json_encode(['success' => true, 'html' => $options]));
@@ -30,7 +30,7 @@ endif;
 
                             <label for="vh-br">Véhicule</label>
 
-                            <select id="vh-br" name="vh-br">
+                            <select id="vh-br" name="vh-br" required>
                                 <?php $affectationRepo = new AffectationRepository($con);
                                 foreach ($affectationRepo->findActiveByContext(getContextRegions(), getContextEntities()) as $r):
                                     echo "<option value='" . $r['id_affectation'] . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $r['id_affectation'] ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
@@ -57,7 +57,7 @@ endif;
 
                             <label for="type-execution-br">Type d'exécution</label>
 
-                            <select id="type-execution-br" name="type-execution-br">
+                            <select id="type-execution-br" name="type-execution-br" required>
                                 <option value="0">Interne</option>
                                 <option value="1">Externe</option>
                             </select>
@@ -68,7 +68,7 @@ endif;
                         <div class="mb-3">
                             <label for="prestataire-br">Prestataire</label>
                             <div class="input-group">
-                                <select id="prestataire-br" name="prestataire-br">
+                                <select id="prestataire-br" name="prestataire-br" required>
                                     <?php $maintenanceRepo = new MaintenanceRepository($con);
                                     $prestataires = $maintenanceRepo->findAllPrestataires();
                                     foreach ($prestataires as $r):
@@ -92,7 +92,7 @@ endif;
 
                             <label for="plus-moins-br">Type Valeur additionnelle</label>
 
-                            <select id="plus-moins-br" name="plus-moins-br">
+                            <select id="plus-moins-br" name="plus-moins-br" required>
                                 <?php $plusOuMoins = $maintenanceRepo->findAllPlusOuMoinsValue();
                                 foreach ($plusOuMoins as $r):
                                     echo "<option value='" . $r['id_plus_ou_moins_value'] . "'>" . h($r['lib_plus_ou_moins_value']) . "</option>";
@@ -135,7 +135,7 @@ endif;
                                     <?php $maintenanceRepo = new MaintenanceRepository($con);
                                     $centresCouts = $maintenanceRepo->findAllCentresCouts();
                                     foreach ($centresCouts as $r):
-                                        echo "<option value='" . $r['id_centre_cout'] . "'>" . h($r['lib_centre_cout']) . "</option>";
+                                        echo "<option value='" . $r['id_centre_cout'] . "'>" . h($r['nom_centre_cout']) . "</option>";
                                     endforeach;
                                     if (count($centresCouts) == 0) echo "<option value=''></option>";
                                     ?>
@@ -176,9 +176,11 @@ endif;
         var valid = true
         $('#form-new-br *[required]').each((e, el) => {
             $(el).removeClass('is-invalid')
+            $(el).closest('.ts-wrapper').removeClass('is-invalid')
             if ($(el).val() == '') {
                 valid = false
                 $(el).addClass('is-invalid')
+                $(el).closest('.ts-wrapper').addClass('is-invalid')
             }
         })
         if (!valid) {

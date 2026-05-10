@@ -56,33 +56,47 @@ $routes = [
     'id-chauffeur-forModal' => [$chauffeurCtrl, 'fetchByHash'],
     'id-chauffeur'        => [$chauffeurCtrl, 'update'],
     'id-chauffeur-forDel' => [$chauffeurCtrl, 'delete'],
+    'nom-chauffeur'       => [$chauffeurCtrl, 'create'],
+    'refresh-chauffeur'   => [$chauffeurCtrl, 'refreshOptions'],
 
     // Convoyeur
     'id-convoyeur-forModal' => [$convoyeurCtrl, 'fetchByHash'],
     'id-convoyeur'        => [$convoyeurCtrl, 'update'],
     'id-convoyeur-forDel' => [$convoyeurCtrl, 'delete'],
+    'nom-convoyeur'       => [$convoyeurCtrl, 'create'],
+    'refresh-convoyeur'   => [$convoyeurCtrl, 'refreshOptions'],
 
     // Affectation
     'id-affectation-forModal' => [$affectationCtrl, 'fetchById'],
     'id-affectation'      => [$affectationCtrl, 'update'],
     'id-affectation-forDel' => [$affectationCtrl, 'delete'],
     'id-aff-toClose'      => [$affectationCtrl, 'close'],
+    'id-vehicule-aff'     => [$affectationCtrl, 'create'],
 
     // Voyage
     'id-voyage-forModal'  => [$voyageCtrl, 'fetchByHash'],
     'id-voyage'           => [$voyageCtrl, 'update'],
     'id-voyage-forDel'    => [$voyageCtrl, 'delete'],
+    'titre-vg'            => [$voyageCtrl, 'create'],
+
+    // Voyage — Dashboard
+    'load-voyages-vs-obj'     => [$voyageCtrl, 'voyagesVsObjectives'],
+    'load-top-destinations'   => [$voyageCtrl, 'topDestinations'],
+    'load-conso-per-vehicle'  => [$voyageCtrl, 'consoPerVehicle'],
+    'load-vehicules-inactifs' => [$voyageCtrl, 'vehiculesInactifs'],
 
     // Maintenance — Vidange
     'c-vd-s'              => [$maintenanceCtrl, 'fetchVidange'],
     'c-upd-vd'            => [$maintenanceCtrl, 'updateVidange'],
     'del-vd-id'           => [$maintenanceCtrl, 'deleteVidange'],
     'cd-vd-hist'          => [$maintenanceCtrl, 'historiqueVidange'],
+    'date-vd'             => [$maintenanceCtrl, 'createVidange'],
 
     // Maintenance — Prestataire
     'c-pt-s'              => [$maintenanceCtrl, 'fetchPrestataire'],
     'id-upd-pt'           => [$maintenanceCtrl, 'updatePrestataire'],
     'del-pt-id'           => [$maintenanceCtrl, 'deletePrestataire'],
+    'nom-pt'              => [$maintenanceCtrl, 'createPrestataire'],
 
     // Maintenance — Centre coûts
     'nom-cc'              => [$maintenanceCtrl, 'createCentreCout'],
@@ -94,37 +108,65 @@ $routes = [
     'semPer'              => [$maintenanceCtrl, 'fetchPeriodes'],
     'vhPer'               => [$maintenanceCtrl, 'fetchKmReleve'],
     'updRel'              => [$maintenanceCtrl, 'updateReleve'],
+    'vh-releve-kms'       => [$maintenanceCtrl, 'createReleveKms'],
+
+    // Maintenance — Bon de réparation
+    'num-br'              => [$maintenanceCtrl, 'createBonReparation'],
+    'c-br-s'              => [$maintenanceCtrl, 'fetchBonReparation'],
+    'id-upd-br'           => [$maintenanceCtrl, 'updateBonReparation'],
+    'del-br-id'           => [$maintenanceCtrl, 'deleteBonReparation'],
+    'load-cc-br'          => [$maintenanceCtrl, 'fetchAllCentresCouts'],
+
+    // Maintenance — Dashboard analytics
+    'load-budget-projection'   => [$maintenanceCtrl, 'budgetProjection'],
+    'load-provider-comparison' => [$maintenanceCtrl, 'providerComparison'],
+    'load-cost-per-km'         => [$maintenanceCtrl, 'costPerKm'],
 
     // Config — Type permis
     'c-dl-s'              => [$configCtrl, 'fetchTypePermis'],
     'lib-type-upd'        => [$configCtrl, 'updateTypePermis'],
     'dl-id'               => [$configCtrl, 'deleteTypePermis'],
+    'lib-type'            => [$configCtrl, 'createTypePermis'],
 
     // Config — Document
     'nom-doc-upd'         => [$configCtrl, 'updateDocument'],
+    'nom-doc'             => [$configCtrl, 'createDocument'],
+    'id-doc-del'          => [$configCtrl, 'deleteDocument'],
 
     // Config — Folder
     'vh-folder-upd'       => [$configCtrl, 'updateFolder'],
+    'vh-folder'           => [$configCtrl, 'createFolder'],
+    'ref-folder-del'      => [$configCtrl, 'deleteFolder'],
+
+    // Config — Paramètres
+    'update-devise'       => [$configCtrl, 'updateDevise'],
 
     // Trajet
     'id-destination-forModal' => [$trajetCtrl, 'fetchByHash'],
     'id-destination'      => [$trajetCtrl, 'update'],
     'id-destination-forDel' => [$trajetCtrl, 'delete'],
+    'nom-destination'     => [$trajetCtrl, 'create'],
+    'refresh-destination' => [$trajetCtrl, 'refreshOptions'],
 
     // Marque
     'id-marque-forModal'  => [$marqueCtrl, 'fetchByHash'],
     'id-marque'           => [$marqueCtrl, 'update'],
     'id-marque-forDel'    => [$marqueCtrl, 'delete'],
+    'nom-marque'          => [$marqueCtrl, 'create'],
+    'refresh-marque'      => [$marqueCtrl, 'refresh'],
 
     // Modele
     'id-modele-forModal'  => [$modeleCtrl, 'fetchByHash'],
     'id-modele'           => [$modeleCtrl, 'update'],
     'id-modele-forDel'    => [$modeleCtrl, 'delete'],
+    'nom-modele'          => [$modeleCtrl, 'create'],
+    'refresh-modele'      => [$modeleCtrl, 'refresh'],
 
     // Objectif
     'id-objectif-forModal' => [$objectifCtrl, 'fetchByHash'],
     'id-objectif'         => [$objectifCtrl, 'update'],
     'id-objectif-forDel'  => [$objectifCtrl, 'delete'],
+    'date-objectif'       => [$objectifCtrl, 'create'],
 
     // Users
     'new-user'             => [$userCtrl, 'create'],

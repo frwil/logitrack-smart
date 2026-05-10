@@ -18,7 +18,7 @@ class AffectationRepository extends BaseRepository
              LEFT JOIN mode_utilisation_vehicule ON mode_utilisation_vehicule.id_mode_utilisation = affectation_vehicule.id_mode_utilisation
              LEFT JOIN marque_vehicule ON marque_vehicule.id_marque = vehicule.id_marque
              LEFT JOIN modele_vehicule ON modele_vehicule.id_modele_vehicule = vehicule.id_modele_vehicule
-             WHERE affectation_vehicule.id_region IN ($placeholders)
+             WHERE affectation_vehicule.is_deleted = 0 AND affectation_vehicule.id_region IN ($placeholders)
              ORDER BY date_affectation DESC",
             $params
         );
@@ -38,7 +38,7 @@ class AffectationRepository extends BaseRepository
              LEFT JOIN mode_utilisation_vehicule ON mode_utilisation_vehicule.id_mode_utilisation = affectation_vehicule.id_mode_utilisation
              LEFT JOIN marque_vehicule ON marque_vehicule.id_marque = vehicule.id_marque
              LEFT JOIN modele_vehicule ON modele_vehicule.id_modele_vehicule = vehicule.id_modele_vehicule
-             WHERE $where AND is_ferme = 0
+             WHERE affectation_vehicule.is_deleted = 0 AND $where AND is_ferme = 0
              ORDER BY date_affectation DESC",
             $params
         );
@@ -48,7 +48,7 @@ class AffectationRepository extends BaseRepository
     public function findById(int $id): ?array
     {
         return $this->selectOne(
-            "SELECT * FROM affectation_vehicule WHERE id_affectation = ?",
+            "SELECT * FROM affectation_vehicule WHERE id_affectation = ? AND is_deleted = 0",
             [$id]
         );
     }
@@ -61,7 +61,7 @@ class AffectationRepository extends BaseRepository
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
              LEFT JOIN region ON affectation_vehicule.id_region = region.id_region
-             WHERE is_ferme = 0",
+             WHERE is_ferme = 0 AND is_deleted = 0",
             []
         );
     }
@@ -74,7 +74,7 @@ class AffectationRepository extends BaseRepository
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
              LEFT JOIN region ON affectation_vehicule.id_region = region.id_region
-             WHERE is_ferme = 0 AND affectation_vehicule.id_region = ?",
+             WHERE is_ferme = 0 AND is_deleted = 0 AND affectation_vehicule.id_region = ?",
             [$regionId]
         );
     }
@@ -88,7 +88,7 @@ class AffectationRepository extends BaseRepository
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
              LEFT JOIN region ON affectation_vehicule.id_region = region.id_region
-             WHERE is_ferme = 0 AND $where",
+             WHERE is_ferme = 0 AND is_deleted = 0 AND $where",
             $params
         );
     }
@@ -100,7 +100,7 @@ class AffectationRepository extends BaseRepository
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
              LEFT JOIN region ON affectation_vehicule.id_region = region.id_region
-             WHERE is_ferme = 0 AND vehicule.id_vehicule = ? AND affectation_vehicule.id_region = ?",
+             WHERE is_ferme = 0 AND is_deleted = 0 AND vehicule.id_vehicule = ? AND affectation_vehicule.id_region = ?",
             [$vehiculeId, $regionId]
         );
     }
@@ -114,7 +114,7 @@ class AffectationRepository extends BaseRepository
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
              LEFT JOIN region ON affectation_vehicule.id_region = region.id_region
-             WHERE is_ferme = 0 AND $where AND vehicule.id_vehicule = ?",
+             WHERE is_ferme = 0 AND is_deleted = 0 AND $where AND vehicule.id_vehicule = ?",
             $params
         );
     }
@@ -131,8 +131,27 @@ class AffectationRepository extends BaseRepository
     public function deleteById(int $id): bool
     {
         return $this->exec(
-            "DELETE FROM affectation_vehicule WHERE id_affectation = ?",
+            "UPDATE affectation_vehicule SET is_deleted = 1 WHERE id_affectation = ?",
             [$id]
+        );
+    }
+
+    /** Direct insert by IDs. */
+    public function insert(
+        int $vehiculeId,
+        int $chauffeurId,
+        int $typeUtilisationId,
+        int $modeUtilisationId,
+        int $entiteId,
+        int $regionId,
+        ?string $objet,
+        string $dateDebut,
+        ?string $dateFin
+    ): int|string {
+        return $this->insertGetId(
+            "INSERT INTO affectation_vehicule (id_vehicule, id_chauffeur, id_type_utilisation, id_mode_utilisation, id_entite, id_region, objet_affectation, date_debut_affectation, date_fin_affectation, date_affectation, is_ferme)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, '0')",
+            [$vehiculeId, $chauffeurId, $typeUtilisationId, $modeUtilisationId, $entiteId, $regionId, $objet, $dateDebut, $dateFin]
         );
     }
 

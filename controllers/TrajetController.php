@@ -21,4 +21,21 @@ class TrajetController extends BaseController
         $ok = $this->repo->deleteById((int)$this->post('id-destination-forDel'));
         $ok ? $this->json() : $this->jsonError('Erreur');
     }
+
+    public function create(): never {
+        $nom = trim($this->post('nom-destination'));
+        $distance = (int)$this->post('distance-destination');
+        if ($nom === '') $this->jsonError('Le champ est obligatoire');
+        try { $this->repo->insert($nom, $distance); $this->json(); }
+        catch (\mysqli_sql_exception $e) { $this->jsonError("Erreur lors de l'enregistrement"); }
+    }
+
+    public function refreshOptions(): never {
+        $rows = $this->repo->findAll();
+        $html = '';
+        foreach ($rows as $r) {
+            $html .= "<option value='{$r['id_destination']}'>" . h($r['lib_destination']) . "</option>";
+        }
+        $this->json(['html' => $html]);
+    }
 }

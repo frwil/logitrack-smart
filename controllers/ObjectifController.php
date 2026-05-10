@@ -22,4 +22,23 @@ class ObjectifController extends BaseController
             $this->repo->deleteById((int)$this->post('id-objectif-forDel'))
         ); $this->json(); } catch (\mysqli_sql_exception $e) { $this->jsonError('Erreur'); }
     }
+
+    public function create(): never {
+        $date = $this->post('date-objectif');
+        $objectif = (int)$this->post('objectif');
+        if (!$date || !$objectif) $this->jsonError('Tous les champs sont obligatoires');
+        $regions = getContextRegions();
+        if (empty($regions)) $this->jsonError('Aucune région sélectionnée');
+        try {
+            $this->repo->transactional(function () use ($date, $objectif, $regions) {
+                foreach ($regions as $rid) {
+                    $this->repo->insert($date, $objectif, $rid);
+                }
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            if ($e->getCode() == 1062) $this->jsonError('Cet objectif existe déjà pour cette période et région');
+            $this->jsonError("Erreur lors de l'enregistrement");
+        }
+    }
 }

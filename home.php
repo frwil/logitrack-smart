@@ -187,11 +187,14 @@ if (!$renderPartial):
             <?php if (in_array('report', $rights_voyage)): ?>
                 <div class="lt-sidebar-divider"></div>
                 <div class="lt-sidebar-title">Rapports</div>
-                <a class="lt-sidebar-link" href="?page=voyages&subpage=evaluationVoyages"><i class="fa fa-chart-bar"></i> Evaluation des voyages</a>
+                <a class="lt-sidebar-link <?php if (!isset($_GET['subpage']) || $_GET['subpage'] == 'listeVoyages') echo 'active'; ?>" href="?page=voyages"><i class="fa fa-list"></i> Historique des voyages</a>
+                <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'dashboard') echo 'active'; ?>" href="?page=voyages&subpage=dashboard"><i class="fa fa-chart-bar"></i> Tableau de bord</a>
+                <a class="lt-sidebar-link" href="?page=voyages&subpage=evaluationVoyages"><i class="fa fa-chart-line"></i> Evaluation des voyages</a>
                 <a class="lt-sidebar-link" href="?page=voyages&subpage=listeVoyagesVehicules"><i class="fa fa-truck-moving"></i> Voyages / Véhicules</a>
                 <a class="lt-sidebar-link" href="?page=voyages&subpage=listeVoyagesPeriodes"><i class="fa fa-calendar-alt"></i> Voyages / Périodes</a>
             <?php endif; ?>
         <?php elseif (isset($_GET['page']) && $_GET['page'] == 'maintenances' && in_array('view', $rights_maintenance)): ?>
+            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'dashboard') echo 'active'; ?>" href="?page=maintenances&subpage=dashboard"><i class="fa fa-chart-bar"></i> Tableau de bord</a>
             <a class="lt-sidebar-link <?php if (!isset($_GET['subpage']) || $_GET['subpage'] == 'releveKms') echo 'active'; ?>" href="?page=maintenances&subpage=releveKms"><i class="fa fa-tachometer-alt"></i> Relevés kilométrage</a>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviVidanges') echo 'active'; ?>" href="?page=maintenances&subpage=suiviVidanges"><i class="fa fa-oil-can"></i> Suivi vidanges</a>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'centreCouts') echo 'active'; ?>" href="?page=maintenances&subpage=centreCouts"><i class="fa fa-euro-sign"></i> Centre de coûts</a>
@@ -239,11 +242,18 @@ if (!$renderPartial):
                     echo getTableauAffectations(); ?>
                 <?php endif; ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'voyages') : ?>
-                <?php if (!isset($_GET['subpage']) || $_GET['subpage'] == 'listeVoyages'): ?>
-                    <div class="lt-page-title">Liste des voyages de véhicules</div>
+                <?php include("voyage.php"); echo getDashboardCardsVoyages(); ?>
+                <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'dashboard'): ?>
+                    <div class="lt-page-title">Tableau de bord voyages</div>
                     <hr>
-                    <?php include("voyage.php");
-                    echo getTableauVoyages(); ?>
+                    <?php echo getDashboardChartsVoyages(); ?>
+                    <?php echo getAnomaliesVoyages(); ?>
+                    <?php echo getScoreActivite(); ?>
+                    <?php echo getProjectionMois(); ?>
+                <?php elseif (!isset($_GET['subpage']) || $_GET['subpage'] == 'listeVoyages'): ?>
+                    <div class="lt-page-title">Historique des voyages</div>
+                    <hr>
+                    <?php echo getTableauVoyages(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listeTrajets'): ?>
                     <div class="lt-page-title">Liste des trajets de voyage</div>
                     <hr>
@@ -257,22 +267,26 @@ if (!$renderPartial):
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'evaluationVoyages'): ?>
                     <div class="lt-page-title">Evaluation des voyages</div>
                     <hr>
-                    <?php include("voyage.php");
-                    echo getTableauEvaluationVoyages(); ?>
+                    <?php echo getTableauEvaluationVoyages(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listeVoyagesVehicules'): ?>
                     <div class="lt-page-title">Liste des Voyages/Véhicules/Trajets</div>
                     <hr>
-                    <?php include("voyage.php");
-                    echo getTableauVoyagesVehicules(); ?>
+                    <?php echo getTableauVoyagesVehicules(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listeVoyagesPeriodes'): ?>
                     <div class="lt-page-title">Liste des Voyages/Périodes/Trajets</div>
                     <hr>
-                    <?php include("voyage.php");
-                    echo getTableauVoyagesPeriodes(); ?>
+                    <?php echo getTableauVoyagesPeriodes(); ?>
                 <?php endif; ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'maintenances') :  ?>
                 <?php include("maintenance.php"); ?>
-                <?php if (!isset($_GET['subpage']) || $_GET['subpage'] == 'releveKms'): ?>
+                <?php echo getDashboardCards(); ?>
+                <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'dashboard'): ?>
+                    <div class="lt-page-title">Tableau de bord maintenance</div>
+                    <hr>
+                    <?php echo getDashboardCharts(); ?>
+                    <?php echo getHealthScores(); ?>
+                    <?php echo getUpcomingVidanges(); ?>
+                <?php elseif (!isset($_GET['subpage']) || $_GET['subpage'] == 'releveKms'): ?>
                     <div class="lt-page-title">Relevés de kilométrages</div>
                     <hr>
                     <?php echo getTableauReleveKMS(); ?>

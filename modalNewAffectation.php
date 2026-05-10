@@ -1,13 +1,4 @@
 <?php
-/* POST handled by AffectationController — see controllers/router.php */
-if (isset($_POST['refresh-vehicule'])):
-    $vhRepo = new VehiculeRepository($con);
-    $liste = "";
-    foreach ($vhRepo->findAllWithDetails() as $r):
-        $liste .= "<option value='" . $r['id_vehicule'] . "'>" . h($r['immatriculation_vehicule']) . "</option>";
-    endforeach;
-    die(json_encode(['success' => true, 'html' => $liste]));
-endif;
 ?>
 <div class="modal fade" id="modal-new-affectation" tabindex="-1" aria-labelledby="modal-new-affectationLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -140,29 +131,15 @@ endif;
         $('#modal-new-affectation').modal('show')
     }
 
-    function refreshMarqueOptions() {
-        $.ajax({
-            type: 'post',
-            data: 'refresh-marque=1',
-            dataType: 'json'
-        }).done((e) => {
-            if (e.success) {
-                $('#marque-vh').html(e.html)
-            } else {
-                showError(e.error || "Erreur lors du chargement")
-            }
-        }).fail((jqXHR) => {
-            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
-        })
-    }
-
     function saveAffectation() {
         var valid = true
         $('#form-new-affectation *[required]').each((e, el) => {
             $(el).removeClass('is-invalid')
+            $(el).closest('.ts-wrapper').removeClass('is-invalid')
             if ($(el).val() == '') {
                 valid = false
                 $(el).addClass('is-invalid')
+                $(el).closest('.ts-wrapper').addClass('is-invalid')
             }
         })
         if (!valid) {

@@ -37,6 +37,14 @@ class ConfigRepository extends BaseRepository
         );
     }
 
+    public function insertTypePermis(string $lib, ?string $desc): int|string
+    {
+        return $this->insertGetId(
+            "INSERT INTO type_permis_vehicule (lib_type_permis, desc_type_permis) VALUES (?, ?)",
+            [$lib, $desc]
+        );
+    }
+
     /** Permis for a specific vehicle. */
     public function findPermisByVehiculeId(int $vehiculeId): array
     {
@@ -64,12 +72,33 @@ class ConfigRepository extends BaseRepository
         );
     }
 
+    public function findDocumentByHash(string $hash): ?array
+    {
+        return $this->findDocumentById((int)$hash);
+    }
+
     public function updateDocumentById(int $id, string $nom, int $validite): bool
     {
         return $this->exec(
             "UPDATE document_vehicule SET nom_document = ?, validite_document = ?
              WHERE id_document = ?",
             [$nom, $validite, $id]
+        );
+    }
+
+    public function insertDocument(string $nom, int $validite): int|string
+    {
+        return $this->insertGetId(
+            "INSERT INTO document_vehicule (nom_document, validite_document) VALUES (?, ?)",
+            [$nom, $validite]
+        );
+    }
+
+    public function deleteDocumentById(int $id): bool
+    {
+        return $this->exec(
+            "DELETE FROM document_vehicule WHERE id_document = ?",
+            [$id]
         );
     }
 
@@ -87,7 +116,7 @@ class ConfigRepository extends BaseRepository
              LEFT JOIN chauffeur c ON c.id_chauffeur = affectation_vehicule.id_chauffeur
              LEFT JOIN marque_vehicule ON marque_vehicule.id_marque = vehicule.id_marque
              LEFT JOIN entite ON entite.id_entite = vehicule.id_entite
-             WHERE is_ferme = 0 AND affectation_vehicule.id_region = ?
+             WHERE is_ferme = 0 AND affectation_vehicule.is_deleted = 0 AND affectation_vehicule.id_region = ?
              ORDER BY immatriculation_vehicule",
             [$regionId]
         );
@@ -106,7 +135,7 @@ class ConfigRepository extends BaseRepository
              LEFT JOIN chauffeur c ON c.id_chauffeur = affectation_vehicule.id_chauffeur
              LEFT JOIN marque_vehicule ON marque_vehicule.id_marque = vehicule.id_marque
              LEFT JOIN entite ON entite.id_entite = vehicule.id_entite
-             WHERE is_ferme = 0 AND $where
+             WHERE is_ferme = 0 AND affectation_vehicule.is_deleted = 0 AND $where
              ORDER BY immatriculation_vehicule",
             $params
         );
@@ -145,6 +174,48 @@ class ConfigRepository extends BaseRepository
             "DELETE FROM dossier_vehicule_document
              WHERE id_dossier_vehicule = (SELECT id_dossier_vehicule FROM dossier_vehicule WHERE ref_dossier = ?)",
             [$refDossier]
+        );
+    }
+
+    public function ensureDossierVehicule(string $refDossier): void
+    {
+        $exists = $this->selectOne(
+            "SELECT id_dossier_vehicule FROM dossier_vehicule WHERE ref_dossier = ?",
+            [$refDossier]
+        );
+        if (!$exists) {
+            $this->insertGetId(
+                "INSERT INTO dossier_vehicule (ref_dossier) VALUES (?)",
+                [$refDossier]
+            );
+        }
+    }
+
+    public function deleteDossierByRef(string $refDossier): bool
+    {
+        return $this->exec(
+            "DELETE FROM dossier_vehicule WHERE ref_dossier = ?",
+            [$refDossier]
+        );
+    }
+
+    // ---- Paramètres globaux (key-value) ----
+
+    public function getParametre(string $cle, string $default = ''): string
+    {
+        $row = $this->selectOne(
+            "SELECT valeur FROM parametres WHERE cle = ?",
+            [$cle]
+        );
+        return $row ? $row['valeur'] : $default;
+    }
+
+    public function setParametre(string $cle, string $valeur): bool
+    {
+        return $this->exec(
+            "INSERT INTO parametres (cle, valeur) VALUES (?, ?)
+             ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)",
+            [$cle, $valeur]
         );
     }
 }

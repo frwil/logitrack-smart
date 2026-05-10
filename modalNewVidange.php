@@ -15,7 +15,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="vh-vd">Véhicule</label>
-                        <select id="vh-vd" name="vh-vd">
+                        <select id="vh-vd" name="vh-vd" required>
                             <?php $affectationRepo = new AffectationRepository($con);
                             foreach ($affectationRepo->findActiveByContext(getContextRegions(), getContextEntities()) as $r):
                                 echo "<option value='" . $r['id_affectation'] . "' " . (isset($_GET['idvgch']) && $_GET['idvgch'] == $r['id_affectation'] ? "selected" : (isset($_GET['idvgch']) ? "disabled" : "")) . " >" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
@@ -33,7 +33,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="id-pt-vd">Prestataire</label>
-                        <select id="id-pt-vd" name="id-pt-vd">
+                        <select id="id-pt-vd" name="id-pt-vd" required>
                             <?php $maintenanceRepo = new MaintenanceRepository($con);
                             foreach ($maintenanceRepo->findAllPrestataires() as $r):
                                 echo "<option value='" . $r['id_prestataire'] . "'>" . h($r['nom_prestataire']) . "</option>";
@@ -59,9 +59,11 @@
         var valid=true
         $('#form-new-vidange *[required]').each((e,el)=>{
             $(el).removeClass('is-invalid')
+            $(el).closest('.ts-wrapper').removeClass('is-invalid')
             if($(el).val()==''){
                 valid=false
                 $(el).addClass('is-invalid')
+                $(el).closest('.ts-wrapper').addClass('is-invalid')
             }
         })
         if(!valid){

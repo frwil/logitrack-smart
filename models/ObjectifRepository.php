@@ -77,4 +77,12 @@ class ObjectifRepository extends BaseRepository
             [$id]
         );
     }
+
+    public function insert(string $date, int $objectif, int $regionId): int|string
+    {
+        return $this->insertGetId(
+            "INSERT INTO objectif_periode_region (date_objectif_periode, objectif, id_region) VALUES (?, ?, ?)",
+            [$date, $objectif, $regionId]
+        );
+    }
 }

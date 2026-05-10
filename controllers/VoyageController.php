@@ -56,4 +56,69 @@ class VoyageController extends BaseController
         }
         $this->jsonError('Échec de la suppression');
     }
+
+    /** Create voyage with destinations. */
+    public function create(): never
+    {
+        $trajets = json_decode($this->post('trajets-voyage'), true);
+        if (empty($trajets)) $this->jsonError('Aucun trajet ajouté');
+        try {
+            $this->voyageRepo->transactional(function () use ($trajets) {
+                $voyageId = $this->voyageRepo->insertVoyage(
+                    $this->post('titre-vg'),
+                    $this->post('date-vg'),
+                    (int)$this->post('id-vehicule-vg'),
+                    (float)$this->post('qtecarburant-vg'),
+                    $this->post('id-convoyeur-vg'),
+                    (int)$this->post('typechargement-vg'),
+                    (float)$this->post('qtechargement-vg')
+                );
+                foreach ($trajets as $destId) {
+                    $this->voyageRepo->insertVoyageVehicule((int)$voyageId, (int)$destId);
+                }
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            $this->jsonError("Erreur lors de l'enregistrement");
+        }
+    }
+
+    // ---- Dashboard N2 ----
+
+    public function voyagesVsObjectives(): never
+    {
+        $days = (int)($this->post('days') ?: 30);
+        $regionIds = getContextRegions();
+        $entiteIds = getContextEntities();
+        $data = $this->voyageRepo->dailyVoyagesVsObjectives($days, $regionIds, $entiteIds);
+        $this->json(['data' => $data]);
+    }
+
+    public function topDestinations(): never
+    {
+        $limit = (int)($this->post('limit') ?: 10);
+        $regionIds = getContextRegions();
+        $entiteIds = getContextEntities();
+        $data = $this->voyageRepo->topDestinations($limit, $regionIds, $entiteIds);
+        $this->json(['data' => $data]);
+    }
+
+    public function consoPerVehicle(): never
+    {
+        $regionIds = getContextRegions();
+        $entiteIds = getContextEntities();
+        $dateFrom = $this->post('dateFrom') ?: date('Y-m-01');
+        $dateTo = $this->post('dateTo') ?: date('Y-m-t');
+        $data = $this->voyageRepo->consoPerVehicle($regionIds, $entiteIds, $dateFrom, $dateTo);
+        $this->json(['data' => $data]);
+    }
+
+    public function vehiculesInactifs(): never
+    {
+        $days = (int)($this->post('days') ?: 7);
+        $regionIds = getContextRegions();
+        $entiteIds = getContextEntities();
+        $data = $this->voyageRepo->vehiculesInactifs($days, $regionIds, $entiteIds);
+        $this->json(['data' => $data]);
+    }
 }

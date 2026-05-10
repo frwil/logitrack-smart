@@ -332,6 +332,31 @@ table, .table {
   margin: 0;
 }
 
+/* Stat cards for dashboards */
+.lt-stat-card {
+  text-align: center;
+  padding: 1.25rem 1rem;
+}
+.lt-stat-card .lt-stat-icon {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+.lt-stat-card .lt-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.lt-stat-card .lt-stat-label {
+  font-size: 0.75rem;
+  color: var(--lt-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.25rem;
+}
+.lt-stat-danger  .lt-stat-value { color: #ef4444; }
+.lt-stat-warning .lt-stat-value { color: #f59e0b; }
+.lt-stat-success .lt-stat-value { color: #22c55e; }
+
 .lt-table-wrapper {
   background: var(--lt-surface);
   border: 1px solid var(--lt-border);

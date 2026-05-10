@@ -114,3 +114,15 @@ function getContextEntities(): array
     }
     return $_SESSION['usr-con']['users-entite'] ?? [];
 }
+
+function devise(): string
+{
+    $con = $GLOBALS['con'] ?? null;
+    if (!$con) return 'F';
+    static $devise = null;
+    if ($devise === null) {
+        $repo = new ConfigRepository($con);
+        $devise = $repo->getParametre('devise', 'F');
+    }
+    return $devise;
+}

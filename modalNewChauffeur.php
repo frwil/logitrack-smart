@@ -66,8 +66,18 @@ endif;
     }
 
     function saveChauffeur() {
-        if ($('#nom-chauffeur').val() == '') {
-            showError("Le champ est obligatoire!");
+        var valid = true
+        $('#form-new-chauffeur *[required]').each((e, el) => {
+            $(el).removeClass('is-invalid')
+            $(el).closest('.ts-wrapper').removeClass('is-invalid')
+            if ($(el).val() == '') {
+                valid = false
+                $(el).addClass('is-invalid')
+                $(el).closest('.ts-wrapper').addClass('is-invalid')
+            }
+        })
+        if (!valid) {
+            showError('Tous les champs en rouge sont obligatoires!!!')
             return false
         }
         $.ajax({
