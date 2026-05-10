@@ -51,15 +51,15 @@ class VoyageRepository extends BaseRepository
             "SELECT v.id_voyage, v.date_voyage, v.id_affectation, v.qte_carburant, v.qte_chargement,
                     vv.id_destination, dv.lib_destination, dv.distance_destination,
                     tcv.lib_type_chargement,
-                    av.id_vehicule
+                    affectation_vehicule.id_vehicule
              FROM voyage v
-             LEFT JOIN affectation_vehicule av ON av.id_affectation = v.id_affectation
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
              LEFT JOIN voyage_vehicule vv ON vv.id_voyage = v.id_voyage
              LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
              LEFT JOIN type_chargement_voyage tcv ON tcv.id_type_chargement = v.id_type_chargement
-             WHERE av.is_deleted = 0 AND av.is_ferme = 0 AND $where
+             WHERE affectation_vehicule.is_deleted = 0 AND affectation_vehicule.is_ferme = 0 AND $where
              AND v.date_voyage BETWEEN ? AND ?
-             ORDER BY av.id_vehicule, v.date_voyage, v.id_voyage",
+             ORDER BY affectation_vehicule.id_vehicule, v.date_voyage, v.id_voyage",
             $params
         );
     }
