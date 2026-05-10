@@ -102,98 +102,124 @@
 }
 function getTableauVoyagesVehicules()
 {
+    set_time_limit(120);
     global $con;
     $vehiculeRepo = new VehiculeRepository($con);
     $voyageRepo = new VoyageRepository($con);
     $trajetRepo = new TrajetRepository($con);
+
+    $dateFrom = isset($_POST['date-f']) ? date('Y-m-d', strtotime($_POST['date-f'])) : date('Y-m-01');
+    $dateTo   = isset($_POST['date-t']) ? date('Y-m-d', strtotime($_POST['date-t'])) : date('Y-m-t');
+
     $vehicleRows = $vehiculeRepo->findAllWithChauffeur();
-    $nblignes = count($vehicleRows);
-    $tableau = "<table class='table table-striped'><thead><tr><th>#</th><th>Immatriculation</th><th># Voyages</th><th># Kms</th><th>Carburant (en L)</th><th>Conso. 100km</th>";
     $destinations = $trajetRepo->findAll();
-    $nbTrajets = count($destinations);
-    $trajets = array_column($destinations, 'id_destination');
+
+    // Pre-build destination lookup: id → [lib, distance]
+    $destMap = [];
+    foreach ($destinations as $d) {
+        $destMap[(int)$d['id_destination']] = [
+            'lib' => $d['lib_destination'],
+            'distance' => (int)$d['distance_destination'],
+        ];
+    }
+
+    $regionIds = getContextRegions();
+    $entiteIds = getContextEntities();
+    $allRows = $voyageRepo->findBatchVoyagesVehicules($regionIds, $entiteIds, $dateFrom, $dateTo);
+
+    // Index: [vehicle_id][destination_id] → [voyage_ids, total_carburant]
+    $byVehDest = [];
+    foreach ($allRows as $row) {
+        $vid = (int)$row['id_vehicule'];
+        $did = (int)$row['id_destination'];
+        if (!isset($byVehDest[$vid])) $byVehDest[$vid] = [];
+        if (!isset($byVehDest[$vid][$did])) $byVehDest[$vid][$did] = ['ids' => [], 'carb' => 0];
+        $byVehDest[$vid][$did]['ids'][] = (int)$row['id_voyage'];
+        $byVehDest[$vid][$did]['carb'] += (float)$row['qte_carburant'];
+    }
+
+    $tableau = "<table class='table table-striped'><thead><tr><th>#</th><th>Immatriculation</th><th># Voyages</th><th># Kms</th><th>Carburant (en L)</th><th>Conso. 100km</th>";
     foreach ($destinations as $r):
         $tableau .= "<th>" . h($r['lib_destination']) . "</th>";
     endforeach;
     $tableau .= "</tr></thead><tbody>";
+
     $i = 1;
     $total_voyages = 0;
     $total_kms = 0;
     $total_cbt = 0;
-    $total_voyage_col = array();
-    $total_kms_col = array();
-    $voyages_array = array();
-    $k = 0;
-    $total_cbt_ligne = 0;
-    $dateFrom = isset($_POST['date-f']) ? $_POST['date-f'] : null;
-    $dateTo = isset($_POST['date-t']) ? $_POST['date-t'] : null;
+    $total_voyage_col = [];
+    $total_kms_col = [];
+    $nbTrajets = count($destinations);
+    $nblignes = count($vehicleRows);
+
     foreach ($vehicleRows as $r):
-        $voyages_array = array();
-        $v_arr = array();
-        $total_distance = 0;
-        $total_kms_ligne = 0;
-        $total_cbt_ligne = 0;
         $vid = (int)$r['id_vehicule'];
-        $tableau .= "<tr><td>$i</td><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['n_chauffeur']) . "</td><td><span id='total_vg_ln_$vid'></span></td><td><span id='total_kms_ln_$vid'></span></td><td><span id='total_cbt_ln_$vid'></span></td><td><span id='total_cbt_100_ln_$vid'></span></td>";
-        for ($j = 0; $j < count($trajets); $j++):
-            $v_arr[$trajets[$j]] = array();
-            $q1Results = $voyageRepo->findVoyageVehiculesByDestination((int)$trajets[$j], $vid, $dateFrom, $dateTo);
-            $q1Count = count($q1Results);
-            foreach ($q1Results as $r1):
-                $total_distance += $r1['dist_trajet'];
-                $total_cbt_ligne += $r1['qte_carburant'];
-                if (!in_array($r1['id_voyage'], $v_arr[$trajets[$j]])) : array_push($v_arr[$trajets[$j]], $r1['id_voyage']);
-                endif;
-                if (!in_array($r1['id_voyage'], $voyages_array)) : array_push($voyages_array, $r1['id_voyage']);
-                endif;
-            endforeach;
-            $tableau .= "<td " . ($q1Count > 0 ? "class='text-bg-success' style='background-color:#198754;color:white'>" . count($v_arr[$trajets[$j]]) : " class='text-bg-info' style='background-color:#0dcaf0;'>") . "</td>";
+        $vehData = $byVehDest[$vid] ?? [];
 
-            if ($q1Count > 0):
-                $distRow = $trajetRepo->findDistanceById((int)$trajets[$j]);
-                $kms = $distRow ? (int)$distRow['distance_destination'] : 0;
-                $total_kms_ligne = $total_distance;
-                if (!isset($total_voyage_col[$i][$j])) $total_voyage_col[$i][$j] = 0;
-                $total_voyage_col[$i][$j] += $q1Count;
-                if (!isset($total_kms_col[$i][$j])) $total_kms_col[$i][$j] = 0;
-                $total_kms_col[$i][$j] += $kms * $q1Count;
-            else :
-                $total_voyage_col[$i][$j] = 0;
-                $total_kms_col[$i][$j] = 0;
-            endif;
+        $ligneVoyages = 0;
+        $ligneKms = 0;
+        $ligneCarb = 0;
+        $voyagesArray = [];
 
-        endfor;
-        $tableau .= "</tr>";
-        $i++;
-        $tableau .= "<script>getTotalLine($vid," . count($voyages_array) . ",$total_kms_ligne,$total_cbt_ligne)</script>";
-        $total_voyages += count($voyages_array);
-        $total_kms += $total_kms_ligne;
-        $total_cbt += $total_cbt_ligne;
-        $k++;
-    endforeach;
-    $tfoot = "";
-    if ($nbTrajets > 0):
-        $total_col = array();
-        $total_k = array();
-        for ($i = 0; $i < $nblignes; $i++) {
-            if ($i == 0) {
-                $total_col[$i] = 0;
-                $total_k[$i] = 0;
-            }
-            for ($j = 0; $j < $nbTrajets; $j++) {
-                if (!isset($total_voyage_col[$i][$j])) $total_voyage_col[$i][$j] = 0;
-                if (!isset($total_col[$j])) $total_col[$j] = 0;
-                $total_col[$j] += $total_voyage_col[$i][$j];
-                if (!isset($total_kms_col[$i][$j])) $total_kms_col[$i][$j] = 0;
-                if (!isset($total_k[$j])) $total_k[$j] = 0;
-                $total_k[$j] += $total_kms_col[$i][$j];
+        foreach ($vehData as $did => $data) {
+            $cnt = count(array_unique($data['ids']));
+            $ligneVoyages += $cnt;
+            $ligneCarb += $data['carb'];
+            $dist = $destMap[$did]['distance'] ?? 0;
+            $ligneKms += $dist * $cnt;
+            foreach ($data['ids'] as $idv) {
+                $voyagesArray[$idv] = true;
             }
         }
-        $tfoot = "<tr style='font-weight:bold'><td colspan=2  class='text-bg-dark'>Total</td><td  class='text-bg-dark'>{$total_voyages}</td><td class='text-bg-dark'>{$total_kms}</td><td class='text-bg-dark'>{$total_cbt}</td><td class='text-bg-dark'>" . round($total_cbt / ($total_kms > 0 ? $total_kms : 1) * 100, 2) . "</td>";
-        for ($i = 0; $i < $nbTrajets; $i++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . (int)$total_col[$i] . "</td>";
+        $nbVoyagesUniques = count($voyagesArray);
+        $conso = $ligneKms > 0 ? round($ligneCarb / $ligneKms * 100, 2) : 0;
+
+        $tableau .= "<tr><td>$i</td><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['n_chauffeur']) . "</td>"
+            . "<td><span id='total_vg_ln_$vid'>$nbVoyagesUniques</span></td>"
+            . "<td><span id='total_kms_ln_$vid'>$ligneKms</span></td>"
+            . "<td><span id='total_cbt_ln_$vid'>$ligneCarb</span></td>"
+            . "<td><span id='total_cbt_100_ln_$vid'>$conso</span></td>";
+
+        for ($j = 0; $j < $nbTrajets; $j++):
+            $did = (int)$destinations[$j]['id_destination'];
+            $cell = $vehData[$did] ?? null;
+            $cnt = $cell ? count(array_unique($cell['ids'])) : 0;
+            $tableau .= "<td " . ($cnt > 0 ? "class='text-bg-success' style='background-color:#198754;color:white'>$cnt" : " class='text-bg-info' style='background-color:#0dcaf0;'>") . "</td>";
+
+            $kms = $cnt > 0 ? ($destMap[$did]['distance'] ?? 0) * $cnt : 0;
+            if (!isset($total_voyage_col[$i])) $total_voyage_col[$i] = [];
+            if (!isset($total_voyage_col[$i][$j])) $total_voyage_col[$i][$j] = 0;
+            $total_voyage_col[$i][$j] += $cnt;
+            if (!isset($total_kms_col[$i])) $total_kms_col[$i] = [];
+            if (!isset($total_kms_col[$i][$j])) $total_kms_col[$i][$j] = 0;
+            $total_kms_col[$i][$j] += $kms;
+        endfor;
+
+        $tableau .= "</tr>";
+        $i++;
+        $total_voyages += $nbVoyagesUniques;
+        $total_kms += $ligneKms;
+        $total_cbt += $ligneCarb;
+    endforeach;
+
+    $tfoot = "";
+    if ($nbTrajets > 0):
+        $total_col = [];
+        $total_k = [];
+        for ($r = 0; $r < $nblignes; $r++) {
+            for ($c = 0; $c < $nbTrajets; $c++) {
+                if (!isset($total_col[$c])) $total_col[$c] = 0;
+                if (!isset($total_k[$c])) $total_k[$c] = 0;
+                $total_col[$c] += $total_voyage_col[$r + 1][$c] ?? 0;
+                $total_k[$c] += $total_kms_col[$r + 1][$c] ?? 0;
+            }
+        }
+        $tfoot = "<tr style='font-weight:bold'><td colspan=2 class='text-bg-dark'>Total</td><td class='text-bg-dark'>{$total_voyages}</td><td class='text-bg-dark'>{$total_kms}</td><td class='text-bg-dark'>{$total_cbt}</td><td class='text-bg-dark'>" . round($total_cbt / ($total_kms > 0 ? $total_kms : 1) * 100, 2) . "</td>";
+        for ($c = 0; $c < $nbTrajets; $c++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . (int)$total_col[$c] . "</td>";
         $tfoot .= "</tr>";
-        $tfoot .= "<tr style='font-weight:bold'><td colspan=2  class='text-bg-dark'>Total</td><td  class='text-bg-dark'>{$total_voyages}</td><td class='text-bg-dark'>{$total_kms}</td><td></td><td></td>";
-        for ($i = 0; $i < $nbTrajets; $i++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . (int)$total_k[$i] . "</td>";
+        $tfoot .= "<tr style='font-weight:bold'><td colspan=2 class='text-bg-dark'>Total</td><td class='text-bg-dark'>{$total_voyages}</td><td class='text-bg-dark'>{$total_kms}</td><td></td><td></td>";
+        for ($c = 0; $c < $nbTrajets; $c++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . (int)$total_k[$c] . "</td>";
         $tfoot .= "</tr>";
     endif;
     $tableau .= "</tbody><tfoot>$tfoot</tfoot></table>";
@@ -202,96 +228,133 @@ function getTableauVoyagesVehicules()
 }
 function getTableauVoyagesPeriodes()
 {
+    set_time_limit(120);
     global $con;
-    $debut = date_create((isset($_POST['date-f']) ? date('Y-m-d', strtotime($_POST['date-f'])) : date('Y-m-d', strtotime(date('Y-m-01')))));
-    $fin = date_create((isset($_POST['date-t']) ? date('Y-m-d', strtotime($_POST['date-t'])) : date('Y-m-d', strtotime(date('Y-m-t')))));
-    $interval = new DateInterval('P1D');
-    $date_range = new DatePeriod($debut, $interval, $fin->add($interval));
-    $nblignes = ((int)$fin->diff($debut)->format('%a')) + 1;
+    $dateFrom = isset($_POST['date-f']) ? date('Y-m-d', strtotime($_POST['date-f'])) : date('Y-m-01');
+    $dateTo   = isset($_POST['date-t']) ? date('Y-m-d', strtotime($_POST['date-t'])) : date('Y-m-t');
+
+    $dates = [];
+    $dateCols = [];
+    $d = date_create($dateFrom);
+    $end = date_create($dateTo);
+    $end->modify('+1 day');
+    while ($d < $end) {
+        $dates[] = $d->format('Y-m-d');
+        $dateCols[] = $d->format('d M Y');
+        $d->modify('+1 day');
+    }
+
     $voyageRepo = new VoyageRepository($con);
     $trajetRepo = new TrajetRepository($con);
-    $tableau = "<table class='table table-striped'><thead><tr><th>#</th><th>Date</th><th># Voyages</th><th># Kms</th><th>Carburant (en L)</th><th>Conso. 100km</th>";
     $destinations = $trajetRepo->findAll();
-    $nbTrajets = count($destinations);
-    $trajets = array_column($destinations, 'id_destination');
+
+    // Pre-build destination lookup
+    $destMap = [];
+    foreach ($destinations as $dest) {
+        $destMap[(int)$dest['id_destination']] = [
+            'lib' => $dest['lib_destination'],
+            'distance' => (int)$dest['distance_destination'],
+        ];
+    }
+
+    $regionIds = getContextRegions();
+    $entiteIds = getContextEntities();
+    $allRows = $voyageRepo->findBatchVoyagesVehicules($regionIds, $entiteIds, $dateFrom, $dateTo);
+
+    // Index: [date][destination_id] → [voyage_ids, total_carburant]
+    $byDateDest = [];
+    foreach ($allRows as $row) {
+        $dt = $row['date_voyage'];
+        $did = (int)$row['id_destination'];
+        if (!isset($byDateDest[$dt])) $byDateDest[$dt] = [];
+        if (!isset($byDateDest[$dt][$did])) $byDateDest[$dt][$did] = ['ids' => [], 'carb' => 0];
+        $byDateDest[$dt][$did]['ids'][] = (int)$row['id_voyage'];
+        $byDateDest[$dt][$did]['carb'] += (float)$row['qte_carburant'];
+    }
+
+    $tableau = "<table class='table table-striped'><thead><tr><th>#</th><th>Date</th><th># Voyages</th><th># Kms</th><th>Carburant (en L)</th><th>Conso. 100km</th>";
     foreach ($destinations as $r):
         $tableau .= "<th>" . h($r['lib_destination']) . "</th>";
     endforeach;
     $tableau .= "</tr></thead><tbody>";
+
+    $nbTrajets = count($destinations);
+    $nblignes = count($dates);
     $i = 1;
     $total_voyages = 0;
     $total_kms = 0;
     $total_cbt = 0;
-    $total_voyage_col = array();
-    $total_kms_col = array();
-    foreach ($date_range as $date) :
-        $total_distance = 0;
-        $voyages_array = array();
-        $total_kms_ligne = 0;
-        $total_cbt_ligne = 0;
-        $dateStr = $date->format('Y-m-d');
-        $tableau .= "<tr><td>$i</td><td>" . $date->format('d M Y') . "</td><td><span id='total_vg_ln_{$date->format('dmY')}'></span></td><td><span id='total_kms_ln_{$date->format('dmY')}'></span></td><td><span id='total_cbt_ln_{$date->format('dmY')}'></span></td><td><span id='total_cbt_100_ln_{$date->format('dmY')}'></span></td>";
-        for ($j = 0; $j < count($trajets); $j++):
-            $q1Results = $voyageRepo->findVoyageVehiculesByDateDestination((int)$trajets[$j], $dateStr);
-            $q1Count = count($q1Results);
-            foreach ($q1Results as $r1):
-                $total_distance += $r1['dist_trajet'];
-                $total_cbt_ligne += $r1['qte_carburant'];
-                if (!in_array($r1['id_voyage'], $voyages_array)) : array_push($voyages_array, $r1['id_voyage']);
-                endif;
-            endforeach;
-            $tableau .= "<td " . ($q1Count > 0 ? "class='text-bg-success' style='background-color:#198754;color:white'>" . $q1Count : " class='text-bg-info' style='background-color:#0dcaf0;'>") . "</td>";
+    $total_voyage_col = [];
+    $total_kms_col = [];
 
-            if ($q1Count > 0):
-                $total_voyage_ligne++;
-                $nbv = $q1Count;
-                $distRow = $trajetRepo->findDistanceById((int)$trajets[$j]);
-                $kms = $distRow ? (int)$distRow['distance_destination'] : 0;
-                $total_kms_ligne += $kms;
-                if (!isset($total_voyage_col[$i])) :
-                    $total_voyage_col[$i] = array(0);
-                    $total_kms_col[$i] = array(0);
-                endif;
-                if (!isset($total_voyage_col[$i][$j])) :
-                    $total_voyage_col[$i][$j] = 0;
-                    $total_kms_col[$i][$j] = 0;
-                endif;
-                $total_voyage_col[$i][$j] += $q1Count;
-                $total_kms_col[$i][$j] += $kms * $q1Count;
-            else :
-                $total_voyage_col[$i][$j] = 0;
-                $total_kms_col[$i][$j] = 0;
-            endif;
+    foreach ($dates as $idx => $dateStr):
+        $dateData = $byDateDest[$dateStr] ?? [];
+        $displayDate = $dateCols[$idx];
+        $dateId = date('dmY', strtotime($dateStr));
 
-        endfor;
-        $tableau .= "</tr>";
-        $i++;
-        $tableau .= "<script>getTotalLine('{$date->format('dmY')}'," . count($voyages_array) . ",$total_distance,$total_cbt_ligne)</script>";
-        $total_voyages += count($voyages_array);
-        $total_kms += $total_kms_ligne;
-        $total_cbt += $total_cbt_ligne;
-    endforeach;
-    $tfoot = "";
-    if ($nbTrajets > 0):
-        $total_col = array();
-        $total_k = array();
-        for ($i = 0; $i < $nblignes; $i++) {
-            if ($i == 0) {
-                $total_col[$i] = 0;
-                $total_k[$i] = 0;
-            }
-            for ($j = 0; $j < $nbTrajets; $j++) {
-                if (!isset($total_col[$j])) $total_col[$j] = 0;
-                if (!isset($total_k[$j])) $total_k[$j] = 0;
-                $total_col[$j] += (isset($total_voyage_col[$i][$j]) ? $total_voyage_col[$i][$j] : 0);
-                $total_k[$j] += (isset($total_kms_col[$i][$j]) ? $total_kms_col[$i][$j] : 0);
+        $ligneVoyages = 0;
+        $ligneKms = 0;
+        $ligneCarb = 0;
+        $voyagesArray = [];
+
+        foreach ($dateData as $did => $data) {
+            $cnt = count(array_unique($data['ids']));
+            $ligneVoyages += $cnt;
+            $ligneCarb += $data['carb'];
+            $dist = $destMap[$did]['distance'] ?? 0;
+            $ligneKms += $dist * $cnt;
+            foreach ($data['ids'] as $idv) {
+                $voyagesArray[$idv] = true;
             }
         }
-        $tfoot = "<tr style='font-weight:bold'><td colspan=2  class='text-bg-dark'>Total</td><td  class='text-bg-dark'>{$total_voyages}</td><td class='text-bg-dark'>{$total_kms}</td><td class='text-bg-dark'>{$total_cbt}</td><td class='text-bg-dark'>" . round($total_cbt / ($total_kms > 0 ? $total_kms : 1) * 100, 2) . "</td>";
-        for ($i = 0; $i < $nbTrajets; $i++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . (int)$total_col[$i] . "</td>";
+        $nbVoyagesUniques = count($voyagesArray);
+        $conso = $ligneKms > 0 ? round($ligneCarb / $ligneKms * 100, 2) : 0;
+
+        $tableau .= "<tr><td>$i</td><td>$displayDate</td>"
+            . "<td><span id='total_vg_ln_$dateId'>$nbVoyagesUniques</span></td>"
+            . "<td><span id='total_kms_ln_$dateId'>$ligneKms</span></td>"
+            . "<td><span id='total_cbt_ln_$dateId'>$ligneCarb</span></td>"
+            . "<td><span id='total_cbt_100_ln_$dateId'>$conso</span></td>";
+
+        for ($j = 0; $j < $nbTrajets; $j++):
+            $did = (int)$destinations[$j]['id_destination'];
+            $cell = $dateData[$did] ?? null;
+            $cnt = $cell ? count(array_unique($cell['ids'])) : 0;
+            $tableau .= "<td " . ($cnt > 0 ? "class='text-bg-success' style='background-color:#198754;color:white'>$cnt" : " class='text-bg-info' style='background-color:#0dcaf0;'>") . "</td>";
+
+            $kms = $cnt > 0 ? ($destMap[$did]['distance'] ?? 0) * $cnt : 0;
+            if (!isset($total_voyage_col[$i])) $total_voyage_col[$i] = [];
+            if (!isset($total_voyage_col[$i][$j])) $total_voyage_col[$i][$j] = 0;
+            $total_voyage_col[$i][$j] += $cnt;
+            if (!isset($total_kms_col[$i])) $total_kms_col[$i] = [];
+            if (!isset($total_kms_col[$i][$j])) $total_kms_col[$i][$j] = 0;
+            $total_kms_col[$i][$j] += $kms;
+        endfor;
+
+        $tableau .= "</tr>";
+        $i++;
+        $total_voyages += $nbVoyagesUniques;
+        $total_kms += $ligneKms;
+        $total_cbt += $ligneCarb;
+    endforeach;
+
+    $tfoot = "";
+    if ($nbTrajets > 0):
+        $total_col = [];
+        $total_k = [];
+        for ($r = 0; $r < $nblignes; $r++) {
+            for ($c = 0; $c < $nbTrajets; $c++) {
+                if (!isset($total_col[$c])) $total_col[$c] = 0;
+                if (!isset($total_k[$c])) $total_k[$c] = 0;
+                $total_col[$c] += $total_voyage_col[$r + 1][$c] ?? 0;
+                $total_k[$c] += $total_kms_col[$r + 1][$c] ?? 0;
+            }
+        }
+        $tfoot = "<tr style='font-weight:bold'><td colspan=2 class='text-bg-dark'>Total</td><td class='text-bg-dark'>{$total_voyages}</td><td class='text-bg-dark'>{$total_kms}</td><td class='text-bg-dark'>{$total_cbt}</td><td class='text-bg-dark'>" . round($total_cbt / ($total_kms > 0 ? $total_kms : 1) * 100, 2) . "</td>";
+        for ($c = 0; $c < $nbTrajets; $c++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . (int)$total_col[$c] . "</td>";
         $tfoot .= "</tr>";
-        $tfoot .= "<tr style='font-weight:bold'><td colspan=2  class='text-bg-dark'>Total</td><td  class='text-bg-dark'>{$total_voyages}</td><td class='text-bg-dark'>{$total_kms}</td><td></td><td></td>";
-        for ($i = 0; $i < $nbTrajets; $i++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . (int)$total_k[$i] . "</td>";
+        $tfoot .= "<tr style='font-weight:bold'><td colspan=2 class='text-bg-dark'>Total</td><td class='text-bg-dark'>{$total_voyages}</td><td class='text-bg-dark'>{$total_kms}</td><td></td><td></td>";
+        for ($c = 0; $c < $nbTrajets; $c++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . (int)$total_k[$c] . "</td>";
         $tfoot .= "</tr>";
     endif;
     $tableau .= "</tbody><tfoot>$tfoot</tfoot></table>";
@@ -301,17 +364,48 @@ function getTableauVoyagesPeriodes()
 
 function getTableauEvaluationVoyages()
 {
+    set_time_limit(120);
     global $con;
-    $debut = date_create((isset($_POST['date-f']) ? date('Y-m-d', strtotime($_POST['date-f'])) : date('Y-m-01')));
-    $fin = date_create((isset($_POST['date-t']) ? date('Y-m-d', strtotime($_POST['date-t'])) : date('Y-m-t')));
-    $interval = new DateInterval('P1D');
-    $date_range = new DatePeriod($debut, $interval, $fin->add($interval));
-    $tableau = "<table class='table table-striped no-datatable' id='table-evaluation'><thead><tr><th rowspan=2>Date</th>";
+    $dateFrom = isset($_POST['date-f']) ? date('Y-m-d', strtotime($_POST['date-f'])) : date('Y-m-01');
+    $dateTo   = isset($_POST['date-t']) ? date('Y-m-d', strtotime($_POST['date-t'])) : date('Y-m-t');
+
+    $dates = [];
+    $dateCols = [];
+    $d = date_create($dateFrom);
+    $end = date_create($dateTo);
+    $end->modify('+1 day');
+    while ($d < $end) {
+        $dates[] = $d->format('Y-m-d');
+        $dateCols[] = $d->format('d M Y');
+        $d->modify('+1 day');
+    }
+
     $regionIds = array_map('intval', explode(',', $_SESSION['usr-con']['users_region']));
     $regionRepo = new RegionRepository($con);
     $objectifRepo = new ObjectifRepository($con);
     $voyageRepo = new VoyageRepository($con);
     $reg = $regionRepo->findNonAdminByIds($regionIds);
+
+    // 2 batch queries instead of D×R×2
+    $allObjectifs = $objectifRepo->findByDateRangeAndRegions($dateFrom, $dateTo, $regionIds);
+    $allCounts = $voyageRepo->countBatchByDateAndRegions($regionIds, $dateFrom, $dateTo);
+
+    // Index objectifs by [date][region]
+    $objByDateRegion = [];
+    foreach ($allObjectifs as $o) {
+        $objByDateRegion[$o['date_objectif_periode']][(int)$o['id_region']] = (int)$o['objectif'];
+    }
+
+    // Index counts by [date][region]
+    $cntByDateRegion = [];
+    foreach ($allCounts as $c) {
+        $cntByDateRegion[$c['date_voyage']][(int)$c['id_region']] = [
+            'nb' => (int)$c['nb_voyages'],
+            'dist' => (float)$c['total_dist'],
+        ];
+    }
+
+    $tableau = "<table class='table table-striped no-datatable' id='table-evaluation'><thead><tr><th rowspan=2>Date</th>";
     $nb_regions = count($reg);
     foreach ($reg as $r):
         $tableau .= "<th colspan='5' style='text-align:center'>" . h($r['nom_region']) . "</th>";
@@ -322,35 +416,29 @@ function getTableauEvaluationVoyages()
         $tableau .= "<th>Planifié</th><th>Réalisé</th><th>Score</th><th>Gap</th><th class='border-end'>Kms</th>";
     endfor;
     $tableau .= "</tr></thead><tbody>";
-    foreach ($date_range as $date) :
+
+    foreach ($dates as $idx => $dateStr):
         $total_plan = 0;
         $total_real = 0;
         $total_distances = 0;
-        $tableau .= "<tr><td>" . $date->format('d M Y') . "</td>";
+        $tableau .= "<tr><td>" . $dateCols[$idx] . "</td>";
         foreach ($reg as $r):
             $regionId = (int)$r['id_region'];
-            $dateStr = $date->format('Y-m-d');
-            $objRows = $objectifRepo->findByDateAndRegion($dateStr, $regionId);
-            $plan = 0;
-            if (!empty($objRows)):
-                $obj = $objRows[0];
-                $tableau .= "<td>" . h($obj['objectif']) . "</td>";
-                $plan = $obj['objectif'];
-            else:
-                $tableau .= "<td>0</td>";
-            endif;
+            $plan = $objByDateRegion[$dateStr][$regionId] ?? 0;
+            $tableau .= "<td>" . ($plan ? h((string)$plan) : '0') . "</td>";
             $total_plan += $plan;
-            $voyageRows = $voyageRepo->countByDateAndRegion($dateStr, $regionId);
-            $real = count($voyageRows);
+
+            $cnt = $cntByDateRegion[$dateStr][$regionId] ?? null;
+            $real = $cnt ? $cnt['nb'] : 0;
+            $dist = $cnt ? $cnt['dist'] : 0;
             $tableau .= "<td>$real</td>";
             $total_real += $real;
-            $total_distance = 0;
-            foreach ($voyageRows as $vr) $total_distance += $vr['total_dest'];
+            $total_distances += $dist;
+
             $score = round($plan > 0 ? $real / $plan * 100 : 0, 1);
             $tableau .= "<td " . ($score < 100 ? 'class="text-bg-danger"' : 'class="text-bg-success"') . ">$score%</td>";
             $tableau .= "<td>" . ($plan - $real) . "</td>";
-            $tableau .= "<td class='border-end'>$total_distance</td>";
-            $total_distances += $total_distance;
+            $tableau .= "<td class='border-end'>$dist</td>";
         endforeach;
         $total_score = round($total_plan == 0 ? 0 : $total_real / $total_plan * 100, 1);
         $total_gap = $total_plan - $total_real;

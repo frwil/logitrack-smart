@@ -64,6 +64,47 @@ class VoyageRepository extends BaseRepository
         );
     }
 
+    /** All voyage_vehicule rows with destination details for a date range — replaces N×M queries in matrix views. */
+    public function findBatchVoyagesVehicules(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): array
+    {
+        [$where, $ctxParams] = db_context_filter($regionIds, $entiteIds);
+        $params = array_merge([$dateFrom, $dateTo], $ctxParams);
+        return $this->select(
+            "SELECT v.id_voyage, v.date_voyage, v.qte_carburant, vv.id_destination,
+                    dv.lib_destination, dv.distance_destination,
+                    affectation_vehicule.id_vehicule
+             FROM voyage_vehicule vv
+             LEFT JOIN voyage v ON v.id_voyage = vv.id_voyage
+             LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             AND v.date_voyage BETWEEN ? AND ?
+             ORDER BY v.date_voyage, affectation_vehicule.id_vehicule, vv.id_destination",
+            $params
+        );
+    }
+
+    /** Count voyages and sum distances per date per region — replaces D×R queries in evaluation view. */
+    public function countBatchByDateAndRegions(array $regionIds, string $dateFrom, string $dateTo): array
+    {
+        [$ph, $p] = db_in($regionIds);
+        $params = array_merge([$dateFrom, $dateTo], $p);
+        return $this->select(
+            "SELECT v.date_voyage, affectation_vehicule.id_region,
+                    COUNT(DISTINCT v.id_voyage) AS nb_voyages,
+                    COALESCE(SUM(dv.distance_destination), 0) AS total_dist
+             FROM voyage v
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
+             LEFT JOIN voyage_vehicule vv ON vv.id_voyage = v.id_voyage
+             LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
+             WHERE affectation_vehicule.is_deleted = 0
+             AND affectation_vehicule.id_region IN ($ph)
+             AND v.date_voyage BETWEEN ? AND ?
+             GROUP BY v.date_voyage, affectation_vehicule.id_region",
+            $params
+        );
+    }
+
     /** Voyage vehicles by destination with optional date range. */
     public function findVoyageVehiculesByDestination(int $destinationId, int $vehiculeId, ?string $dateFrom = null, ?string $dateTo = null): array
     {

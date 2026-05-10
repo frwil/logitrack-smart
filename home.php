@@ -242,7 +242,8 @@ if (!$renderPartial):
                     echo getTableauAffectations(); ?>
                 <?php endif; ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'voyages') : ?>
-                <?php include("voyage.php"); echo getDashboardCardsVoyages(); ?>
+                <?php set_time_limit(120);
+                include("voyage.php"); echo getDashboardCardsVoyages(); ?>
                 <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'dashboard'): ?>
                     <div class="lt-page-title">Tableau de bord voyages</div>
                     <hr>
