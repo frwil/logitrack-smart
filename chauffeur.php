@@ -1,12 +1,20 @@
 <?php function getTableauChauffeurs()
 {
     global $con;
+    global $rights_affectation;
     $repo = new ChauffeurRepository($con);
     $rows = $repo->findAll();
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Nom Chauffeur</th><th></th></tr></thead><tbody>";
     $i = 1;
     foreach ($rows as $r):
-        $tableau .= "<tr><td>$i</td><td>" . h($r['nom_chauffeur']) . "</td><td><div class='btn-group'><button class='btn btn-light' type='button' title='Modifier le chauffeur " . h($r['nom_chauffeur']) . "' onclick='showModalUpdateChauffeur(\"".$r['id_chauffeur']."\")'><i class='fa fa-pencil-alt'></i></button><button class='btn btn-danger' title='Supprimer le chauffeur " . h($r['nom_chauffeur']) . "' onclick='deleteChauffeur(\"".$r['id_chauffeur']."\")'><i class='fa fa-times'></i></button></div></td></tr>";
+        $tableau .= "<tr><td>$i</td><td>" . h($r['nom_chauffeur']) . "</td><td><div class='btn-group'>";
+        if (in_array('upd', $rights_affectation)):
+            $tableau .= "<button class='btn btn-light' type='button' title='Modifier le chauffeur " . h($r['nom_chauffeur']) . "' onclick='showModalUpdateChauffeur(\"".$r['id_chauffeur']."\")'><i class='fa fa-pencil-alt'></i></button>";
+        endif;
+        if (in_array('del', $rights_affectation)):
+            $tableau .= "<button class='btn btn-danger' title='Supprimer le chauffeur " . h($r['nom_chauffeur']) . "' onclick='deleteChauffeur(\"".$r['id_chauffeur']."\")'><i class='fa fa-times'></i></button>";
+        endif;
+        $tableau .= "</div></td></tr>";
         $i++;
     endforeach;
     $tableau .= "</tbody></table>";

@@ -187,6 +187,11 @@ function getTableauUsers()
                                         ['Centre de coûts',       'viewCentreCout',  'saveCentreCout',  'updCentreCout',  'delCentreCout'],
                                         ['Bons de réparation',    'viewBonsReparation', 'saveBonsReparation', 'updBonsReparation', 'delBonsReparation'],
                                     ];
+                                    // Voyages specific action rights
+                                    $voyagesSubs = [
+                                        ['Rapports',             'report',    '',         '', ''],
+                                        ['Trajets',              '',          'savetrajet', '', ''],
+                                    ];
 
                                     if (!function_exists('renderRightsRow')): function renderRightsRow(string $objKey, string $label, array $perms): void {
                                         echo '<tr><td>' . h($label) . '</td>';
@@ -202,7 +207,11 @@ function getTableauUsers()
 
                                     foreach ($knownObjects as $objKey => $objLabel):
                                         renderRightsRow($objKey, $objLabel, $permKeys);
-                                        if ($objKey === 'maintenances'):
+                                        if ($objKey === 'voyages'):
+                                            foreach ($voyagesSubs as $sub):
+                                                renderRightsRow('voyages', '↳ ' . $sub[0], [$sub[1], $sub[2], $sub[3], $sub[4]]);
+                                            endforeach;
+                                        elseif ($objKey === 'maintenances'):
                                             foreach ($maintenanceSubs as $sub):
                                                 renderRightsRow('maintenances', '↳ ' . $sub[0], [$sub[1], $sub[2], $sub[3], $sub[4]]);
                                             endforeach;

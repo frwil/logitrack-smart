@@ -172,7 +172,11 @@ if (!$renderPartial):
                 <?php endif; ?>
             <?php endif; ?>
         <?php elseif (isset($_GET['page']) && $_GET['page'] == 'affectationVehicules' && in_array('view', $rights_affectation)): ?>
+            <a class="lt-sidebar-link <?php if (!isset($_GET['subpage']) || $_GET['subpage'] == 'listeAffectationsVehicules') echo 'active'; ?>" href="?page=affectationVehicules"><i class="fa fa-list"></i> Liste des affectations</a>
+            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeChauffeurs') echo 'active'; ?>" href="?page=affectationVehicules&subpage=listeChauffeurs"><i class="fa fa-users"></i> Chauffeurs</a>
+            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeConvoyeurs') echo 'active'; ?>" href="?page=affectationVehicules&subpage=listeConvoyeurs"><i class="fa fa-truck-loading"></i> Convoyeurs</a>
             <?php if (in_array('save', $rights_affectation)): ?>
+                <div class="lt-sidebar-divider"></div>
                 <a class="lt-sidebar-link new-item" href="?page=affectationVehicules&subpage=listeChauffeurs&action=new"><i class="fa fa-user-plus"></i> Nouveau chauffeur</a>
                 <a class="lt-sidebar-link new-item" href="?page=affectationVehicules&action=new"><i class="fa fa-plus-circle"></i> Nouvelle affectation</a>
             <?php endif; ?>
@@ -317,7 +321,12 @@ if (!$renderPartial):
                     <?php echo getTableauBonsReparation(); ?>
                 <?php endif; ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'configuration') :  ?>
+                <?php if (!in_array('view', $rights_config)): ?>
+                    <div class="lt-page-title">Accès non autorisé</div>
+                    <p>Vous n'avez pas les droits nécessaires pour accéder à cette page.</p>
+                <?php else: ?>
                 <?php include("config.php"); ?>
+                <?php endif; ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'users') :  ?>
                 <?php
                 include("_users.php");
@@ -330,9 +339,19 @@ if (!$renderPartial):
                     <p>Vous n'avez pas les droits nécessaires pour accéder à cette page.</p>
                 <?php endif; ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'reports') :  ?>
+                <?php if (!in_array('view', $rights_report)): ?>
+                    <div class="lt-page-title">Accès non autorisé</div>
+                    <p>Vous n'avez pas les droits nécessaires pour accéder à cette page.</p>
+                <?php else: ?>
                 <?php include("reporting.php"); ?>
+                <?php endif; ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'reporting') :  ?>
+                <?php if (!in_array('view', $rights_report)): ?>
+                    <div class="lt-page-title">Accès non autorisé</div>
+                    <p>Vous n'avez pas les droits nécessaires pour accéder à cette page.</p>
+                <?php else: ?>
                 <?php include("reporting.php"); ?>
+                <?php endif; ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'import') :  ?>
                 <?php include("import.php"); ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'userRegistration') :  ?>
