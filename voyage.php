@@ -98,7 +98,7 @@
     $fDateFrom = isset($_POST['date-f']) ? h($_POST['date-f']) : date('Y-m-01');
     $fDateTo   = isset($_POST['date-t']) ? h($_POST['date-t']) : date('Y-m-t');
     $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='$fDateFrom'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='$fDateTo'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
-    return $debug . $form . "<hr>" . $tableau;
+    return $form . "<hr>" . $tableau;
 }
 function getTableauVoyagesVehicules()
 {
