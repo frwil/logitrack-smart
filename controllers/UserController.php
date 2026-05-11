@@ -28,17 +28,28 @@ class UserController extends BaseController
         return $r === 'admin' || $r === 'superadmin';
     }
 
-    private function requireAdmin(): void
+    private function hasRight(string $right): bool
     {
-        if (!$this->isAdmin()) {
+        $rights = $_SESSION['usr-con']['users-rights'] ?? [];
+        foreach ($rights as $r) {
+            if (($r['users_rights_objet'] ?? '') === 'users') {
+                return in_array($right, explode(',', $r['users_rights_valeur'] ?? ''));
+            }
+        }
+        return false;
+    }
+
+    private function requireRight(string $right): void
+    {
+        if (!$this->hasRight($right)) {
             $this->jsonError('Accès non autorisé', 403);
         }
     }
 
-    /** Create a new user. Admin can only create users with role='user'. */
+    /** Create a new user. Non-superadmins can only create users with role='user'. */
     public function create(): never
     {
-        $this->requireAdmin();
+        $this->requireRight('save');
 
         $name = $this->post('name-user');
         $pass = $this->post('pass-user');
@@ -108,7 +119,7 @@ class UserController extends BaseController
     /** Fetch a single user for the edit modal. */
     public function fetchByHash(): never
     {
-        $this->requireAdmin();
+        $this->requireRight('view');
 
         $id = (int)$this->post('id-user-forModal');
         $user = $this->repo->findById($id);
@@ -148,7 +159,7 @@ class UserController extends BaseController
     /** Update an existing user. */
     public function update(): never
     {
-        $this->requireAdmin();
+        $this->requireRight('upd');
 
         $id = (int)$this->post('id-user');
         $pass = $this->post('pass-user');
@@ -231,7 +242,7 @@ class UserController extends BaseController
     /** Soft-delete a user. */
     public function delete(): never
     {
-        $this->requireAdmin();
+        $this->requireRight('del');
 
         $id = (int)$this->post('id-user-forDel');
         $target = $this->repo->findById($id);
@@ -259,7 +270,7 @@ class UserController extends BaseController
     /** Toggle is_active on a user. */
     public function toggleActive(): never
     {
-        $this->requireAdmin();
+        $this->requireRight('upd');
 
         $id = (int)$this->post('id-user-active');
         $val = (int)$this->post('val-user-active');

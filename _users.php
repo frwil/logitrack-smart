@@ -2,6 +2,7 @@
 function getTableauUsers()
 {
     global $con;
+    global $rights_user;
     $repo = new UserRepository($con);
     $currentRole = $_SESSION['usr-con']['role'] ?? 'user';
     $isSuperadmin = $currentRole === 'superadmin';
@@ -45,17 +46,21 @@ function getTableauUsers()
             <td><div class='btn-group'>";
 
         // Edit button
+        if (in_array('upd', $rights_user)):
         $tableau .= "<button class='btn btn-primary btn-sm' onclick='showModalUpdateUser($id)' title='Modifier'><i class='fa fa-pencil-alt'></i></button>";
+        endif;
 
         // Toggle active button (superadmins can never be deactivated)
-        if ($role !== 'superadmin'):
+        if ($role !== 'superadmin' && in_array('upd', $rights_user)):
         $toggleIcon = $isActive ? 'fa-toggle-off' : 'fa-toggle-on';
         $toggleTitle = $isActive ? 'Désactiver' : 'Activer';
         $tableau .= "<button class='btn btn-warning btn-sm' onclick='toggleUserActive($id, $isActive)' title='$toggleTitle'><i class='fa $toggleIcon'></i></button>";
         endif;
 
         // Delete button
+        if (in_array('del', $rights_user)):
         $tableau .= "<button class='btn btn-danger btn-sm' onclick='deleteUser($id)' title='Supprimer'><i class='fa fa-times'></i></button>";
+        endif;
 
         $tableau .= "</div></td></tr>";
         $i++;
