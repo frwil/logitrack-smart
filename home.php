@@ -285,8 +285,8 @@ if (!$renderPartial):
                     <div class="lt-page-title">Tableau de bord maintenance</div>
                     <hr>
                     <?php echo getDashboardCharts(); ?>
-                    <?php echo getHealthScores(); ?>
-                    <?php echo getUpcomingVidanges(); ?>
+                    <div id="health-scores-section"><div class="text-center p-4"><i class="fa fa-spinner fa-spin"></i> Chargement scores de santé...</div></div>
+                    <div id="upcoming-vidanges-section"><div class="text-center p-4"><i class="fa fa-spinner fa-spin"></i> Chargement planification...</div></div>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'releveKms'): ?>
                     <div class="lt-page-title">Relevés de kilométrages</div>
                     <hr>
@@ -312,11 +312,8 @@ if (!$renderPartial):
                 <?php include("config.php"); ?>
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'users') :  ?>
                 <?php
-                $currentRole = $_SESSION['usr-con']['role'] ?? 'user';
-                $isSuperadmin = $currentRole === 'superadmin';
-                $isAdmin = $isSuperadmin || $currentRole === 'admin';
                 include("_users.php");
-                if ($isAdmin): ?>
+                if (in_array('view', $rights_user)): ?>
                     <div class="lt-page-title">Gestion des utilisateurs</div>
                     <hr>
                     <?php echo getTableauUsers(); ?>
