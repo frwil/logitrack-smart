@@ -178,19 +178,36 @@ function getTableauUsers()
                                         'report' => 'Rapports',
                                     ];
                                     $permKeys = ['view', 'save', 'upd', 'del'];
-                                    foreach ($knownObjects as $objKey => $objLabel): ?>
-                                    <tr>
-                                        <td><?php echo h($objLabel); ?></td>
-                                        <?php foreach ($permKeys as $pk): ?>
-                                        <td class="text-center">
-                                            <input type="checkbox" class="right-cb form-check-input"
-                                                   data-object="<?php echo $objKey; ?>"
-                                                   data-perm="<?php echo $pk; ?>"
-                                                   value="<?php echo $pk; ?>">
-                                        </td>
-                                        <?php endforeach; ?>
-                                    </tr>
-                                    <?php endforeach; ?>
+
+                                    // Maintenance sub-module rights
+                                    $maintenanceSubs = [
+                                        ['Relevés kilométriques', 'viewReleveKms', 'saveReleveKms', '', ''],
+                                        ['Suivi vidanges',        'viewVidange',    '',               'updVidange',    'delVidange'],
+                                        ['Prestataires',          'viewPrestataire', 'savePrestataire', 'updPrestataire', 'delPrestataire'],
+                                        ['Centre de coûts',       'viewCentreCout',  'saveCentreCout',  'updCentreCout',  'delCentreCout'],
+                                        ['Bons de réparation',    'viewBonsReparation', 'saveBonsReparation', 'updBonsReparation', 'delBonsReparation'],
+                                    ];
+
+                                    if (!function_exists('renderRightsRow')): function renderRightsRow(string $objKey, string $label, array $perms): void {
+                                        echo '<tr><td>' . h($label) . '</td>';
+                                        foreach ($perms as $pk):
+                                            echo '<td class="text-center">';
+                                            if ($pk):
+                                                echo '<input type="checkbox" class="right-cb form-check-input" data-object="' . $objKey . '" data-perm="' . $pk . '" value="' . $pk . '">';
+                                            endif;
+                                            echo '</td>';
+                                        endforeach;
+                                        echo '</tr>';
+                                    } endif;
+
+                                    foreach ($knownObjects as $objKey => $objLabel):
+                                        renderRightsRow($objKey, $objLabel, $permKeys);
+                                        if ($objKey === 'maintenances'):
+                                            foreach ($maintenanceSubs as $sub):
+                                                renderRightsRow('maintenances', '↳ ' . $sub[0], [$sub[1], $sub[2], $sub[3], $sub[4]]);
+                                            endforeach;
+                                        endif;
+                                    endforeach; ?>
                                 </tbody>
                             </table>
                         </div>

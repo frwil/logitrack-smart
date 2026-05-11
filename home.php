@@ -195,10 +195,18 @@ if (!$renderPartial):
             <?php endif; ?>
         <?php elseif (isset($_GET['page']) && $_GET['page'] == 'maintenances' && in_array('view', $rights_maintenance)): ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'dashboard') echo 'active'; ?>" href="?page=maintenances&subpage=dashboard"><i class="fa fa-chart-bar"></i> Tableau de bord</a>
+            <?php if (in_array('viewReleveKms', $rights_maintenance)): ?>
             <a class="lt-sidebar-link <?php if (!isset($_GET['subpage']) || $_GET['subpage'] == 'releveKms') echo 'active'; ?>" href="?page=maintenances&subpage=releveKms"><i class="fa fa-tachometer-alt"></i> Relevés kilométrage</a>
+            <?php endif; ?>
+            <?php if (in_array('viewVidange', $rights_maintenance)): ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviVidanges') echo 'active'; ?>" href="?page=maintenances&subpage=suiviVidanges"><i class="fa fa-oil-can"></i> Suivi vidanges</a>
+            <?php endif; ?>
+            <?php if (in_array('viewCentreCout', $rights_maintenance)): ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'centreCouts') echo 'active'; ?>" href="?page=maintenances&subpage=centreCouts"><i class="fa fa-euro-sign"></i> Centre de coûts</a>
+            <?php endif; ?>
+            <?php if (in_array('viewBonsReparation', $rights_maintenance)): ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviBonsReparation') echo 'active'; ?>" href="?page=maintenances&subpage=suiviBonsReparation"><i class="fa fa-tools"></i> Bons de réparation</a>
+            <?php endif; ?>
         <?php elseif (isset($_GET['page']) && $_GET['page'] == 'users' && in_array('view', $rights_user)): ?>
             <?php if (in_array('save', $rights_user)): ?>
                 <a class="lt-sidebar-link new-item" href="#" onclick="openModalUser()"><i class="fa fa-plus-circle"></i> Nouvel utilisateur</a>
