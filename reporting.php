@@ -54,30 +54,51 @@
           $vehiculeRepo = new VehiculeRepository($con);
           $voyageRepo = new VoyageRepository($con);
           $vehicules = $vehiculeRepo->findAllWithDetails();
-          $table = "";
-          $sum_chargement = array();
-          $sum_kms = array();
-          $sum_conso = array();
-          foreach ($vehicules as $row) {
-            $id_vehicule = $row['id_vehicule'];
-            $voyages = $voyageRepo->findForReportingByContext((int)$id_vehicule, $_POST['date_debut'], $_POST['date_fin'], getContextRegions(), getContextEntities());
-            $countVoyages = count($voyages);
-            $sum_chargement[$id_vehicule] = array();
-            $sum_kms[$id_vehicule] = array();
-            $sum_conso[$id_vehicule] = array();
-            foreach ($voyages as $row2) {
-              if(!isset($sum_chargement[$id_vehicule][$row2['id_type_chargement']])) {
-                $sum_chargement[$id_vehicule][$row2['id_type_chargement']] = 0;
-                $sum_kms[$id_vehicule][$row2['id_type_chargement']] = 0;
-                $sum_conso[$id_vehicule][$row2['id_type_chargement']] = 0;
+
+          // Single batch query instead of N+1 per-vehicle queries
+          $allVoyages = $voyageRepo->findAllForReportingByContext($_POST['date_debut'], $_POST['date_fin'], getContextRegions(), getContextEntities());
+
+          // Group voyages by vehicle ID
+          $voyagesByVehicle = [];
+          foreach ($allVoyages as $v) {
+              $vid = (int)$v['id_vehicule'];
+              if (!isset($voyagesByVehicle[$vid])) {
+                  $voyagesByVehicle[$vid] = [];
               }
-              $sum_chargement[$id_vehicule][$row2['id_type_chargement']] += $row2['qte_chargement'];
-              $sum_kms[$id_vehicule][$row2['id_type_chargement']] += $row2['distance_destination'];
-              $sum_conso[$id_vehicule][$row2['id_type_chargement']] += $row2['qte_carburant'];
+              $voyagesByVehicle[$vid][] = $v;
+          }
+
+          $table = "";
+          foreach ($vehicules as $row) {
+            $id_vehicule = (int)$row['id_vehicule'];
+            $voyages = $voyagesByVehicle[$id_vehicule] ?? [];
+            $countVoyages = count($voyages);
+            $sum_chargement = [];
+            $sum_kms = [];
+            $sum_conso = [];
+            foreach ($voyages as $row2) {
+              $tc = (int)$row2['id_type_chargement'];
+              if(!isset($sum_chargement[$tc])) {
+                $sum_chargement[$tc] = 0;
+                $sum_kms[$tc] = 0;
+                $sum_conso[$tc] = 0;
+              }
+              $sum_chargement[$tc] += $row2['qte_chargement'];
+              $sum_kms[$tc] += $row2['distance_destination'];
+              $sum_conso[$tc] += $row2['qte_carburant'];
+            }
+            // Pre-compute summary strings per charge type
+            $summaries = [];
+            foreach ($voyages as $row2) {
+              $tc = (int)$row2['id_type_chargement'];
+              if (!isset($summaries[$tc])) {
+                  $summaries[$tc] = h($row['immatriculation_vehicule']) . " - " . h($row2['lib_type_chargement']) . " (" . $sum_chargement[$tc] . " - " . $sum_kms[$tc] . "kms - " . $sum_conso[$tc] . "Litres)";
+              }
             }
             foreach ($voyages as $row2) {
+              $tc = (int)$row2['id_type_chargement'];
               $table .= "<tr><td>" . h($row['immatriculation_vehicule']) . " (" . $countVoyages . " Voyages)" . "</td>";
-              $table .= "<td>".($row2['date_voyage'] ? date('d/m/Y',strtotime($row2['date_voyage'])) : '')."</td><td>".h($row['immatriculation_vehicule'])." - ".h($row2['lib_type_chargement']). " (".$sum_chargement[$id_vehicule][$row2['id_type_chargement']]." - ". $sum_kms[$id_vehicule][$row2['id_type_chargement']]."kms - " .$sum_conso[$id_vehicule][$row2['id_type_chargement']]."Litres)"."</td><td>" . h($row2['qte_chargement']) . "</td><td>".h($row2['distance_destination'])."</td><td>".h($row2['qte_carburant'])."</td></tr>";
+              $table .= "<td>".($row2['date_voyage'] ? date('d/m/Y',strtotime($row2['date_voyage'])) : '')."</td><td>" . $summaries[$tc] . "</td><td>" . h($row2['qte_chargement']) . "</td><td>".h($row2['distance_destination'])."</td><td>".h($row2['qte_carburant'])."</td></tr>";
             }
             if ($countVoyages == 0) {
               $table .= "<tr><td>" . h($row['immatriculation_vehicule']) . " (0)" . "</td><td></td><td>Aucun voyage trouvé</td><td></td><td></td><td></td></tr>";

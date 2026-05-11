@@ -443,21 +443,24 @@ class MaintenanceRepository extends BaseRepository
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
         $rows = $this->select(
-            "SELECT km_prochaine_vidange,
-             (SELECT km_releve FROM releve_kms_vehicule
-              WHERE id_affectation_vehicule = vidange_vehicule.id_affectation_vehicule
-              AND date_fin_periode_releve = (
-                SELECT MAX(date_fin_periode_releve) FROM releve_kms_vehicule
-                WHERE id_affectation_vehicule = vidange_vehicule.id_affectation_vehicule
-              )) AS kms_actuel
-             FROM vidange_vehicule, affectation_vehicule, region
-             WHERE affectation_vehicule.id_affectation = vidange_vehicule.id_affectation_vehicule
-             AND affectation_vehicule.id_region = region.id_region
-             AND affectation_vehicule.is_deleted = 0 AND is_ferme = 0 AND $where
-             AND date_vidange = (
-               SELECT MAX(date_vidange) FROM vidange_vehicule v
-               WHERE v.id_affectation_vehicule = affectation_vehicule.id_affectation
-             )",
+            "SELECT vv.km_prochaine_vidange, rkv.km_releve AS kms_actuel
+             FROM vidange_vehicule vv
+             JOIN affectation_vehicule ON affectation_vehicule.id_affectation = vv.id_affectation_vehicule
+             INNER JOIN (
+                 SELECT v2.id_affectation_vehicule, MAX(v2.date_vidange) AS max_date
+                 FROM vidange_vehicule v2 GROUP BY v2.id_affectation_vehicule
+             ) vv_max ON vv_max.id_affectation_vehicule = vv.id_affectation_vehicule
+                      AND vv_max.max_date = vv.date_vidange
+             LEFT JOIN (
+                 SELECT r1.id_affectation_vehicule, r1.km_releve
+                 FROM releve_kms_vehicule r1
+                 INNER JOIN (
+                     SELECT id_affectation_vehicule, MAX(date_fin_periode_releve) AS max_date
+                     FROM releve_kms_vehicule GROUP BY id_affectation_vehicule
+                 ) r2 ON r2.id_affectation_vehicule = r1.id_affectation_vehicule
+                     AND r2.max_date = r1.date_fin_periode_releve
+             ) rkv ON rkv.id_affectation_vehicule = vv.id_affectation_vehicule
+             WHERE affectation_vehicule.is_deleted = 0 AND is_ferme = 0 AND $where",
             $params
         );
         $total = count($rows);
@@ -502,23 +505,22 @@ class MaintenanceRepository extends BaseRepository
     public function countImmobilizedVehicles(array $regionIds, array $entiteIds): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
-        $immobilises = count($this->select(
-            "SELECT DISTINCT affectation_vehicule.id_affectation FROM affectation_vehicule
+        $rows = $this->select(
+            "SELECT affectation_vehicule.id_affectation,
+                    (vehicule.statut_vehicule IN ('EN PANNE', 'EN RÉPARATION')
+                     OR br_open.id_affectation_vehicule IS NOT NULL) AS is_immobilise
+             FROM affectation_vehicule
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
-             WHERE affectation_vehicule.is_deleted = 0 AND is_ferme = 0 AND $where
-             AND (vehicule.statut_vehicule IN ('EN PANNE', 'EN RÉPARATION')
-                  OR EXISTS (
-                    SELECT 1 FROM bons_reparation br
-                    WHERE br.id_affectation_vehicule = affectation_vehicule.id_affectation
-                    AND (br.date_fin_reparation IS NULL OR br.date_fin_reparation = '0000-00-00')
-                  ))",
+             LEFT JOIN (
+                 SELECT DISTINCT br.id_affectation_vehicule
+                 FROM bons_reparation br
+                 WHERE br.date_fin_reparation IS NULL OR br.date_fin_reparation = '0000-00-00'
+             ) br_open ON br_open.id_affectation_vehicule = affectation_vehicule.id_affectation
+             WHERE affectation_vehicule.is_deleted = 0 AND is_ferme = 0 AND $where",
             $params
-        ));
-        $total = count($this->select(
-            "SELECT id_affectation FROM affectation_vehicule
-             WHERE is_deleted = 0 AND is_ferme = 0 AND $where",
-            $params
-        ));
+        );
+        $total = count($rows);
+        $immobilises = count(array_filter($rows, fn($r) => (bool)($r['is_immobilise'] ?? false)));
         return ['immobilises' => $immobilises, 'total' => $total];
     }
 
@@ -564,20 +566,24 @@ class MaintenanceRepository extends BaseRepository
     public function costPerKm(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
-        $params = array_merge($params, [$dateFrom, $dateTo, $dateFrom, $dateTo, $dateFrom, $dateTo]);
+        $params = array_merge($params, [$dateFrom, $dateTo, $dateFrom, $dateTo]);
         return $this->select(
             "SELECT vehicule.immatriculation_vehicule,
                     SUM(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0)) AS total_cout,
-                    (SELECT MAX(km_releve) FROM releve_kms_vehicule
-                     WHERE id_affectation_vehicule = affectation_vehicule.id_affectation
-                     AND date_releve BETWEEN ? AND ?) AS km_max,
-                    (SELECT MIN(km_releve) FROM releve_kms_vehicule
-                     WHERE id_affectation_vehicule = affectation_vehicule.id_affectation
-                     AND date_releve BETWEEN ? AND ?) AS km_min
+                    km_data.km_max,
+                    km_data.km_min
              FROM bons_reparation
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
+             LEFT JOIN (
+                 SELECT id_affectation_vehicule,
+                        MAX(km_releve) AS km_max,
+                        MIN(km_releve) AS km_min
+                 FROM releve_kms_vehicule
+                 WHERE date_releve BETWEEN ? AND ?
+                 GROUP BY id_affectation_vehicule
+             ) km_data ON km_data.id_affectation_vehicule = affectation_vehicule.id_affectation
              WHERE affectation_vehicule.is_deleted = 0 AND $where
              AND date_entree BETWEEN ? AND ?
              GROUP BY vehicule.id_vehicule, vehicule.immatriculation_vehicule, affectation_vehicule.id_affectation
@@ -671,25 +677,39 @@ class MaintenanceRepository extends BaseRepository
         $rows = $this->select(
             "SELECT vehicule.immatriculation_vehicule, chauffeur.nom_chauffeur,
                     vehicule.annee_vehicule,
-                    (SELECT km_releve FROM releve_kms_vehicule
-                     WHERE id_affectation_vehicule = affectation_vehicule.id_affectation
-                     ORDER BY date_fin_periode_releve DESC LIMIT 1) AS km_actuel,
-                    (SELECT km_prochaine_vidange FROM vidange_vehicule
-                     WHERE id_affectation_vehicule = affectation_vehicule.id_affectation
-                     AND date_vidange = (
-                       SELECT MAX(date_vidange) FROM vidange_vehicule v
-                       WHERE v.id_affectation_vehicule = affectation_vehicule.id_affectation
-                     ) LIMIT 1) AS km_prochaine_vidange,
-                    (SELECT COUNT(*) FROM bons_reparation
-                     WHERE id_affectation_vehicule = affectation_vehicule.id_affectation
-                     AND date_entree >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)) AS nb_pannes_6mois,
-                    (SELECT SUM(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0))
-                     FROM bons_reparation br2
-                     LEFT JOIN plus_ou_moins_value pmv ON pmv.id_plus_ou_moins_value = br2.id_plus_ou_moins_value
-                     WHERE br2.id_affectation_vehicule = affectation_vehicule.id_affectation) AS total_cout
+                    rkv_data.km_releve AS km_actuel,
+                    vv_data.km_prochaine_vidange,
+                    IFNULL(br_agg.nb_pannes_6mois, 0) AS nb_pannes_6mois,
+                    IFNULL(br_agg.total_cout, 0) AS total_cout
              FROM affectation_vehicule
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
+             LEFT JOIN (
+                 SELECT r1.id_affectation_vehicule, r1.km_releve
+                 FROM releve_kms_vehicule r1
+                 INNER JOIN (
+                     SELECT id_affectation_vehicule, MAX(date_fin_periode_releve) AS max_date
+                     FROM releve_kms_vehicule GROUP BY id_affectation_vehicule
+                 ) r2 ON r2.id_affectation_vehicule = r1.id_affectation_vehicule
+                     AND r2.max_date = r1.date_fin_periode_releve
+             ) rkv_data ON rkv_data.id_affectation_vehicule = affectation_vehicule.id_affectation
+             LEFT JOIN (
+                 SELECT v1.id_affectation_vehicule, v1.km_prochaine_vidange
+                 FROM vidange_vehicule v1
+                 INNER JOIN (
+                     SELECT id_affectation_vehicule, MAX(date_vidange) AS max_date
+                     FROM vidange_vehicule GROUP BY id_affectation_vehicule
+                 ) v2 ON v2.id_affectation_vehicule = v1.id_affectation_vehicule
+                     AND v2.max_date = v1.date_vidange
+             ) vv_data ON vv_data.id_affectation_vehicule = affectation_vehicule.id_affectation
+             LEFT JOIN (
+                 SELECT br2.id_affectation_vehicule,
+                        COUNT(CASE WHEN br2.date_entree >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) THEN 1 END) AS nb_pannes_6mois,
+                        SUM(br2.montant_reparation + IFNULL(IF(pmv.type_plus_ou_moins_value = 0, pmv.plus_ou_moins_value_valeur, -pmv.plus_ou_moins_value_valeur), 0)) AS total_cout
+                 FROM bons_reparation br2
+                 LEFT JOIN plus_ou_moins_value pmv ON pmv.id_plus_ou_moins_value = br2.id_plus_ou_moins_value
+                 GROUP BY br2.id_affectation_vehicule
+             ) br_agg ON br_agg.id_affectation_vehicule = affectation_vehicule.id_affectation
              WHERE affectation_vehicule.is_deleted = 0 AND is_ferme = 0 AND $where",
             $params
         );
@@ -742,27 +762,37 @@ class MaintenanceRepository extends BaseRepository
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
         $rows = $this->select(
             "SELECT vehicule.immatriculation_vehicule, chauffeur.nom_chauffeur,
-                    (SELECT km_releve FROM releve_kms_vehicule
-                     WHERE id_affectation_vehicule = affectation_vehicule.id_affectation
-                     ORDER BY date_fin_periode_releve DESC LIMIT 1) AS km_actuel,
-                    (SELECT km_prochaine_vidange FROM vidange_vehicule
-                     WHERE id_affectation_vehicule = affectation_vehicule.id_affectation
-                     AND date_vidange = (
-                       SELECT MAX(date_vidange) FROM vidange_vehicule v
-                       WHERE v.id_affectation_vehicule = affectation_vehicule.id_affectation
-                     ) LIMIT 1) AS km_prochaine_vidange,
-                    (SELECT km_releve FROM releve_kms_vehicule
-                     WHERE id_affectation_vehicule = affectation_vehicule.id_affectation
-                     AND date_fin_periode_releve = (
-                       SELECT MAX(date_fin_periode_releve) FROM releve_kms_vehicule
-                       WHERE id_affectation_vehicule = affectation_vehicule.id_affectation
-                     )) AS km_max,
-                    (SELECT MIN(km_releve) FROM releve_kms_vehicule
-                     WHERE id_affectation_vehicule = affectation_vehicule.id_affectation
-                     AND date_debut_periode_releve >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)) AS km_30j_min
+                    rkv_latest.km_releve AS km_actuel,
+                    vv_latest.km_prochaine_vidange,
+                    rkv_latest.km_releve AS km_max,
+                    rkv_30j.km_30j_min
              FROM affectation_vehicule
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
+             LEFT JOIN (
+                 SELECT r1.id_affectation_vehicule, r1.km_releve
+                 FROM releve_kms_vehicule r1
+                 INNER JOIN (
+                     SELECT id_affectation_vehicule, MAX(date_fin_periode_releve) AS max_date
+                     FROM releve_kms_vehicule GROUP BY id_affectation_vehicule
+                 ) r2 ON r2.id_affectation_vehicule = r1.id_affectation_vehicule
+                     AND r2.max_date = r1.date_fin_periode_releve
+             ) rkv_latest ON rkv_latest.id_affectation_vehicule = affectation_vehicule.id_affectation
+             LEFT JOIN (
+                 SELECT v1.id_affectation_vehicule, v1.km_prochaine_vidange
+                 FROM vidange_vehicule v1
+                 INNER JOIN (
+                     SELECT id_affectation_vehicule, MAX(date_vidange) AS max_date
+                     FROM vidange_vehicule GROUP BY id_affectation_vehicule
+                 ) v2 ON v2.id_affectation_vehicule = v1.id_affectation_vehicule
+                     AND v2.max_date = v1.date_vidange
+             ) vv_latest ON vv_latest.id_affectation_vehicule = affectation_vehicule.id_affectation
+             LEFT JOIN (
+                 SELECT id_affectation_vehicule, MIN(km_releve) AS km_30j_min
+                 FROM releve_kms_vehicule
+                 WHERE date_debut_periode_releve >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                 GROUP BY id_affectation_vehicule
+             ) rkv_30j ON rkv_30j.id_affectation_vehicule = affectation_vehicule.id_affectation
              WHERE affectation_vehicule.is_deleted = 0 AND is_ferme = 0 AND $where
              HAVING km_actuel IS NOT NULL AND km_prochaine_vidange IS NOT NULL",
             $params

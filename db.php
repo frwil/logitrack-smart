@@ -18,7 +18,9 @@ function db_select($con, string $sql, array $params = []): mysqli_result|false
         mysqli_stmt_bind_param($stmt, $types, ...$params);
     }
     mysqli_stmt_execute($stmt);
-    return mysqli_stmt_get_result($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    mysqli_stmt_close($stmt);
+    return $result;
 }
 
 function db_exec($con, string $sql, array $params = []): bool
@@ -29,7 +31,9 @@ function db_exec($con, string $sql, array $params = []): bool
         $types = _db_types($params);
         mysqli_stmt_bind_param($stmt, $types, ...$params);
     }
-    return mysqli_stmt_execute($stmt);
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    return $ok;
 }
 
 function db_insert_id($con, string $sql, array $params = []): int|string|false
@@ -41,7 +45,9 @@ function db_insert_id($con, string $sql, array $params = []): int|string|false
         mysqli_stmt_bind_param($stmt, $types, ...$params);
     }
     mysqli_stmt_execute($stmt);
-    return mysqli_insert_id($con);
+    $id = mysqli_insert_id($con);
+    mysqli_stmt_close($stmt);
+    return $id;
 }
 
 function _db_types(array $params): string

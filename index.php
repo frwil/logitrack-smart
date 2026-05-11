@@ -21,7 +21,10 @@ require_once __DIR__ . '/sanitize.php';
 require_once __DIR__ . '/models/autoload.php';
 require_once __DIR__ . '/controllers/autoload.php';
 
+set_time_limit(60);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST'):
+
     // CSRF check — also decode JSON body for reuse by the router.
     // php://input can only be read once, so we save the decoded result.
     $csrf_token = $_POST['csrf_token'] ?? null;
@@ -43,8 +46,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'):
 
     // DB connection + route dispatch
     try {
-        $con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME'));
+        $con = mysqli_init();
         if (!$con) {
+            throw new \RuntimeException('Database connection failed');
+        }
+        mysqli_options($con, MYSQLI_OPT_CONNECT_TIMEOUT, 10);
+        mysqli_options($con, MYSQLI_OPT_READ_TIMEOUT, 30);
+        mysqli_real_connect($con, getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME'));
+        if (mysqli_connect_errno()) {
             throw new \RuntimeException('Database connection failed');
         }
         require_once __DIR__ . '/controllers/router.php';
@@ -55,7 +64,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'):
     }
 endif;
 
-$con = mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME'));
+$con = mysqli_init();
+if ($con) {
+    mysqli_options($con, MYSQLI_OPT_CONNECT_TIMEOUT, 10);
+    mysqli_options($con, MYSQLI_OPT_READ_TIMEOUT, 30);
+    mysqli_real_connect($con, getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME'));
+}
 $partial = isset($_GET['_partial']) && isset($_SESSION['usr-con']);
 ?>
 <?php if (!$partial): ?>

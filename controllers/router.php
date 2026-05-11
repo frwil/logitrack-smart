@@ -128,6 +128,9 @@ $routes = [
     'load-docs-expiration'     => [$maintenanceCtrl, 'docsExpiration'],
     'load-chauffeur-impact'    => [$maintenanceCtrl, 'chauffeurImpact'],
     'load-repair-conflicts'    => [$maintenanceCtrl, 'repairConflicts'],
+    'load-dashboard-all'      => [$maintenanceCtrl, 'dashboardAll'],
+    'load-health-scores'      => [$maintenanceCtrl, 'healthScoresHtml'],
+    'load-upcoming-vidanges'  => [$maintenanceCtrl, 'upcomingVidangesHtml'],
 
     // Config — Type permis
     'c-dl-s'              => [$configCtrl, 'fetchTypePermis'],

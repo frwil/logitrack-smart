@@ -336,7 +336,7 @@ function getPremiereSemaineDuMois($date)
             })
         }
     </script>
-    <?php elseif ($_GET['subpage'] == 'prestataire') :
+    <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'prestataire') :
     if (isset($_GET['action']) && $_GET['action'] == 'new' && in_array("savePrestataire", $rights_maintenance)):
         include("modalNewPrestataire.php");
     ?>
@@ -460,7 +460,7 @@ function getPremiereSemaineDuMois($date)
             }
         }
     </script>
-    <?php elseif ($_GET['subpage'] == 'suiviVidanges') : include("modalNewVidange.php");
+    <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviVidanges') : include("modalNewVidange.php");
     if (isset($_GET['action']) && $_GET['action'] == 'new'):
     ?>
         <script>
@@ -697,7 +697,7 @@ function getPremiereSemaineDuMois($date)
             downloadXLSX(excelBuffer, fn);
         }
     </script>
-    <?php elseif ($_GET['subpage'] == 'centreCouts') :
+    <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'centreCouts') :
     include("modalNewCentreCout.php");
     if (isset($_GET['action']) && $_GET['action'] == 'new' && in_array("saveCentreCout", $rights_maintenance)):
     ?>
@@ -811,7 +811,7 @@ function getPremiereSemaineDuMois($date)
             }
         }
     </script>
-    <?php elseif ($_GET['subpage'] == 'suiviBonsReparation') : include("modalNewSuiviBonsReparation.php"); include("modalUpdBonsReparation.php"); ?>
+    <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviBonsReparation') : include("modalNewSuiviBonsReparation.php"); include("modalUpdBonsReparation.php"); ?>
         <script>
             function delBonsReparation(id) {
                 if (confirm("Etes-vous sûr de vouloir supprimer ?")) {
@@ -886,161 +886,153 @@ function getDashboardCharts()
     $html .= '<script>
     google.charts.load("current", {packages: ["corechart", "table"]});
     google.charts.setOnLoadCallback(function() {
-        $.ajax({type:"post", data:"load-budget-projection=1", dataType:"json"})
-        .done(function(e) {
-            if (!e.data || !e.data.length) return;
-            var dt = new google.visualization.DataTable();
-            dt.addColumn("string", "Mois");
-            dt.addColumn("number", "Coût (' . devise() . ')");
-            e.data.forEach(function(r) { dt.addRow([r.mois, parseFloat(r.total)]); });
-            var c = new google.visualization.LineChart(document.getElementById("chart-budget"));
-            c.draw(dt, {title:"Évolution mensuelle des coûts", curveType:"function", legend:"none", colors:["#5D54A4"], chartArea:{width:"85%", height:"75%"}});
-        });
-        $.ajax({type:"post", data:"load-cost-by-centre=1", dataType:"json"})
-        .done(function(e) {
-            if (!e.data || !e.data.length) return;
-            var dtC = new google.visualization.DataTable();
-            dtC.addColumn("string", "Centre de coûts");
-            dtC.addColumn("number", "Coût total (' . devise() . ')");
-            dtC.addColumn("number", "Nb bons");
-            dtC.addColumn({type:"string", role:"tooltip", p:{html:true}});
-            e.data.forEach(function(r) {
-                var cout = parseFloat(r.total_cout);
-                var nb = parseInt(r.nb_bons);
-                dtC.addRow([r.lib_centre_cout, cout, nb, r.lib_centre_cout + ": " + cout.toLocaleString() + " (' . devise() . ') - " + nb + " bon(s)"]);
-            });
-            var cc = new google.visualization.ColumnChart(document.getElementById("chart-centres"));
-            cc.draw(dtC, {title:"Répartition des coûts par centre", legend:"none", colors:["#5D54A4"], chartArea:{width:"75%", height:"75%"}, hAxis:{title:"Centre de coûts"}, vAxis:{title:"Coût total (' . devise() . ')"}});
-        });
-        $.ajax({type:"post", data:"load-cout-type=1", dataType:"json"})
-        .done(function(e) {
-            if (!e.data || !e.data.length) return;
-            var dtT = new google.visualization.DataTable();
-            dtT.addColumn("string", "Type");
-            dtT.addColumn("number", "Coût");
-            e.data.forEach(function(r) {
-                var label = r.type_execution == "0" ? "Interne" : "Externe";
-                dtT.addRow([label, parseFloat(r.total_cout)]);
-            });
-            var ct = new google.visualization.PieChart(document.getElementById("chart-type"));
-            ct.draw(dtT, {title:"Coûts par type d\'exécution", colors:["#5D54A4","#7C78B8"], chartArea:{width:"80%", height:"70%"}, pieHole:0.4});
-        });
-        $.ajax({type:"post", data:"load-duree-diagnostic=1", dataType:"json"})
-        .done(function(e) {
-            if (!e.data || !e.data.length) return;
-            var dtD = new google.visualization.DataTable();
-            dtD.addColumn("string", "Diagnostic");
-            dtD.addColumn("number", "Durée moyenne (j)");
-            dtD.addColumn("number", "Nb bons");
-            e.data.forEach(function(r) {
-                dtD.addRow([r.diagnostic, parseFloat(r.duree_moyenne), parseInt(r.nb_bons)]);
-            });
-            var cd = new google.visualization.BarChart(document.getElementById("chart-diagnostic"));
-            cd.draw(dtD, {title:"Durée moyenne de réparation par diagnostic", legend:"none", colors:["#3D3486"], chartArea:{width:"65%", height:"75%"}});
-        });
-        $.ajax({type:"post", data:"load-provider-comparison=1", dataType:"json"})
-        .done(function(e) {
-            if (!e.data || !e.data.length) return;
-            var dt = new google.visualization.DataTable();
-            dt.addColumn("string", "Prestataire");
-            dt.addColumn("number", "Nb réparations");
-            dt.addColumn("number", "Durée moy (j)");
-            dt.addColumn("number", "Coût moyen (' . devise() . ')");
-            e.data.forEach(function(r) { dt.addRow([r.nom_prestataire, parseInt(r.nb_reparations), parseFloat(r.duree_moyenne), parseFloat(r.cout_moyen)]); });
-            var c = new google.visualization.ColumnChart(document.getElementById("chart-providers"));
-            c.draw(dt, {title:"Performance par prestataire", colors:["#5D54A4","#7C78B8","#3D3486"], chartArea:{width:"80%", height:"70%"}});
-        });
-        $.ajax({type:"post", data:"load-recurrence=1", dataType:"json"})
-        .done(function(e) {
-            if (!e.data || !e.data.length) {
+        $.ajax({type:"post", data:"load-dashboard-all=1", dataType:"json"})
+        .done(function(resp) {
+            var d = resp.data;
+            // Budget projection — LineChart
+            if (d.budget && d.budget.length) {
+                var dt = new google.visualization.DataTable();
+                dt.addColumn("string", "Mois");
+                dt.addColumn("number", "Coût (' . devise() . ')");
+                d.budget.forEach(function(r) { dt.addRow([r.mois, parseFloat(r.total)]); });
+                new google.visualization.LineChart(document.getElementById("chart-budget"))
+                    .draw(dt, {title:"Évolution mensuelle des coûts", curveType:"function", legend:"none", colors:["#5D54A4"], chartArea:{width:"85%", height:"75%"}});
+            }
+            // Cost by centre — ColumnChart
+            if (d.centres && d.centres.length) {
+                var dtC = new google.visualization.DataTable();
+                dtC.addColumn("string", "Centre de coûts");
+                dtC.addColumn("number", "Coût total (' . devise() . ')");
+                dtC.addColumn("number", "Nb bons");
+                dtC.addColumn({type:"string", role:"tooltip", p:{html:true}});
+                d.centres.forEach(function(r) {
+                    var cout = parseFloat(r.total_cout);
+                    var nb = parseInt(r.nb_bons);
+                    dtC.addRow([r.lib_centre_cout, cout, nb, r.lib_centre_cout + ": " + cout.toLocaleString() + " (' . devise() . ') - " + nb + " bon(s)"]);
+                });
+                new google.visualization.ColumnChart(document.getElementById("chart-centres"))
+                    .draw(dtC, {title:"Répartition des coûts par centre", legend:"none", colors:["#5D54A4"], chartArea:{width:"75%", height:"75%"}, hAxis:{title:"Centre de coûts"}, vAxis:{title:"Coût total (' . devise() . ')"}});
+            }
+            // Execution type — PieChart
+            if (d.typeExec && d.typeExec.length) {
+                var dtT = new google.visualization.DataTable();
+                dtT.addColumn("string", "Type");
+                dtT.addColumn("number", "Coût");
+                d.typeExec.forEach(function(r) {
+                    dtT.addRow([r.type_execution == "0" ? "Interne" : "Externe", parseFloat(r.total_cout)]);
+                });
+                new google.visualization.PieChart(document.getElementById("chart-type"))
+                    .draw(dtT, {title:"Coûts par type d\'exécution", colors:["#5D54A4","#7C78B8"], chartArea:{width:"80%", height:"70%"}, pieHole:0.4});
+            }
+            // Duration by diagnostic — BarChart
+            if (d.diagnostics && d.diagnostics.length) {
+                var dtD = new google.visualization.DataTable();
+                dtD.addColumn("string", "Diagnostic");
+                dtD.addColumn("number", "Durée moyenne (j)");
+                dtD.addColumn("number", "Nb bons");
+                d.diagnostics.forEach(function(r) {
+                    dtD.addRow([r.diagnostic, parseFloat(r.duree_moyenne), parseInt(r.nb_bons)]);
+                });
+                new google.visualization.BarChart(document.getElementById("chart-diagnostic"))
+                    .draw(dtD, {title:"Durée moyenne de réparation par diagnostic", legend:"none", colors:["#3D3486"], chartArea:{width:"65%", height:"75%"}});
+            }
+            // Provider comparison — ColumnChart
+            if (d.providers && d.providers.length) {
+                var dtP = new google.visualization.DataTable();
+                dtP.addColumn("string", "Prestataire");
+                dtP.addColumn("number", "Nb réparations");
+                dtP.addColumn("number", "Durée moy (j)");
+                dtP.addColumn("number", "Coût moyen (' . devise() . ')");
+                d.providers.forEach(function(r) { dtP.addRow([r.nom_prestataire, parseInt(r.nb_reparations), parseFloat(r.duree_moyenne), parseFloat(r.cout_moyen)]); });
+                new google.visualization.ColumnChart(document.getElementById("chart-providers"))
+                    .draw(dtP, {title:"Performance par prestataire", colors:["#5D54A4","#7C78B8","#3D3486"], chartArea:{width:"80%", height:"70%"}});
+            }
+            // Recurrence — Table
+            if (d.recurrence && d.recurrence.length) {
+                var dtR = new google.visualization.DataTable();
+                dtR.addColumn("string", "Véhicule");
+                dtR.addColumn("number", "Nb pannes");
+                dtR.addColumn("number", "Coût total (' . devise() . ')");
+                dtR.addColumn("number", "Durée moy (j)");
+                dtR.addColumn("string", "Dernière panne");
+                d.recurrence.forEach(function(r) {
+                    dtR.addRow([r.immatriculation_vehicule, parseInt(r.nb_pannes), parseFloat(r.total_cout), parseFloat(r.duree_moyenne), r.derniere_panne]);
+                });
+                new google.visualization.Table(document.getElementById("table-recurrence"))
+                    .draw(dtR, {showRowNumber:true, width:"100%", height:"100%", page:"enable", pageSize:10, sortColumn:1, sortAscending:false});
+            } else {
                 $("#table-recurrence").html("<div class=\"p-3 text-muted\">Aucun véhicule avec pannes récurrentes sur les 6 derniers mois.</div>");
-                return;
             }
-            var dtR = new google.visualization.DataTable();
-            dtR.addColumn("string", "Véhicule");
-            dtR.addColumn("number", "Nb pannes");
-            dtR.addColumn("number", "Coût total (' . devise() . ')");
-            dtR.addColumn("number", "Durée moy (j)");
-            dtR.addColumn("string", "Dernière panne");
-            e.data.forEach(function(r) {
-                dtR.addRow([r.immatriculation_vehicule, parseInt(r.nb_pannes), parseFloat(r.total_cout), parseFloat(r.duree_moyenne), r.derniere_panne]);
-            });
-            var tr = new google.visualization.Table(document.getElementById("table-recurrence"));
-            tr.draw(dtR, {showRowNumber:true, width:"100%", height:"100%", page:"enable", pageSize:10, sortColumn:1, sortAscending:false});
-        });
-        $.ajax({type:"post", data:"load-cost-per-km=1&dateFrom=2024-01-01&dateTo=" + new Date().toISOString().slice(0,10), dataType:"json"})
-        .done(function(e) {
-            if (!e.data || !e.data.length) return;
-            var dt = new google.visualization.DataTable();
-            dt.addColumn("string", "Véhicule");
-            dt.addColumn("number", "Coût total (' . devise() . ')");
-            dt.addColumn("number", "Km parcourus");
-            dt.addColumn("number", "Coût/km (' . devise() . ')");
-            e.data.forEach(function(r) {
-                var km = parseFloat(r.km_max) - parseFloat(r.km_min);
-                var coutKm = km > 0 ? parseFloat(r.total_cout) / km : 0;
-                dt.addRow([r.immatriculation_vehicule, parseFloat(r.total_cout), km, coutKm]);
-            });
-            var t = new google.visualization.Table(document.getElementById("chart-costkm"));
-            t.draw(dt, {showRowNumber:true, width:"100%", height:"100%", page:"enable", pageSize:15});
-        });
-        // -- Cross-domain analytics --
-        $.ajax({type:"post", data:"load-docs-expiration=1", dataType:"json"})
-        .done(function(e) {
-            if (!e.data || !e.data.length) {
+            // Cost per km — Table
+            if (d.costPerKm && d.costPerKm.length) {
+                var dtK = new google.visualization.DataTable();
+                dtK.addColumn("string", "Véhicule");
+                dtK.addColumn("number", "Coût total (' . devise() . ')");
+                dtK.addColumn("number", "Km parcourus");
+                dtK.addColumn("number", "Coût/km (' . devise() . ')");
+                d.costPerKm.forEach(function(r) {
+                    var km = parseFloat(r.km_max) - parseFloat(r.km_min);
+                    var coutKm = km > 0 ? parseFloat(r.total_cout) / km : 0;
+                    dtK.addRow([r.immatriculation_vehicule, parseFloat(r.total_cout), km, coutKm]);
+                });
+                new google.visualization.Table(document.getElementById("chart-costkm"))
+                    .draw(dtK, {showRowNumber:true, width:"100%", height:"100%", page:"enable", pageSize:15});
+            }
+            // Docs expiration — Table
+            if (d.docsExpiration && d.docsExpiration.length) {
+                var dtE = new google.visualization.DataTable();
+                dtE.addColumn("string", "Véhicule");
+                dtE.addColumn("string", "Document");
+                dtE.addColumn("string", "Expiration");
+                dtE.addColumn("number", "Jours restants");
+                dtE.addColumn("string", "Réf");
+                d.docsExpiration.forEach(function(r) {
+                    dtE.addRow([r.immatriculation_vehicule, r.nom_document, r.date_expiration_document, parseInt(r.jours_restants), r.ref_document]);
+                });
+                new google.visualization.Table(document.getElementById("table-docs-expiration"))
+                    .draw(dtE, {showRowNumber:false, width:"100%", height:"100%", sortColumn:3, sortAscending:true, page:"enable", pageSize:10});
+            } else {
                 $("#table-docs-expiration").html("<div class=\"p-3 text-success fw-bold\"><i class=\"fa fa-check-circle\"></i> Aucun document n\'expire dans les 30 prochains jours.</div>");
-                return;
             }
-            var dtE = new google.visualization.DataTable();
-            dtE.addColumn("string", "Véhicule");
-            dtE.addColumn("string", "Document");
-            dtE.addColumn("string", "Expiration");
-            dtE.addColumn("number", "Jours restants");
-            dtE.addColumn("string", "Réf");
-            e.data.forEach(function(r) {
-                var jours = parseInt(r.jours_restants);
-                var badge = jours <= 7 ? "<span class=\"lt-badge lt-badge-danger\">" + jours + "j</span>"
-                           : jours <= 15 ? "<span class=\"lt-badge lt-badge-warning\">" + jours + "j</span>"
-                           : "<span class=\"lt-badge lt-badge-success\">" + jours + "j</span>";
-                dtE.addRow([r.immatriculation_vehicule, r.nom_document, r.date_expiration_document, jours, r.ref_document]);
-            });
-            var te = new google.visualization.Table(document.getElementById("table-docs-expiration"));
-            te.draw(dtE, {showRowNumber:false, width:"100%", height:"100%", sortColumn:3, sortAscending:true, page:"enable", pageSize:10});
-        });
-        $.ajax({type:"post", data:"load-chauffeur-impact=1", dataType:"json"})
-        .done(function(e) {
-            if (!e.data || !e.data.length) return;
-            var dtC = new google.visualization.DataTable();
-            dtC.addColumn("string", "Chauffeur");
-            dtC.addColumn("number", "Coût total (' . devise() . ')");
-            dtC.addColumn("number", "Nb pannes");
-            dtC.addColumn("number", "Durée moy (j)");
-            e.data.forEach(function(r) {
-                dtC.addRow([r.nom_chauffeur, parseFloat(r.total_cout), parseInt(r.nb_pannes), parseFloat(r.duree_moyenne)]);
-            });
-            var cc = new google.visualization.BarChart(document.getElementById("chart-chauffeur-impact"));
-            cc.draw(dtC, {title:"Coûts de maintenance par chauffeur", legend:"none", colors:["#5D54A4"], chartArea:{width:"60%", height:"75%"}, hAxis:{title:"Coût total (' . devise() . ')"}});
-        });
-        $.ajax({type:"post", data:"load-repair-conflicts=1", dataType:"json"})
-        .done(function(e) {
-            if (!e.data || !e.data.length) {
+            // Chauffeur impact — BarChart
+            if (d.chauffeurImpact && d.chauffeurImpact.length) {
+                var dtH = new google.visualization.DataTable();
+                dtH.addColumn("string", "Chauffeur");
+                dtH.addColumn("number", "Coût total (' . devise() . ')");
+                dtH.addColumn("number", "Nb pannes");
+                dtH.addColumn("number", "Durée moy (j)");
+                d.chauffeurImpact.forEach(function(r) {
+                    dtH.addRow([r.nom_chauffeur, parseFloat(r.total_cout), parseInt(r.nb_pannes), parseFloat(r.duree_moyenne)]);
+                });
+                new google.visualization.BarChart(document.getElementById("chart-chauffeur-impact"))
+                    .draw(dtH, {title:"Coûts de maintenance par chauffeur", legend:"none", colors:["#5D54A4"], chartArea:{width:"60%", height:"75%"}, hAxis:{title:"Coût total (' . devise() . ')"}});
+            }
+            // Repair conflicts — Table
+            if (d.repairConflicts && d.repairConflicts.length) {
+                var dtX = new google.visualization.DataTable();
+                dtX.addColumn("string", "Véhicule");
+                dtX.addColumn("string", "Chauffeur");
+                dtX.addColumn("string", "Bon réparation");
+                dtX.addColumn("string", "Sortie prévue");
+                dtX.addColumn("string", "Voyage");
+                dtX.addColumn("string", "Date voyage");
+                dtX.addColumn("number", "Décalage (j)");
+                d.repairConflicts.forEach(function(r) {
+                    dtX.addRow([r.immatriculation_vehicule, r.nom_chauffeur, r.num_bon_reparation, r.date_prevue_sortie, r.titre_voyage, r.date_voyage, parseInt(r.decalage_jours)]);
+                });
+                new google.visualization.Table(document.getElementById("table-repair-conflicts"))
+                    .draw(dtX, {showRowNumber:false, width:"100%", height:"100%", sortColumn:6, sortAscending:false, page:"enable", pageSize:10});
+            } else {
                 $("#table-repair-conflicts").html("<div class=\"p-3 text-success fw-bold\"><i class=\"fa fa-check-circle\"></i> Aucun conflit détecté entre réparations en cours et voyages planifiés.</div>");
-                return;
             }
-            var dtX = new google.visualization.DataTable();
-            dtX.addColumn("string", "Véhicule");
-            dtX.addColumn("string", "Chauffeur");
-            dtX.addColumn("string", "Bon réparation");
-            dtX.addColumn("string", "Sortie prévue");
-            dtX.addColumn("string", "Voyage");
-            dtX.addColumn("string", "Date voyage");
-            dtX.addColumn("number", "Décalage (j)");
-            e.data.forEach(function(r) {
-                dtX.addRow([r.immatriculation_vehicule, r.nom_chauffeur, r.num_bon_reparation, r.date_prevue_sortie, r.titre_voyage, r.date_voyage, parseInt(r.decalage_jours)]);
-            });
-            var tx = new google.visualization.Table(document.getElementById("table-repair-conflicts"));
-            tx.draw(dtX, {showRowNumber:false, width:"100%", height:"100%", sortColumn:6, sortAscending:false, page:"enable", pageSize:10});
         });
+        // Lazy-load health scores & upcoming vidanges (separate calls to prevent blocking page load)
+        $.ajax({type:"post", data:"load-health-scores=1", dataType:"json"})
+        .done(function(e) { if (e.html) $("#health-scores-section").html(e.html); })
+        .fail(function() { $("#health-scores-section").html("<div class=\"alert alert-warning\">Erreur lors du chargement des scores de santé.</div>"); });
+        $.ajax({type:"post", data:"load-upcoming-vidanges=1", dataType:"json"})
+        .done(function(e) { if (e.html) $("#upcoming-vidanges-section").html(e.html); })
+        .fail(function() { $("#upcoming-vidanges-section").html("<div class=\"alert alert-warning\">Erreur lors du chargement de la planification.</div>"); });
     });
     </script>';
     return $html;

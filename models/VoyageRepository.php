@@ -247,6 +247,35 @@ class VoyageRepository extends BaseRepository
         );
     }
 
+    /** Batch reporting query — one query for all vehicles instead of N+1 per-vehicle calls. */
+    public function findAllForReportingByContext(string $dateFrom, string $dateTo, array $regionIds, array $entiteIds): array
+    {
+        [$where, $ctxParams] = db_context_filter($regionIds, $entiteIds);
+        $params = array_merge([$dateFrom, $dateTo], $ctxParams);
+        return $this->select(
+            "SELECT affectation_vehicule.id_vehicule,
+                    vehicule.immatriculation_vehicule,
+                    voyage.date_voyage,
+                    type_chargement_voyage.lib_type_chargement,
+                    type_chargement_voyage.id_type_chargement,
+                    voyage.qte_chargement,
+                    destination_voyage.distance_destination,
+                    voyage.qte_carburant
+             FROM voyage
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
+             LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
+             LEFT JOIN type_chargement_voyage ON type_chargement_voyage.id_type_chargement = voyage.id_type_chargement
+             LEFT JOIN voyage_vehicule ON voyage_vehicule.id_voyage = voyage.id_voyage
+             LEFT JOIN destination_voyage ON destination_voyage.id_destination = voyage_vehicule.id_destination
+             WHERE date_voyage BETWEEN ? AND ?
+             AND is_ferme = 0
+             AND affectation_vehicule.is_deleted = 0
+             AND $where
+             ORDER BY affectation_vehicule.id_vehicule, type_chargement_voyage.id_type_chargement, date_voyage",
+            $params
+        );
+    }
+
     /** Voyages by date and region (for evaluation). */
     public function countByDateAndRegion(string $date, int $regionId): array
     {

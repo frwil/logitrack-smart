@@ -440,4 +440,82 @@ class MaintenanceController extends BaseController
         $rows = $this->maintenanceRepo->repairVoyageConflicts(getContextRegions(), getContextEntities());
         $this->json(['data' => $rows]);
     }
+
+    /** Single endpoint for all dashboard charts — one connection, no lock contention. */
+    public function dashboardAll(): never
+    {
+        $regionIds = getContextRegions();
+        $entiteIds = getContextEntities();
+        $dateTo = date('Y-m-d');
+        $this->json(['data' => [
+            'budget'        => $this->maintenanceRepo->monthlyCostHistory(12, $regionIds, $entiteIds),
+            'centres'       => $this->maintenanceRepo->costByCentreCout($regionIds, $entiteIds),
+            'typeExec'      => $this->maintenanceRepo->costByExecutionType($regionIds, $entiteIds),
+            'diagnostics'   => $this->maintenanceRepo->avgDurationByDiagnostic($regionIds, $entiteIds),
+            'providers'     => $this->maintenanceRepo->providerComparison($regionIds, $entiteIds),
+            'recurrence'    => $this->maintenanceRepo->recurrenceByVehicle($regionIds, $entiteIds),
+            'costPerKm'     => $this->maintenanceRepo->costPerKm($regionIds, $entiteIds, '2024-01-01', $dateTo),
+            'docsExpiration' => $this->maintenanceRepo->documentsExpiration($regionIds, $entiteIds),
+            'chauffeurImpact' => $this->maintenanceRepo->chauffeurMaintenanceImpact($regionIds, $entiteIds),
+            'repairConflicts' => $this->maintenanceRepo->repairVoyageConflicts($regionIds, $entiteIds),
+        ]]);
+    }
+
+    public function healthScoresHtml(): never
+    {
+        $rows = $this->maintenanceRepo->vehicleHealthScores(getContextRegions(), getContextEntities());
+        if (!count($rows)) {
+            $this->json(['html' => '<div class="alert alert-info">Aucun véhicule actif trouvé.</div>']);
+        }
+
+        $html = '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title">Score de santé des véhicules</h2></div>';
+        $html .= '<table id="table-health-scores" class="table table-striped no-datatable"><thead><tr>
+            <th>Véhicule</th><th>Chauffeur</th><th>Km actuel</th><th>Proch. vidange</th>
+            <th>Pannes (6 mois)</th><th>Coût total (' . devise() . ')</th><th>Score</th><th>État</th></tr></thead><tbody>';
+        foreach ($rows as $r) {
+            $score = (int)$r['score'];
+            $color = $score >= 70 ? 'success' : ($score >= 40 ? 'warning' : 'danger');
+            $etat = $score >= 70 ? 'Bon' : ($score >= 40 ? 'Moyen' : 'Critique');
+            $html .= '<tr>
+                <td>' . h($r['immatriculation_vehicule']) . '</td>
+                <td>' . h($r['nom_chauffeur']) . '</td>
+                <td>' . ($r['km_actuel'] ?? '-') . '</td>
+                <td>' . ($r['km_prochaine_vidange'] ?? '-') . '</td>
+                <td>' . (int)($r['nb_pannes_6mois'] ?? 0) . '</td>
+                <td>' . number_format((float)($r['total_cout'] ?? 0), 0, ',', ' ') . '</td>
+                <td><span class="lt-badge lt-badge-' . $color . '">' . $score . '/100</span></td>
+                <td><span class="text-' . $color . ' fw-bold">' . $etat . '</span></td></tr>';
+        }
+        $html .= '</tbody></table></div>';
+        $html .= '<script>$("#table-health-scores").DataTable({order:[[6,"asc"]], pageLength:25, destroy:true});</script>';
+        $this->json(['html' => $html]);
+    }
+
+    public function upcomingVidangesHtml(): never
+    {
+        $rows = $this->maintenanceRepo->upcomingVidanges(60, getContextRegions(), getContextEntities());
+        if (!count($rows)) {
+            $this->json(['html' => '<div class="alert alert-info">Aucune vidange à prévoir dans les 60 jours.</div>']);
+        }
+
+        $html = '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title">Planification des vidanges à venir (60 jours)</h2></div>';
+        $html .= '<table id="table-upcoming-vidanges" class="table table-striped no-datatable"><thead><tr>
+            <th>Véhicule</th><th>Chauffeur</th><th>Km actuel</th><th>Proch. vidange</th>
+            <th>Km restants</th><th>Km/jour</th><th>Jours estimés</th><th>Urgence</th></tr></thead><tbody>';
+        foreach ($rows as $r) {
+            $urgenceClass = $r['urgence'] === 'Dépassée' ? 'danger' : ($r['urgence'] === 'Urgent' ? 'warning' : ($r['urgence'] === 'Bientôt' ? 'info' : 'success'));
+            $html .= '<tr>
+                <td>' . h($r['immatriculation_vehicule']) . '</td>
+                <td>' . h($r['nom_chauffeur']) . '</td>
+                <td>' . ($r['km_actuel'] ?? '-') . '</td>
+                <td>' . ($r['km_prochaine_vidange'] ?? '-') . '</td>
+                <td>' . (int)($r['km_restant'] ?? 0) . '</td>
+                <td>' . ($r['km_moyen_jour'] ?? '-') . '</td>
+                <td>' . (int)($r['jours_estimes'] ?? 0) . '</td>
+                <td><span class="lt-badge lt-badge-' . $urgenceClass . '">' . h($r['urgence']) . '</span></td></tr>';
+        }
+        $html .= '</tbody></table></div>';
+        $html .= '<script>$("#table-upcoming-vidanges").DataTable({order:[[6,"asc"]], pageLength:25, destroy:true});</script>';
+        $this->json(['html' => $html]);
+    }
 }
