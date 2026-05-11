@@ -281,13 +281,13 @@ if (!$renderPartial):
             <?php elseif (isset($_GET['page']) && $_GET['page'] == 'maintenances') :  ?>
                 <?php include("maintenance.php"); ?>
                 <?php echo getDashboardCards(); ?>
-                <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'dashboard'): ?>
+                <?php if (!isset($_GET['subpage']) || $_GET['subpage'] == 'dashboard'): ?>
                     <div class="lt-page-title">Tableau de bord maintenance</div>
                     <hr>
                     <?php echo getDashboardCharts(); ?>
                     <?php echo getHealthScores(); ?>
                     <?php echo getUpcomingVidanges(); ?>
-                <?php elseif (!isset($_GET['subpage']) || $_GET['subpage'] == 'releveKms'): ?>
+                <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'releveKms'): ?>
                     <div class="lt-page-title">Relevés de kilométrages</div>
                     <hr>
                     <?php echo getTableauReleveKMS(); ?>

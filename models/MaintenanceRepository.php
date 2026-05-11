@@ -320,7 +320,7 @@ class MaintenanceRepository extends BaseRepository
     public function insertCentreCout(string $nom): int
     {
         return (int)$this->insertGetId(
-            "INSERT INTO centre_couts (nom_centre_cout) VALUES (?)",
+            "INSERT INTO centre_couts (lib_centre_cout) VALUES (?)",
             [$nom]
         );
     }
@@ -328,7 +328,7 @@ class MaintenanceRepository extends BaseRepository
     public function updateCentreCout(int $id, string $nom): bool
     {
         return $this->exec(
-            "UPDATE centre_couts SET nom_centre_cout = ? WHERE id_centre_cout = ?",
+            "UPDATE centre_couts SET lib_centre_cout = ? WHERE id_centre_cout = ?",
             [$nom, $id]
         );
     }
@@ -587,6 +587,82 @@ class MaintenanceRepository extends BaseRepository
         );
     }
 
+    public function costByCentreCout(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT centre_couts.lib_centre_cout,
+                    COUNT(bons_reparation.id_bon_reparation) AS nb_bons,
+                    SUM(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0)) AS total_cout
+             FROM bons_reparation
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
+             LEFT JOIN centre_couts ON centre_couts.id_centre_cout = bons_reparation.id_centre_cout
+             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             GROUP BY centre_couts.id_centre_cout, centre_couts.lib_centre_cout
+             ORDER BY total_cout DESC",
+            $params
+        );
+    }
+
+    public function recurrenceByVehicle(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT vehicule.immatriculation_vehicule,
+                    COUNT(bons_reparation.id_bon_reparation) AS nb_pannes,
+                    SUM(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0)) AS total_cout,
+                    AVG(duree_reparation) AS duree_moyenne,
+                    MAX(date_entree) AS derniere_panne
+             FROM bons_reparation
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
+             LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
+             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+               AND date_entree >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+             GROUP BY vehicule.id_vehicule, vehicule.immatriculation_vehicule
+             HAVING nb_pannes >= 2
+             ORDER BY nb_pannes DESC, total_cout DESC",
+            $params
+        );
+    }
+
+    public function avgDurationByDiagnostic(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT diagnostic,
+                    COUNT(id_bon_reparation) AS nb_bons,
+                    AVG(duree_reparation) AS duree_moyenne,
+                    SUM(duree_reparation) AS duree_totale
+             FROM bons_reparation
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+               AND duree_reparation > 0
+             GROUP BY diagnostic
+             ORDER BY duree_totale DESC
+             LIMIT 10",
+            $params
+        );
+    }
+
+    public function costByExecutionType(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT type_execution,
+                    COUNT(id_bon_reparation) AS nb_bons,
+                    SUM(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0)) AS total_cout
+             FROM bons_reparation
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
+             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             GROUP BY type_execution
+             ORDER BY total_cout DESC",
+            $params
+        );
+    }
+
     // ---- Vehicle Health & Prediction ----
 
     public function vehicleHealthScores(array $regionIds, array $entiteIds): array
@@ -786,6 +862,78 @@ class MaintenanceRepository extends BaseRepository
              observations = ?
              WHERE id_bon_reparation = ?",
             [$num, $affectationId, $dateEntree, $diagnostic, $typeExecution, $prestataireId, $montant, $plusMoinsId, $plusMoinsVal, $destinationId, $duree, $dateJustif, $centreCoutId, $datePrevue, $dateFin, $observation, $id]
+        );
+    }
+
+    // ---- Cross-domain Analytics ----
+
+    public function documentsExpiration(array $regionIds, array $entiteIds, int $jours = 30): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT vehicule.immatriculation_vehicule,
+                    document_vehicule.nom_document,
+                    dossier_vehicule_document.date_expiration_document,
+                    DATEDIFF(dossier_vehicule_document.date_expiration_document, CURDATE()) AS jours_restants,
+                    dossier_vehicule_document.ref_document
+             FROM dossier_vehicule_document
+             JOIN document_vehicule ON document_vehicule.id_document = dossier_vehicule_document.id_document
+             JOIN vehicule ON vehicule.id_vehicule = dossier_vehicule_document.id_vehicule
+             WHERE dossier_vehicule_document.is_active = 1
+               AND dossier_vehicule_document.date_expiration_document >= CURDATE()
+               AND dossier_vehicule_document.date_expiration_document <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
+               AND dossier_vehicule_document.id_vehicule IN (
+                   SELECT affectation_vehicule.id_vehicule FROM affectation_vehicule
+                   WHERE affectation_vehicule.is_deleted = 0 AND $where
+               )
+             ORDER BY dossier_vehicule_document.date_expiration_document ASC
+             LIMIT 50",
+            array_merge($params, [$jours])
+        );
+    }
+
+    public function chauffeurMaintenanceImpact(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT chauffeur.nom_chauffeur,
+                    COUNT(bons_reparation.id_bon_reparation) AS nb_pannes,
+                    SUM(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0)) AS total_cout,
+                    ROUND(AVG(duree_reparation), 1) AS duree_moyenne,
+                    MAX(bons_reparation.date_entree) AS derniere_panne
+             FROM bons_reparation
+             JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
+             JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
+             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             GROUP BY chauffeur.id_chauffeur, chauffeur.nom_chauffeur
+             HAVING nb_pannes > 0
+             ORDER BY total_cout DESC",
+            $params
+        );
+    }
+
+    public function repairVoyageConflicts(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT vehicule.immatriculation_vehicule,
+                    chauffeur.nom_chauffeur,
+                    bons_reparation.num_bon_reparation,
+                    bons_reparation.date_prevue_sortie,
+                    voyage.titre_voyage,
+                    voyage.date_voyage,
+                    DATEDIFF(bons_reparation.date_prevue_sortie, voyage.date_voyage) AS decalage_jours
+             FROM bons_reparation
+             JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
+             JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
+             LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
+             JOIN voyage ON voyage.id_affectation = affectation_vehicule.id_affectation
+             WHERE bons_reparation.cloture_reparation = 0
+               AND voyage.date_voyage BETWEEN CURDATE() AND bons_reparation.date_prevue_sortie
+               AND affectation_vehicule.is_deleted = 0 AND $where
+             ORDER BY voyage.date_voyage ASC",
+            $params
         );
     }
 }

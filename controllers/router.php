@@ -121,6 +121,13 @@ $routes = [
     'load-budget-projection'   => [$maintenanceCtrl, 'budgetProjection'],
     'load-provider-comparison' => [$maintenanceCtrl, 'providerComparison'],
     'load-cost-per-km'         => [$maintenanceCtrl, 'costPerKm'],
+    'load-cost-by-centre'      => [$maintenanceCtrl, 'costByCentre'],
+    'load-recurrence'          => [$maintenanceCtrl, 'recurrence'],
+    'load-duree-diagnostic'    => [$maintenanceCtrl, 'dureeByDiagnostic'],
+    'load-cout-type'           => [$maintenanceCtrl, 'coutByType'],
+    'load-docs-expiration'     => [$maintenanceCtrl, 'docsExpiration'],
+    'load-chauffeur-impact'    => [$maintenanceCtrl, 'chauffeurImpact'],
+    'load-repair-conflicts'    => [$maintenanceCtrl, 'repairConflicts'],
 
     // Config — Type permis
     'c-dl-s'              => [$configCtrl, 'fetchTypePermis'],

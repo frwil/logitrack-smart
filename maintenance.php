@@ -75,7 +75,7 @@ function getTableauCentreCout()
         $table = "<table id='table-centrecouts' class='table table-striped'><thead><tr><th>Centre de coûts</th><th></th></tr></thead><tbody>";
         foreach ($rows as $r):
             $hash = $r['id_centre_cout'];
-            $table .= "<tr><td>" . h($r['nom_centre_cout']) . "</td><td><div class='btn-group'>" . (in_array("updCentreCout", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le centre de coûts' data-bs-toggle='modal' data-bs-target='#modal-upd-centrecout' data-bs-id-cc='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delCentreCout", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delCentreCout(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div>";
+            $table .= "<tr><td>" . h($r['lib_centre_cout']) . "</td><td><div class='btn-group'>" . (in_array("updCentreCout", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le centre de coûts' data-bs-toggle='modal' data-bs-target='#modal-upd-centrecout' data-bs-id-cc='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delCentreCout", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delCentreCout(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div>";
         endforeach;
         return "<a class='btn btn-primary' href='?page=maintenances&subpage=centreCouts&action=new'>Nouveau Centre de coûts</a><hr>" . $table . "</tbody></table>";
     else :
@@ -92,7 +92,7 @@ function getTableauBonsReparation()
         $table = "<table id='table-bons-reparation' class='table table-striped responsive'><thead><tr><th>N°</th><th>Véhicule</th><th>Date d'entrée</th><th>Diagnostic</th><th>Type d'exécution</th><th>Prestataire</th><th>Montant</th><th>Opération additionnelle</th><th>Montant opération</th><th>Montant réel</th><th>Destination</th><th>Durée réparation</th><th>Date de justification</th><th>Centre de coûts</th><th>Date prévue de sortie</th><th>Date effective de fin des travaux</th><th>Observations</th><th></th></tr></thead><tbody>";
         foreach ($rows as $r):
             $hash = $r['id_bon_reparation'];
-            $table .= "<tr><td>" . h($r['num_bon_reparation']) . "</td><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . ($r['date_entree'] ? date('d-m-Y', strtotime($r['date_entree'])) : '') . "</td><td>" . h($r['diagnostic']) . "</td><td>" . ($r['type_execution'] == '0' ? "Interne" : "Externe") . "</td><td>" . h($r['nom_prestataire']) . "</td><td>" . h($r['montant_reparation']) . "</td><td>" . h($r['lib_plus_ou_moins_value']) . "</td><td>" . h($r['plus_ou_moins_value_valeur']) . "</td><td>" . ($r['montant_reparation'] + $r['plus_ou_moins_value_valeur'] * ($r['type_plus_ou_moins_value'] == 0 ? 1 : -1)) . "</td><td>" . h($r['destination_bon']) . "</td><td>" . h($r['duree_reparation']) . "</td><td>" . ($r['date_justification'] == '' ? "" : date('d-m-Y', strtotime($r['date_justification']))) . "</td><td>" . h($r['nom_centre_cout']) . "</td><td>" . ($r['date_prevue_sortie'] == "" ? "" : date('d-m-Y', strtotime($r['date_prevue_sortie']))) . "</td><td>" . ($r['date_fin_reparation'] == "" ? "" : date('d-m-Y', strtotime($r['date_fin_reparation']))) . "</td><td>" . h($r['observations']) . "</td><td><div class='btn-group'>" . (in_array("updBonsReparation", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-bonsReparation' data-bs-id-br='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delBonsReparation", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delBonsReparation(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+            $table .= "<tr><td>" . h($r['num_bon_reparation']) . "</td><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . ($r['date_entree'] ? date('d-m-Y', strtotime($r['date_entree'])) : '') . "</td><td>" . h($r['diagnostic']) . "</td><td>" . ($r['type_execution'] == '0' ? "Interne" : "Externe") . "</td><td>" . h($r['nom_prestataire']) . "</td><td>" . h($r['montant_reparation']) . "</td><td>" . h($r['lib_plus_ou_moins_value']) . "</td><td>" . h($r['plus_ou_moins_value_valeur']) . "</td><td>" . ($r['montant_reparation'] + $r['plus_ou_moins_value_valeur'] * ($r['type_plus_ou_moins_value'] == 0 ? 1 : -1)) . "</td><td>" . h($r['destination_bon']) . "</td><td>" . h($r['duree_reparation']) . "</td><td>" . ($r['date_justification'] == '' ? "" : date('d-m-Y', strtotime($r['date_justification']))) . "</td><td>" . h($r['lib_centre_cout']) . "</td><td>" . ($r['date_prevue_sortie'] == "" ? "" : date('d-m-Y', strtotime($r['date_prevue_sortie']))) . "</td><td>" . ($r['date_fin_reparation'] == "" ? "" : date('d-m-Y', strtotime($r['date_fin_reparation']))) . "</td><td>" . h($r['observations']) . "</td><td><div class='btn-group'>" . (in_array("updBonsReparation", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-bonsReparation' data-bs-id-br='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delBonsReparation", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delBonsReparation(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         endforeach;
         return "<a class='btn btn-primary' href='?page=maintenances&subpage=suiviBonsReparation&action=new'>Nouveau Bon de réparation</a><hr>" . $table . "<tfoot></tfoot></tbody></table>";
     else :
@@ -174,7 +174,7 @@ function getPremiereSemaineDuMois($date)
 
 /* POST handled by MaintenanceController — see controllers/router.php */
 ?>
-<?php if ((isset($_GET['subpage']) && $_GET['subpage'] == 'releveKms') || !isset($_GET['subpage'])) : ?>
+<?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'releveKms') : ?>
     <?php if (isset($_GET['action']) && $_GET['action'] == 'new' && in_array("saveReleveKms", $rights_maintenance)): ?>
         <script>
             setTimeout(() => {
@@ -780,8 +780,8 @@ function getPremiereSemaineDuMois($date)
                 }).done((e) => {
                     if (e.success) {
                         let v = e.data
-                        $('#nom-upd-cc').val(v.nom_centre_cout)
-                        $('#id-centrecout').html(v.nom_centre_cout)
+                        $('#nom-upd-cc').val(v.lib_centre_cout)
+                        $('#id-centrecout').html(v.lib_centre_cout)
                         $('#id-upd-cc').val(v.id_centre_cout)
                     } else {
                         showError(e.error || "Erreur lors du chargement")
@@ -859,8 +859,27 @@ function getDashboardCharts()
     $html = '<div class="row g-3 mb-3">';
     $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Évolution des coûts (12 mois)</h2></div>';
     $html .= '<div id="chart-budget" style="height: 350px;"></div></div></div>';
+    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Coûts par centre</h2></div>';
+    $html .= '<div id="chart-centres" style="height: 350px;"></div></div></div>';
+    $html .= '<div class="col-md-4"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Répartition par type</h2></div>';
+    $html .= '<div id="chart-type" style="height: 300px;"></div></div></div>';
+    $html .= '<div class="col-md-8"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Durée moyenne par diagnostic</h2></div>';
+    $html .= '<div id="chart-diagnostic" style="height: 300px;"></div></div></div>';
     $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Comparaison des prestataires</h2></div>';
     $html .= '<div id="chart-providers" style="height: 350px;"></div></div></div>';
+    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Véhicules à pannes récurrentes (6 mois)</h2></div>';
+    $html .= '<div id="table-recurrence" style="max-height:350px;overflow-y:auto;"></div></div></div>';
+    $html .= '<div class="row g-3 mb-3">';
+    $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Alertes documents (30 jours)</h2></div>';
+    $html .= '<div id="table-docs-expiration" style="max-height:250px;overflow-y:auto;"></div></div></div>';
+    $html .= '</div>';
+    $html .= '<div class="row g-3 mb-3">';
+    $html .= '<div class="col-md-7"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Impact chauffeur sur la maintenance</h2></div>';
+    $html .= '<div id="chart-chauffeur-impact" style="height: 350px;"></div></div></div>';
+    $html .= '<div class="col-md-5"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Conflits réparation / voyages</h2></div>';
+    $html .= '<div id="table-repair-conflicts" style="max-height:350px;overflow-y:auto;"></div></div></div>';
+    $html .= '</div>';
+    $html .= '<div class="row g-3 mb-3">';
     $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Coût au kilomètre par véhicule</h2></div>';
     $html .= '<div id="chart-costkm"></div></div></div>';
     $html .= '</div>';
@@ -877,6 +896,48 @@ function getDashboardCharts()
             var c = new google.visualization.LineChart(document.getElementById("chart-budget"));
             c.draw(dt, {title:"Évolution mensuelle des coûts", curveType:"function", legend:"none", colors:["#5D54A4"], chartArea:{width:"85%", height:"75%"}});
         });
+        $.ajax({type:"post", data:"load-cost-by-centre=1", dataType:"json"})
+        .done(function(e) {
+            if (!e.data || !e.data.length) return;
+            var dtC = new google.visualization.DataTable();
+            dtC.addColumn("string", "Centre de coûts");
+            dtC.addColumn("number", "Coût total (' . devise() . ')");
+            dtC.addColumn("number", "Nb bons");
+            dtC.addColumn({type:"string", role:"tooltip", p:{html:true}});
+            e.data.forEach(function(r) {
+                var cout = parseFloat(r.total_cout);
+                var nb = parseInt(r.nb_bons);
+                dtC.addRow([r.lib_centre_cout, cout, nb, r.lib_centre_cout + ": " + cout.toLocaleString() + " (' . devise() . ') - " + nb + " bon(s)"]);
+            });
+            var cc = new google.visualization.ColumnChart(document.getElementById("chart-centres"));
+            cc.draw(dtC, {title:"Répartition des coûts par centre", legend:"none", colors:["#5D54A4"], chartArea:{width:"75%", height:"75%"}, hAxis:{title:"Centre de coûts"}, vAxis:{title:"Coût total (' . devise() . ')"}});
+        });
+        $.ajax({type:"post", data:"load-cout-type=1", dataType:"json"})
+        .done(function(e) {
+            if (!e.data || !e.data.length) return;
+            var dtT = new google.visualization.DataTable();
+            dtT.addColumn("string", "Type");
+            dtT.addColumn("number", "Coût");
+            e.data.forEach(function(r) {
+                var label = r.type_execution == "0" ? "Interne" : "Externe";
+                dtT.addRow([label, parseFloat(r.total_cout)]);
+            });
+            var ct = new google.visualization.PieChart(document.getElementById("chart-type"));
+            ct.draw(dtT, {title:"Coûts par type d\'exécution", colors:["#5D54A4","#7C78B8"], chartArea:{width:"80%", height:"70%"}, pieHole:0.4});
+        });
+        $.ajax({type:"post", data:"load-duree-diagnostic=1", dataType:"json"})
+        .done(function(e) {
+            if (!e.data || !e.data.length) return;
+            var dtD = new google.visualization.DataTable();
+            dtD.addColumn("string", "Diagnostic");
+            dtD.addColumn("number", "Durée moyenne (j)");
+            dtD.addColumn("number", "Nb bons");
+            e.data.forEach(function(r) {
+                dtD.addRow([r.diagnostic, parseFloat(r.duree_moyenne), parseInt(r.nb_bons)]);
+            });
+            var cd = new google.visualization.BarChart(document.getElementById("chart-diagnostic"));
+            cd.draw(dtD, {title:"Durée moyenne de réparation par diagnostic", legend:"none", colors:["#3D3486"], chartArea:{width:"65%", height:"75%"}});
+        });
         $.ajax({type:"post", data:"load-provider-comparison=1", dataType:"json"})
         .done(function(e) {
             if (!e.data || !e.data.length) return;
@@ -888,6 +949,24 @@ function getDashboardCharts()
             e.data.forEach(function(r) { dt.addRow([r.nom_prestataire, parseInt(r.nb_reparations), parseFloat(r.duree_moyenne), parseFloat(r.cout_moyen)]); });
             var c = new google.visualization.ColumnChart(document.getElementById("chart-providers"));
             c.draw(dt, {title:"Performance par prestataire", colors:["#5D54A4","#7C78B8","#3D3486"], chartArea:{width:"80%", height:"70%"}});
+        });
+        $.ajax({type:"post", data:"load-recurrence=1", dataType:"json"})
+        .done(function(e) {
+            if (!e.data || !e.data.length) {
+                $("#table-recurrence").html("<div class=\"p-3 text-muted\">Aucun véhicule avec pannes récurrentes sur les 6 derniers mois.</div>");
+                return;
+            }
+            var dtR = new google.visualization.DataTable();
+            dtR.addColumn("string", "Véhicule");
+            dtR.addColumn("number", "Nb pannes");
+            dtR.addColumn("number", "Coût total (' . devise() . ')");
+            dtR.addColumn("number", "Durée moy (j)");
+            dtR.addColumn("string", "Dernière panne");
+            e.data.forEach(function(r) {
+                dtR.addRow([r.immatriculation_vehicule, parseInt(r.nb_pannes), parseFloat(r.total_cout), parseFloat(r.duree_moyenne), r.derniere_panne]);
+            });
+            var tr = new google.visualization.Table(document.getElementById("table-recurrence"));
+            tr.draw(dtR, {showRowNumber:true, width:"100%", height:"100%", page:"enable", pageSize:10, sortColumn:1, sortAscending:false});
         });
         $.ajax({type:"post", data:"load-cost-per-km=1&dateFrom=2024-01-01&dateTo=" + new Date().toISOString().slice(0,10), dataType:"json"})
         .done(function(e) {
@@ -904,6 +983,63 @@ function getDashboardCharts()
             });
             var t = new google.visualization.Table(document.getElementById("chart-costkm"));
             t.draw(dt, {showRowNumber:true, width:"100%", height:"100%", page:"enable", pageSize:15});
+        });
+        // -- Cross-domain analytics --
+        $.ajax({type:"post", data:"load-docs-expiration=1", dataType:"json"})
+        .done(function(e) {
+            if (!e.data || !e.data.length) {
+                $("#table-docs-expiration").html("<div class=\"p-3 text-success fw-bold\"><i class=\"fa fa-check-circle\"></i> Aucun document n\'expire dans les 30 prochains jours.</div>");
+                return;
+            }
+            var dtE = new google.visualization.DataTable();
+            dtE.addColumn("string", "Véhicule");
+            dtE.addColumn("string", "Document");
+            dtE.addColumn("string", "Expiration");
+            dtE.addColumn("number", "Jours restants");
+            dtE.addColumn("string", "Réf");
+            e.data.forEach(function(r) {
+                var jours = parseInt(r.jours_restants);
+                var badge = jours <= 7 ? "<span class=\"lt-badge lt-badge-danger\">" + jours + "j</span>"
+                           : jours <= 15 ? "<span class=\"lt-badge lt-badge-warning\">" + jours + "j</span>"
+                           : "<span class=\"lt-badge lt-badge-success\">" + jours + "j</span>";
+                dtE.addRow([r.immatriculation_vehicule, r.nom_document, r.date_expiration_document, jours, r.ref_document]);
+            });
+            var te = new google.visualization.Table(document.getElementById("table-docs-expiration"));
+            te.draw(dtE, {showRowNumber:false, width:"100%", height:"100%", sortColumn:3, sortAscending:true, page:"enable", pageSize:10});
+        });
+        $.ajax({type:"post", data:"load-chauffeur-impact=1", dataType:"json"})
+        .done(function(e) {
+            if (!e.data || !e.data.length) return;
+            var dtC = new google.visualization.DataTable();
+            dtC.addColumn("string", "Chauffeur");
+            dtC.addColumn("number", "Coût total (' . devise() . ')");
+            dtC.addColumn("number", "Nb pannes");
+            dtC.addColumn("number", "Durée moy (j)");
+            e.data.forEach(function(r) {
+                dtC.addRow([r.nom_chauffeur, parseFloat(r.total_cout), parseInt(r.nb_pannes), parseFloat(r.duree_moyenne)]);
+            });
+            var cc = new google.visualization.BarChart(document.getElementById("chart-chauffeur-impact"));
+            cc.draw(dtC, {title:"Coûts de maintenance par chauffeur", legend:"none", colors:["#5D54A4"], chartArea:{width:"60%", height:"75%"}, hAxis:{title:"Coût total (' . devise() . ')"}});
+        });
+        $.ajax({type:"post", data:"load-repair-conflicts=1", dataType:"json"})
+        .done(function(e) {
+            if (!e.data || !e.data.length) {
+                $("#table-repair-conflicts").html("<div class=\"p-3 text-success fw-bold\"><i class=\"fa fa-check-circle\"></i> Aucun conflit détecté entre réparations en cours et voyages planifiés.</div>");
+                return;
+            }
+            var dtX = new google.visualization.DataTable();
+            dtX.addColumn("string", "Véhicule");
+            dtX.addColumn("string", "Chauffeur");
+            dtX.addColumn("string", "Bon réparation");
+            dtX.addColumn("string", "Sortie prévue");
+            dtX.addColumn("string", "Voyage");
+            dtX.addColumn("string", "Date voyage");
+            dtX.addColumn("number", "Décalage (j)");
+            e.data.forEach(function(r) {
+                dtX.addRow([r.immatriculation_vehicule, r.nom_chauffeur, r.num_bon_reparation, r.date_prevue_sortie, r.titre_voyage, r.date_voyage, parseInt(r.decalage_jours)]);
+            });
+            var tx = new google.visualization.Table(document.getElementById("table-repair-conflicts"));
+            tx.draw(dtX, {showRowNumber:false, width:"100%", height:"100%", sortColumn:6, sortAscending:false, page:"enable", pageSize:10});
         });
     });
     </script>';

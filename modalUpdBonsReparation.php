@@ -106,7 +106,7 @@
                             <label for="centrecout-br-upd">Centre de coûts</label>
                             <select id="centrecout-br-upd" name="centrecout-br-upd" required>
                                 <?php foreach ($maintenanceRepo->findAllCentresCouts() as $r):
-                                    echo "<option value='" . $r['id_centre_cout'] . "'>" . h($r['nom_centre_cout']) . "</option>";
+                                    echo "<option value='" . $r['id_centre_cout'] . "'>" . h($r['lib_centre_cout']) . "</option>";
                                 endforeach;
                                 ?>
                             </select>

@@ -127,7 +127,7 @@ class MaintenanceController extends BaseController
         $rows = $this->maintenanceRepo->findAllCentresCouts();
         $html = '';
         foreach ($rows as $r) {
-            $html .= "<option value='{$r['id_centre_cout']}'>" . h($r['nom_centre_cout']) . "</option>";
+            $html .= "<option value='{$r['id_centre_cout']}'>" . h($r['lib_centre_cout']) . "</option>";
         }
         $this->json(['html' => $html]);
     }
@@ -396,6 +396,48 @@ class MaintenanceController extends BaseController
             $this->post('dateFrom'),
             $this->post('dateTo')
         );
+        $this->json(['data' => $rows]);
+    }
+
+    public function costByCentre(): never
+    {
+        $rows = $this->maintenanceRepo->costByCentreCout(getContextRegions(), getContextEntities());
+        $this->json(['data' => $rows]);
+    }
+
+    public function recurrence(): never
+    {
+        $rows = $this->maintenanceRepo->recurrenceByVehicle(getContextRegions(), getContextEntities());
+        $this->json(['data' => $rows]);
+    }
+
+    public function dureeByDiagnostic(): never
+    {
+        $rows = $this->maintenanceRepo->avgDurationByDiagnostic(getContextRegions(), getContextEntities());
+        $this->json(['data' => $rows]);
+    }
+
+    public function coutByType(): never
+    {
+        $rows = $this->maintenanceRepo->costByExecutionType(getContextRegions(), getContextEntities());
+        $this->json(['data' => $rows]);
+    }
+
+    public function docsExpiration(): never
+    {
+        $rows = $this->maintenanceRepo->documentsExpiration(getContextRegions(), getContextEntities());
+        $this->json(['data' => $rows]);
+    }
+
+    public function chauffeurImpact(): never
+    {
+        $rows = $this->maintenanceRepo->chauffeurMaintenanceImpact(getContextRegions(), getContextEntities());
+        $this->json(['data' => $rows]);
+    }
+
+    public function repairConflicts(): never
+    {
+        $rows = $this->maintenanceRepo->repairVoyageConflicts(getContextRegions(), getContextEntities());
         $this->json(['data' => $rows]);
     }
 }
