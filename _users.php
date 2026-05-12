@@ -182,7 +182,7 @@ function getTableauUsers()
                                     // Maintenance sub-module rights
                                     $maintenanceSubs = [
                                         ['Relevés kilométriques', 'viewReleveKms', 'saveReleveKms', '', ''],
-                                        ['Suivi vidanges',        'viewVidange',    '',               'updVidange',    'delVidange'],
+                                        ['Suivi vidanges',        'viewVidange',    'saveVidange',    'updVidange',    'delVidange'],
                                         ['Prestataires',          'viewPrestataire', 'savePrestataire', 'updPrestataire', 'delPrestataire'],
                                         ['Centre de coûts',       'viewCentreCout',  'saveCentreCout',  'updCentreCout',  'delCentreCout'],
                                         ['Bons de réparation',    'viewBonsReparation', 'saveBonsReparation', 'updBonsReparation', 'delBonsReparation'],

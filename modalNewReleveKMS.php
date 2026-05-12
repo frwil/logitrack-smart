@@ -83,7 +83,9 @@
 
     function openModalReleve() {
         $('#modal-new-relevekms').modal('show')
-        $('#date-releve-kms').change()
+        $('#modal-new-relevekms').one('shown.bs.modal', function() {
+            $('#date-releve-kms').change()
+        })
     }
     const releveModal = document.getElementById('modal-new-relevekms')
     if (releveModal) {

@@ -43,7 +43,14 @@ function getTableauVidange()
         endforeach;
         $table .= "</tbody></table><div id='output' style='margin: 30px;'></div>";
         $stats = "<table class='no-datatable'><tbody><tr><td><span class='badge text-bg-danger' style='width:100px'><i class='fa fa-times'></i>Alerte</span></td><td>$danger</td></tr><tr><td><span class='badge text-bg-success' style='width:100px'><i class='fa fa-check'></i>Ok</span></td><td>$success</td></tr></tbody></table>";
-        return "<a class='btn btn-primary' href='?page=maintenances&subpage=prestataire&action=new'>Nouveau Prestataire</a>&nbsp;<a class='btn btn-primary' href='?page=maintenances&subpage=suiviVidanges&action=new'>Nouvelle vidange</a><hr>$table<hr>$stats";
+        $btns = '';
+        if (in_array('savePrestataire', $rights_maintenance)) {
+            $btns .= "<a class='btn btn-primary' href='?page=maintenances&subpage=prestataire&action=new'>Nouveau Prestataire</a>&nbsp;";
+        }
+        if (in_array('saveVidange', $rights_maintenance)) {
+            $btns .= "<a class='btn btn-primary' href='?page=maintenances&subpage=suiviVidanges&action=new'>Nouvelle vidange</a>&nbsp;";
+        }
+        return "$btns<hr>$table<hr>$stats";
     else :
         return "<div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>";
     endif;
