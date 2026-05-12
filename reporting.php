@@ -110,6 +110,7 @@ function badge(float $pct): string {
           <div class="col-6"><label for="date_debut" class="form-label">Date de début</label><?php echo dateField('date_debut', date('Y-m-d')); ?></div>
           <div class="col-6"><label for="date_fin" class="form-label">Date de fin</label><?php echo dateField('date_fin', date('Y-m-d')); ?></div>
         </div>
+        <input type="hidden" name="active_tab" value="poussins">
         <button type="submit" class="btn btn-primary">Générer le rapport</button>
       </form>
       <hr>
@@ -159,6 +160,7 @@ function badge(float $pct): string {
           <div class="col-6"><label for="date_debut_r" class="form-label">Date de début</label><?php echo dateField('date_debut_r', date('Y-m-01')); ?></div>
           <div class="col-6"><label for="date_fin_r" class="form-label">Date de fin</label><?php echo dateField('date_fin_r', date('Y-m-t')); ?></div>
         </div>
+        <input type="hidden" name="active_tab" value="remplissage">
         <button type="submit" class="btn btn-primary">Générer le rapport</button>
       </form>
       <hr>
@@ -208,6 +210,7 @@ function badge(float $pct): string {
           <div class="col-6"><label for="date_debut_c" class="form-label">Date de début</label><?php echo dateField('date_debut_c', date('Y-m-01')); ?></div>
           <div class="col-6"><label for="date_fin_c" class="form-label">Date de fin</label><?php echo dateField('date_fin_c', date('Y-m-t')); ?></div>
         </div>
+        <input type="hidden" name="active_tab" value="conso">
         <button type="submit" class="btn btn-primary">Générer le rapport</button>
       </form>
       <hr>
@@ -251,6 +254,7 @@ function badge(float $pct): string {
           <div class="col-6"><label for="date_debut_ck" class="form-label">Date de début</label><?php echo dateField('date_debut_ck', date('Y-m-01')); ?></div>
           <div class="col-6"><label for="date_fin_ck" class="form-label">Date de fin</label><?php echo dateField('date_fin_ck', date('Y-m-t')); ?></div>
         </div>
+        <input type="hidden" name="active_tab" value="coutkm">
         <button type="submit" class="btn btn-primary">Générer le rapport</button>
       </form>
       <hr>
@@ -296,6 +300,7 @@ function badge(float $pct): string {
           <div class="col-6"><label for="date_debut_i" class="form-label">Date de début</label><?php echo dateField('date_debut_i', date('Y-m-01')); ?></div>
           <div class="col-6"><label for="date_fin_i" class="form-label">Date de fin</label><?php echo dateField('date_fin_i', date('Y-m-t')); ?></div>
         </div>
+        <input type="hidden" name="active_tab" value="immobilisation">
         <button type="submit" class="btn btn-primary">Générer le rapport</button>
       </form>
       <hr>
@@ -335,6 +340,7 @@ function badge(float $pct): string {
           <div class="col-6"><label for="date_debut_dest" class="form-label">Date de début</label><?php echo dateField('date_debut_dest', date('Y-m-01')); ?></div>
           <div class="col-6"><label for="date_fin_dest" class="form-label">Date de fin</label><?php echo dateField('date_fin_dest', date('Y-m-t')); ?></div>
         </div>
+        <input type="hidden" name="active_tab" value="destinations">
         <button type="submit" class="btn btn-primary">Générer le rapport</button>
       </form>
       <hr>
@@ -372,6 +378,7 @@ function badge(float $pct): string {
           <div class="col-6"><label for="date_debut_s" class="form-label">Date de début</label><?php echo dateField('date_debut_s', date('Y-m-01')); ?></div>
           <div class="col-6"><label for="date_fin_s" class="form-label">Date de fin</label><?php echo dateField('date_fin_s', date('Y-m-t')); ?></div>
         </div>
+        <input type="hidden" name="active_tab" value="synthese">
         <button type="submit" class="btn btn-primary">Générer le rapport</button>
       </form>
       <hr>
@@ -406,6 +413,9 @@ function badge(float $pct): string {
 
   </div>
 </div>
+<?php if (!empty($_POST['active_tab'])): ?>
+<script>document.addEventListener('DOMContentLoaded',function(){new bootstrap.Tab(document.getElementById('<?php echo $_POST['active_tab']; ?>-tab')).show()});</script>
+<?php endif; ?>
 <script>
   const mainDiv = $('#reportTabs').parent().parent().parent()
   mainDiv.find('.col-2').remove()
@@ -428,7 +438,7 @@ function badge(float $pct): string {
     rowGroup: { dataSrc: [0,3] },
     columnDefs: [{ targets: [0,3], visible: false }]
   });
-  $('#table_remplissage').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[5, "desc"]] });
+  $('#table_remplissage').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[5, "desc"]], rowGroup: { dataSrc: 0 }, columnDefs: [{ targets: 0, visible: false }] });
   $('#table_conso').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[4, "asc"]] });
   $('#table_coutkm').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[3, "desc"]] });
   $('#table_immobilisation').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[5, "asc"]] });
