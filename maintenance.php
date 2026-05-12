@@ -147,32 +147,6 @@ function getDashboardCards()
 }
 
 /* POST handled by MaintenanceController — see controllers/router.php */
-function getPremiereSemaineDuMois($date)
-{
-    $premierJourDuMois = date('Y-m-01', strtotime($date));
-    $jourDeLaSemaine = date('w', strtotime($premierJourDuMois)); // 0 pour dimanche, 1 pour lundi, etc.
-
-
-    $premiereSemaine = [];
-
-    // Ajouter les jours de la semaine précédente si le premier jour du mois n'est pas un lundi
-    for ($i = $jourDeLaSemaine - 1; $i >= 0; $i--) {
-        $premiereSemaine[] = date('Y-m-d', strtotime($premierJourDuMois . ' -' . ($i + 1) . ' days'));
-    }
-    // Ajouter les jours de la première semaine du mois
-    for ($i = 0; count($premiereSemaine) < 7; $i++) {
-        $premiereSemaine[] = date('Y-m-d', strtotime($premierJourDuMois . ' +' . $i . ' days'));
-    }
-
-    // Ajuster l'ordre des jours (du lundi au dimanche)
-    usort($premiereSemaine, function ($a, $b) {
-        return strtotime($a) - strtotime($b);
-    });
-
-    return $premiereSemaine;
-}
-
-/* POST handled by MaintenanceController — see controllers/router.php */
 ?>
 <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'releveKms') : ?>
     <?php if (isset($_GET['action']) && $_GET['action'] == 'new' && in_array("saveReleveKms", $rights_maintenance)): ?>

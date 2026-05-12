@@ -194,10 +194,28 @@ class MaintenanceController extends BaseController
 
     // ---- Relevé KMS ----
 
+    private function getPremiereSemaineDuMois(string $date): array
+    {
+        $premierJourDuMois = date('Y-m-01', strtotime($date));
+        $jourDeLaSemaine = (int)date('w', strtotime($premierJourDuMois));
+        $semaine = [];
+
+        // Jours de la semaine précédente si le 1er n'est pas un lundi
+        for ($i = $jourDeLaSemaine - 1; $i >= 0; $i--) {
+            $semaine[] = date('Y-m-d', strtotime($premierJourDuMois . ' -' . ($i + 1) . ' days'));
+        }
+        for ($i = 0; count($semaine) < 7; $i++) {
+            $semaine[] = date('Y-m-d', strtotime($premierJourDuMois . ' +' . $i . ' days'));
+        }
+        usort($semaine, fn($a, $b) => strtotime($a) - strtotime($b));
+        return $semaine;
+    }
+
     public function fetchPeriodes(): never
     {
-        $semPer = date('Y-m-01', strtotime($this->post('semPer')));
-        $psem = getPremiereSemaineDuMois($semPer);
+        $input = $this->post('semPer');
+        $semPer = $input ? date('Y-m-01', strtotime($input)) : date('Y-m-01');
+        $psem = $this->getPremiereSemaineDuMois($semPer);
         $rows = $this->maintenanceRepo->findPeriodesReleve($psem[0], date('Y-m-t', strtotime($semPer)));
 
         ob_start();
