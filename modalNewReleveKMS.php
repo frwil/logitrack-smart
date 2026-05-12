@@ -34,7 +34,7 @@
 
                         <label for="per-releve-kms">Semaine</label>
 
-                        <select required name="per-releve-kms" id="per-releve-kms">
+                        <select required name="per-releve-kms" id="per-releve-kms" class="no-tom-select">
 
                         </select>
 

@@ -181,7 +181,7 @@ function getDashboardCards()
 
                             <label for="per-upd-releve-kms">Semaine</label>
 
-                            <select required name="per-upd-releve-kms" id="per-upd-releve-kms" onchange="$('#vh-upd-releve-kms').change()">
+                            <select required name="per-upd-releve-kms" id="per-upd-releve-kms" class="no-tom-select" onchange="$('#vh-upd-releve-kms').change()">
 
                             </select>
 
