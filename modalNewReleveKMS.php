@@ -1,21 +1,5 @@
 <?php
-if (isset($_POST['idvhlkms'])):
-    $maintenanceRepo = new MaintenanceRepository($con);
-    $row = $maintenanceRepo->findMaxKmByAffectationHash($_POST['idvhlkms'], $_POST['dtkms']);
-    $km_releve = ($row && $row['km'] !== null) ? (int)$row['km'] : 0;
-    die(json_encode(['success' => true, 'km' => $km_releve]));
-endif;
-if (isset($_POST['per-releve'])):
-    $per = json_decode($_POST['per-releve']);
-    $maintenanceRepo = new MaintenanceRepository($con);
-    $options = array();
-    for ($i = 0; $i < count($per); $i++):
-        $periodeLabel = 'Semaine ' . ($i + 1);
-        $options[$i] = $maintenanceRepo->countReleveByPeriode($periodeLabel, $_POST['id-vh'], $per[$i]->start, $per[$i]->end);
-    endfor;
-    die(json_encode(['success' => true, 'data' => $options]));
-endif;
-/* POST handled by ReleveKmsController — see controllers/router.php */
+/* POST handled by MaintenanceController — see controllers/router.php */
 ?>
 <div class="modal fade" id="modal-new-relevekms" tabindex="-1" aria-labelledby="modal-new-relevekmsLabel" aria-hidden="true">
     <div class="modal-dialog">

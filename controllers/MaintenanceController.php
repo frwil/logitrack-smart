@@ -236,6 +236,37 @@ class MaintenanceController extends BaseController
         }
     }
 
+    /** Fetch last KM for a vehicle affectation (used by new-releve modal). */
+    public function fetchLastKm(): never
+    {
+        $row = $this->maintenanceRepo->findMaxKmByAffectationHash(
+            $this->post('idvhlkms'),
+            $this->post('dtkms')
+        );
+        $km = ($row && $row['km'] !== null) ? (int)$row['km'] : 0;
+        $this->json(['km' => $km]);
+    }
+
+    /** Fetch weeks for a month (used by new-releve modal). */
+    public function fetchSemaines(): never
+    {
+        $per = json_decode($this->post('per-releve'));
+        if (!$per || !is_array($per)) {
+            $this->jsonError('Données de période invalides');
+        }
+        $options = [];
+        for ($i = 0; $i < count($per); $i++):
+            $label = 'Semaine ' . ($i + 1);
+            $options[$i] = $this->maintenanceRepo->countReleveByPeriode(
+                $label,
+                (int)$this->post('id-vh'),
+                $per[$i]->start,
+                $per[$i]->end
+            );
+        endfor;
+        $this->json(['data' => $options]);
+    }
+
     public function fetchKmReleve(): never
     {
         $row = $this->maintenanceRepo->findKmReleve($this->post('perSem'), (int)$this->post('vhPer'));

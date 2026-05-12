@@ -111,6 +111,8 @@ $routes = [
     'vhPer'               => [$maintenanceCtrl, 'fetchKmReleve'],
     'updRel'              => [$maintenanceCtrl, 'updateReleve'],
     'vh-releve-kms'       => [$maintenanceCtrl, 'createReleveKms'],
+    'idvhlkms'            => [$maintenanceCtrl, 'fetchLastKm'],
+    'per-releve'          => [$maintenanceCtrl, 'fetchSemaines'],
 
     // Maintenance — Bon de réparation
     'num-br'              => [$maintenanceCtrl, 'createBonReparation'],
