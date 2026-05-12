@@ -78,8 +78,11 @@ class AffectationController extends BaseController
     {
         try {
             $this->repo->transactional(function () {
+                $vehiculeId = (int)$this->post('id-vehicule-aff');
+                // Close any previous active assignment for this vehicle
+                $this->repo->closeByVehiculeId($vehiculeId);
                 $this->repo->insert(
-                    (int)$this->post('id-vehicule-aff'),
+                    $vehiculeId,
                     (int)$this->post('id-chauffeur-aff'),
                     (int)$this->post('id-typeutilisation-aff'),
                     (int)$this->post('id-modeutilisation-aff'),

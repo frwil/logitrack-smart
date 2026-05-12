@@ -122,9 +122,19 @@ class AffectationRepository extends BaseRepository
     public function closeById(int $id): bool
     {
         return $this->exec(
-            "UPDATE affectation_vehicule SET is_ferme = 1, date_fin_affectation = CURRENT_DATE
+            "UPDATE affectation_vehicule SET statut_affectation = 'Terminé', is_ferme = 1, date_fin_affectation = CURRENT_DATE
              WHERE id_affectation = ?",
             [$id]
+        );
+    }
+
+    /** Close all active assignments for a vehicle. */
+    public function closeByVehiculeId(int $vehiculeId): bool
+    {
+        return $this->exec(
+            "UPDATE affectation_vehicule SET statut_affectation = 'Terminé', is_ferme = 1, date_fin_affectation = CURRENT_DATE
+             WHERE id_vehicule = ? AND statut_affectation = 'En cours' AND is_deleted = 0",
+            [$vehiculeId]
         );
     }
 

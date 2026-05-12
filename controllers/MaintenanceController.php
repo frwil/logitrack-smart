@@ -213,16 +213,27 @@ class MaintenanceController extends BaseController
 
     public function fetchPeriodes(): never
     {
-        $input = $this->post('semPer');
-        $semPer = $input ? date('Y-m-01', strtotime($input)) : date('Y-m-01');
-        $psem = $this->getPremiereSemaineDuMois($semPer);
-        $rows = $this->maintenanceRepo->findPeriodesReleve($psem[0], date('Y-m-t', strtotime($semPer)));
+        try {
+            $input = $this->post('semPer');
+            error_log('[fetchPeriodes] semPer input: ' . var_export($input, true));
+            $semPer = $input ? date('Y-m-01', strtotime($input)) : date('Y-m-01');
+            error_log('[fetchPeriodes] semPer resolved: ' . $semPer);
+            $psem = $this->getPremiereSemaineDuMois($semPer);
+            error_log('[fetchPeriodes] psem[0]: ' . $psem[0] . ' psem[6]: ' . $psem[6]);
+            $end = date('Y-m-t', strtotime($semPer));
+            error_log('[fetchPeriodes] query range: ' . $psem[0] . ' to ' . $end);
+            $rows = $this->maintenanceRepo->findPeriodesReleve($psem[0], $end);
+            error_log('[fetchPeriodes] rows found: ' . count($rows));
 
-        ob_start();
-        foreach ($rows as $r):
-            echo "<option value='" . $r['periode_releve'] . "'>{$r['periode_releve']}</option>";
-        endforeach;
-        $this->json(['html' => ob_get_clean()]);
+            ob_start();
+            foreach ($rows as $r):
+                echo "<option value='" . $r['periode_releve'] . "'>{$r['periode_releve']}</option>";
+            endforeach;
+            $this->json(['html' => ob_get_clean()]);
+        } catch (\Throwable $e) {
+            error_log('[fetchPeriodes] ERROR: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            $this->jsonError('Erreur: ' . $e->getMessage());
+        }
     }
 
     public function fetchKmReleve(): never
