@@ -450,23 +450,44 @@ function badge(float $pct): string {
     "paginate": { "first": "Premier", "last": "Dernier", "next": "Suivant", "previous": "Précédent" }
   };
 
-  $('#table_report').DataTable({
-    columnDefs: [{ targets: 0, searchable: false }],
-    language: dtLang, ordering: false, dom: 'Bfrtip', buttons: ['excel'],
-    order: [[0, "desc"]],
-    rowGroup: { dataSrc: [0,3] },
-    columnDefs: [{ targets: [0,3], visible: false }]
-  });
-  $('#table_remplissage').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[5, "desc"]], rowGroup: { dataSrc: 0 }, columnDefs: [{ targets: 0, visible: false }] });
-  $('#table_conso').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[4, "asc"]] });
-  $('#table_coutkm').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[3, "desc"]] });
-  $('#table_immobilisation').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[5, "asc"]] });
-  $('#table_destinations').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[1, "desc"]] });
-  $('#table_synthese').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[0, "desc"]] });
+  // DataTables options keyed by table id
+  const dtOpts = {
+    table_report: {
+      language: dtLang, ordering: false, dom: 'Bfrtip', buttons: ['excel'],
+      order: [[0, "desc"]], rowGroup: { dataSrc: [0,3] },
+      columnDefs: [{ targets: [0,3], visible: false }]
+    },
+    table_remplissage: {
+      language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'],
+      order: [[5, "desc"]], rowGroup: { dataSrc: 0 },
+      columnDefs: [{ targets: 0, visible: false }]
+    },
+    table_conso:       { language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[4, "asc"]] },
+    table_coutkm:      { language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[3, "desc"]] },
+    table_immobilisation: { language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[5, "asc"]] },
+    table_destinations:  { language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[1, "desc"]] },
+    table_synthese:     { language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[0, "desc"]] }
+  };
 
-  // Redraw DataTables when a hidden tab becomes visible
-  $(document).on('shown.bs.tab', 'button[data-bs-toggle="tab"]', function () {
-    $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust().draw();
+  function initTable(tableEl) {
+    var $t = $(tableEl);
+    if ($.fn.DataTable.isDataTable(tableEl)) return;
+    var opts = dtOpts[tableEl.id] || {};
+    $t.DataTable(opts);
+  }
+
+  // Init visible tables immediately (active tab)
+  $('.tab-pane.active.show table.no-datatable').each(function() { initTable(this); });
+
+  // Lazy-init tables when their tab becomes visible
+  $(document).on('shown.bs.tab', 'button[data-bs-toggle="tab"]', function (e) {
+    var target = $(e.target).attr('data-bs-target');
+    if (target) {
+      $(target).find('table.no-datatable').each(function() {
+        if (!$.fn.DataTable.isDataTable(this)) initTable(this);
+        else $(this).DataTable().columns.adjust().draw();
+      });
+    }
   });
 
   <?php if (!empty($_POST['active_tab'])): ?>
