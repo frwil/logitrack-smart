@@ -181,7 +181,7 @@ function getDashboardCards()
 
                             <label for="per-upd-releve-kms">Semaine</label>
 
-                            <select required name="per-upd-releve-kms" id="per-upd-releve-kms" class="no-tom-select" onchange="$('#vh-upd-releve-kms').change()">
+                            <select required name="per-upd-releve-kms" id="per-upd-releve-kms" onchange="$('#vh-upd-releve-kms').change()">
 
                             </select>
 
@@ -255,7 +255,9 @@ function getDashboardCards()
                 dataType: 'json'
             }).done((e) => {
                 if (e.success) {
+                    destroyTomSelect('#per-upd-releve-kms')
                     $('#per-upd-releve-kms').html(e.html)
+                    initTomSelect('#per-upd-releve-kms')
                 } else {
                     showError(e.error || "Erreur lors du chargement des semaines")
                 }

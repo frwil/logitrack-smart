@@ -34,7 +34,7 @@
 
                         <label for="per-releve-kms">Semaine</label>
 
-                        <select required name="per-releve-kms" id="per-releve-kms" class="no-tom-select">
+                        <select required name="per-releve-kms" id="per-releve-kms">
 
                         </select>
 
@@ -160,7 +160,9 @@
             for (i = 0; i < weeks.length; i++) {
                 options += "<option " + (v != null ? (v[i] > 0 ? 'disabled' : '') : '') + " value='Semaine " + (i + 1) + "' wk-st='" + weeks[i].start + "' wk-ed='" + weeks[i].end + "' " + (dt != '' && moment(dt).isBetween(moment(weeks[i].start), moment(weeks[i].end)) ? 'selected' : (dt!='' ? 'disabled' : '')) + ">Semaine " + (i + 1) + " (" + moment(weeks[i].start).format('DD MMM YYYY') + " - " + moment(weeks[i].end).format('DD MMM YYYY') + ")</option>"
             }
+            destroyTomSelect('#per-releve-kms')
             $('#per-releve-kms').html(options)
+            initTomSelect('#per-releve-kms')
             getLastKms(vh, dt)
         }).fail((jqXHR) => {
             showError(jqXHR.responseJSON?.error || "Erreur lors du chargement des semaines")
