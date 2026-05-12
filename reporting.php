@@ -443,9 +443,9 @@ function badge(float $pct): string {
   $('#table_synthese').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[0, "desc"]] });
 
   <?php if (!empty($_POST['active_tab'])): ?>
-  (function(){
+  setTimeout(function(){
     var btn = document.getElementById('<?php echo $_POST['active_tab']; ?>-tab');
     if (btn) { var t = new bootstrap.Tab(btn); t.show(); }
-  })();
+  }, 100);
   <?php endif; ?>
 </script>
