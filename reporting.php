@@ -445,7 +445,7 @@ function badge(float $pct): string {
   <?php if (!empty($_POST['active_tab'])): ?>
   setTimeout(function(){
     var btn = document.getElementById('<?php echo $_POST['active_tab']; ?>-tab');
-    if (btn) { var t = new bootstrap.Tab(btn); t.show(); }
+    if (btn) btn.click();
   }, 100);
   <?php endif; ?>
 </script>
