@@ -113,6 +113,11 @@ class UserRepository extends BaseRepository
                 [$userId, (int)$rid]
             );
         }
+        // Sync the denormalized column used by AuthController::login()
+        $this->exec(
+            "UPDATE users SET users_region = ? WHERE id_user = ?",
+            [implode(',', $regionIds), $userId]
+        );
     }
 
     public function replaceUserEntities(int $userId, array $entiteIds): void

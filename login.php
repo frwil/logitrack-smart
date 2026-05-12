@@ -83,20 +83,19 @@
         if ($ts.length) $ts.find('.ts-control').css({borderColor: '', boxShadow: ''});
     }
 
-    // Shared dropdown template with select-all / deselect-all links
-    function makeSelectDropdown() {
-        return '<div class="ts-dropdown-content"><div class="ts-select-all"><a href="#" class="select-all-link">Tout selectionner</a> &middot; <a href="#" class="deselect-all-link">Tout desélectionner</a></div></div>';
-    }
-
     function bindSelectAll(ts) {
         ts.on('dropdown_open', function() {
-            var $dd = $(ts.dropdown_content);
-            $dd.find('.select-all-link').off('click').on('click', function(e) {
+            var $dropdown = $(ts.dropdown);
+            if (!$dropdown.length || $dropdown.children('.ts-select-all').length) return;
+            $dropdown.prepend('<div class="ts-select-all"><a href="#" class="select-all-link">Tout selectionner</a> &middot; <a href="#" class="deselect-all-link">Tout desélectionner</a></div>');
+            $dropdown.find('.select-all-link').off('click').on('click', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 ts.setValue(Object.keys(ts.options).map(function(k) { return ts.options[k].value; }));
             });
-            $dd.find('.deselect-all-link').off('click').on('click', function(e) {
+            $dropdown.find('.deselect-all-link').off('click').on('click', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 ts.clear();
             });
         });
@@ -106,16 +105,14 @@
     var regionSelect = new TomSelect('#region-user', {
         plugins: ['remove_button'],
         maxItems: null,
-        placeholder: 'Selectionner une ou plusieurs regions...',
-        render: { dropdown: makeSelectDropdown }
+        placeholder: 'Selectionner une ou plusieurs regions...'
     });
     bindSelectAll(regionSelect);
 
     var entiteSelect = new TomSelect('#entite-user', {
         plugins: ['remove_button'],
         maxItems: null,
-        placeholder: 'Selectionner une ou plusieurs entites...',
-        render: { dropdown: makeSelectDropdown }
+        placeholder: 'Selectionner une ou plusieurs entites...'
     });
     bindSelectAll(entiteSelect);
 
