@@ -413,9 +413,6 @@ function badge(float $pct): string {
 
   </div>
 </div>
-<?php if (!empty($_POST['active_tab'])): ?>
-<script>document.addEventListener('DOMContentLoaded',function(){new bootstrap.Tab(document.getElementById('<?php echo $_POST['active_tab']; ?>-tab')).show()});</script>
-<?php endif; ?>
 <script>
   const mainDiv = $('#reportTabs').parent().parent().parent()
   mainDiv.find('.col-2').remove()
@@ -444,4 +441,11 @@ function badge(float $pct): string {
   $('#table_immobilisation').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[5, "asc"]] });
   $('#table_destinations').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[1, "desc"]] });
   $('#table_synthese').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[0, "desc"]] });
+
+  <?php if (!empty($_POST['active_tab'])): ?>
+  (function(){
+    var btn = document.getElementById('<?php echo $_POST['active_tab']; ?>-tab');
+    if (btn) { var t = new bootstrap.Tab(btn); t.show(); }
+  })();
+  <?php endif; ?>
 </script>
