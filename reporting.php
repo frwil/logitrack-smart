@@ -172,7 +172,7 @@ function badge(float $pct): string {
               $capacite = (float)$row['capacite_consommation_vehicule'];
               $byTC = $byVehTC2[$vid] ?? [];
               if (empty($byTC)) {
-                  $t2 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td>-</td><td>" . h($capacite) . "</td><td colspan='5'>Aucun voyage</td></tr>";
+                  $t2 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td>-</td><td>" . h($capacite) . "</td><td></td><td></td><td></td><td></td><td></td></tr>";
                   continue;
               }
               foreach ($byTC as $tc => $voyages) {
@@ -225,7 +225,7 @@ function badge(float $pct): string {
               foreach ($voyages as $v) { $km += $v['distance_destination']; $l += $v['qte_carburant']; }
               $totKm3 += $km; $totL3 += $l;
               if ($cnt == 0) {
-                  $t3 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td colspan='5'>Aucun voyage</td></tr>";
+                  $t3 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td></td><td></td><td></td><td></td><td></td></tr>";
                   continue;
               }
               $l100 = $km > 0 ? round(($l / $km) * 100, 1) : 0;
@@ -275,7 +275,7 @@ function badge(float $pct): string {
                   $cpk = $c['km'] > 0 ? round($c['cout'] / $c['km'], 2) : 0;
                   $t4 .= "<tr><td>" . h($immat) . "</td><td>" . number_format($c['cout'], 0, ',', ' ') . " FCFA</td><td>" . h($c['km']) . "</td><td>" . $cpk . " FCFA/km</td></tr>";
               } else {
-                  $t4 .= "<tr><td>" . h($immat) . "</td><td colspan='3'>Aucune donnée de maintenance</td></tr>";
+                  $t4 .= "<tr><td>" . h($immat) . "</td><td></td><td></td><td></td></tr>";
               }
           }
           if ($totalKm4 > 0) {
@@ -358,7 +358,7 @@ function badge(float $pct): string {
               $t6 .= "<tr><td>" . h($dest) . "</td><td>" . $d['count'] . "</td><td>" . h($d['qte']) . "</td>";
               $t6 .= "<td>" . h($d['km']) . "</td><td>" . h($d['l']) . "</td><td>$avgKm</td></tr>";
           }
-          if (empty($destinations)) $t6 .= "<tr><td colspan='6'>Aucune donnée</td></tr>";
+          if (empty($destinations)) $t6 .= "<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
           echo $t6;
           ?>
         </tbody>
@@ -397,7 +397,7 @@ function badge(float $pct): string {
               $t7 .= "<tr><td>$mois</td><td>" . $d['count'] . "</td><td>" . h($d['km']) . "</td><td>" . h($d['l']) . "</td>";
               $t7 .= "<td>" . h($d['qte']) . "</td><td>$l100</td><td>" . number_format($cout, 0, ',', ' ') . " FCFA</td></tr>";
           }
-          if (empty($byMonth)) $t7 .= "<tr><td colspan='7'>Aucune donnée</td></tr>";
+          if (empty($byMonth)) $t7 .= "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
           echo $t7;
           ?>
         </tbody>
