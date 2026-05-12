@@ -151,7 +151,7 @@ if (!$renderPartial):
     </div>
 </div>
 <div class="lt-layout">
-    <?php if (!isset($_GET['page']) || $_GET['page'] !== 'configuration'): ?>
+    <?php if (!isset($_GET['page']) || ($_GET['page'] !== 'configuration' && $_GET['page'] !== 'reports' && $_GET['page'] !== 'reporting')): ?>
     <div class="lt-sidebar">
         <div class="lt-sidebar-title">Navigation</div>
         <?php if ((isset($_GET['page']) && $_GET['page'] == 'vehicules') || !isset($_GET['page']) && in_array('view', $rights_vehicule)) : ?>
