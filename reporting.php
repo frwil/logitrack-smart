@@ -3,6 +3,13 @@ $vehiculeRepo = new VehiculeRepository($con);
 $voyageRepo = new VoyageRepository($con);
 $maintenanceRepo = new MaintenanceRepository($con);
 $vehicules = $vehiculeRepo->findAllWithDetails();
+$tcRepo = new TypeChargementRepository($con);
+$typesChargement = $tcRepo->findAll();
+$tcByUnite = [];
+foreach ($typesChargement as $tc) {
+    $tcByUnite[(int)$tc['id_type_chargement']] = $tc['unite_mesure'];
+}
+$allCapacites = $vehiculeRepo->findAllCapacites();
 
 // — Tab 1 dates (Transport et Consommations) —
 $d1 = $_POST['date_debut'] ?? date('Y-m-d');
@@ -171,13 +178,17 @@ function badge(float $pct): string {
           $t2 = '';
           foreach ($vehicules as $row) {
               $vid = (int)$row['id_vehicule'];
-              $capacite = (float)$row['capacite_consommation_vehicule'];
+              $vehCapacites = $allCapacites[$vid] ?? [];
+              $capByUnite = [];
+              foreach ($vehCapacites as $c) $capByUnite[$c['unite_mesure']] = (float)$c['capacite_max'];
               $byTC = $byVehTC2[$vid] ?? [];
               if (empty($byTC)) {
-                  $t2 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td>-</td><td>" . h($capacite) . "</td><td></td><td></td><td></td><td></td><td></td></tr>";
+                  $t2 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td>-</td><td>-</td><td></td><td></td><td></td><td></td><td></td></tr>";
                   continue;
               }
               foreach ($byTC as $tc => $voyages) {
+                  $unite = $tcByUnite[$tc] ?? '';
+                  $capacite = $capByUnite[$unite] ?? 0;
                   $cnt = count($voyages);
                   $totalQte = 0; $tMax = 0; $tMin = $capacite > 0 ? PHP_FLOAT_MAX : 0;
                   $tcLabel = h($voyages[0]['lib_type_chargement']);
@@ -192,9 +203,14 @@ function badge(float $pct): string {
                   }
                   if ($capacite <= 0) { $tMin = 0; $tMax = 0; }
                   $tMoyen = $capacite > 0 ? ($totalQte / ($cnt * $capacite)) * 100 : 0;
-                  $t2 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td>$tcLabel</td><td>" . h($capacite) . "</td>";
+                  $capDisplay = $capacite > 0 ? (h($capacite) . ' ' . h($unite)) : '<span class="text-warning">Non définie</span>';
+                  $t2 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td>$tcLabel</td><td>$capDisplay</td>";
                   $t2 .= "<td>" . h($totalQte) . "</td><td>$cnt</td>";
-                  $t2 .= "<td>" . badge($tMoyen) . "</td><td>" . round($tMax) . "%</td><td>" . round($tMin) . "%</td></tr>";
+                  if ($capacite > 0) {
+                      $t2 .= "<td>" . badge($tMoyen) . "</td><td>" . round($tMax) . "%</td><td>" . round($tMin) . "%</td></tr>";
+                  } else {
+                      $t2 .= "<td></td><td></td><td></td></tr>";
+                  }
               }
           }
           echo $t2;
@@ -215,31 +231,37 @@ function badge(float $pct): string {
       </form>
       <hr>
       <table id="table_conso" class="table table-striped table-bordered no-datatable" style="width:100%">
-        <thead><tr><th>Véhicule</th><th>Nb voyages</th><th>Total km</th><th>Total L</th><th>L/100km</th><th>km/L</th></tr></thead>
+        <thead><tr><th>Véhicule</th><th>Nb voyages</th><th>Total km</th><th>Total L</th><th>L/100km réel</th><th>Nominal (L/100km)</th><th>Écart</th></tr></thead>
         <tbody>
           <?php
           $t3 = '';
           $totKm3 = 0; $totL3 = 0;
           foreach ($vehicules as $row) {
               $vid = (int)$row['id_vehicule'];
+              $consoNominale = (float)$row['capacite_consommation_vehicule'];
               $voyages = $byVeh3[$vid] ?? [];
               $cnt = count($voyages);
               $km = 0; $l = 0;
               foreach ($voyages as $v) { $km += $v['distance_destination']; $l += $v['qte_carburant']; }
               $totKm3 += $km; $totL3 += $l;
               if ($cnt == 0) {
-                  $t3 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td></td><td></td><td></td><td></td><td></td></tr>";
+                  $t3 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
                   continue;
               }
               $l100 = $km > 0 ? round(($l / $km) * 100, 1) : 0;
-              $kml  = $l > 0 ? round($km / $l, 1) : 0;
-              $cls = $l100 < 20 ? 'bg-success' : ($l100 < 35 ? 'bg-warning text-dark' : 'bg-danger');
+              if ($consoNominale > 0) {
+                  $ecart = round((($l100 - $consoNominale) / $consoNominale) * 100);
+                  $cls = $ecart <= 5 ? 'bg-success' : ($ecart <= 20 ? 'bg-warning text-dark' : 'bg-danger');
+                  $ecartStr = "<span class='badge $cls'>" . ($ecart > 0 ? '+' : '') . "$ecart%</span>";
+              } else {
+                  $ecartStr = '—';
+              }
               $t3 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td>$cnt</td><td>" . h($km) . "</td><td>" . h($l) . "</td>";
-              $t3 .= "<td><span class='badge $cls'>$l100 L/100km</span></td><td>$kml km/L</td></tr>";
+              $t3 .= "<td>$l100</td><td>" . ($consoNominale > 0 ? h($consoNominale) : '—') . "</td><td>$ecartStr</td></tr>";
           }
           if ($totKm3 > 0) {
               $avg100 = round(($totL3 / $totKm3) * 100, 1);
-              $t3 .= "<tr class='table-dark fw-bold'><td>MOYENNE GLOBALE</td><td></td><td>" . h($totKm3) . "</td><td>" . h($totL3) . "</td><td>$avg100 L/100km</td><td></td></tr>";
+              $t3 .= "<tr class='table-dark fw-bold'><td>MOYENNE GLOBALE</td><td></td><td>" . h($totKm3) . "</td><td>" . h($totL3) . "</td><td>$avg100</td><td></td><td></td></tr>";
           }
           echo $t3;
           ?>

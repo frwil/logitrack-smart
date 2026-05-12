@@ -160,4 +160,35 @@ class VehiculeRepository extends BaseRepository
             []
         );
     }
+
+    /** Capacités de chargement par unité pour un véhicule. */
+    public function findCapacites(int $idVehicule): array
+    {
+        return $this->select("SELECT * FROM capacite_vehicule_unite WHERE id_vehicule = ?", [$idVehicule]);
+    }
+
+    /** Capacités de chargement pour tous les véhicules, indexées par id_vehicule. */
+    public function findAllCapacites(): array
+    {
+        $rows = $this->select("SELECT * FROM capacite_vehicule_unite WHERE 1", []);
+        $out = [];
+        foreach ($rows as $r) {
+            $out[(int)$r['id_vehicule']][] = $r;
+        }
+        return $out;
+    }
+
+    public function upsertCapacite(int $idVehicule, string $unite, float $capaciteMax): bool
+    {
+        return $this->exec(
+            "INSERT INTO capacite_vehicule_unite (id_vehicule, unite_mesure, capacite_max) VALUES (?, ?, ?)
+             ON DUPLICATE KEY UPDATE capacite_max = VALUES(capacite_max)",
+            [$idVehicule, $unite, $capaciteMax]
+        );
+    }
+
+    public function deleteCapacite(int $idVehicule, string $unite): bool
+    {
+        return $this->exec("DELETE FROM capacite_vehicule_unite WHERE id_vehicule = ? AND unite_mesure = ?", [$idVehicule, $unite]);
+    }
 }

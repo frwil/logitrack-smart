@@ -182,12 +182,17 @@ if (!$renderPartial):
                 <a class="lt-sidebar-link new-item" href="?page=affectationVehicules&action=new"><i class="fa fa-plus-circle"></i> Nouvelle affectation</a>
             <?php endif; ?>
         <?php elseif (isset($_GET['page']) && $_GET['page'] == 'voyages' && in_array('view', $rights_voyage)): ?>
+            <div class="lt-sidebar-title">Listes</div>
+            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeTrajets') echo 'active'; ?>" href="?page=voyages&subpage=listeTrajets"><i class="fa fa-map-marker-alt"></i> Trajets</a>
+            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeTypesChargement') echo 'active'; ?>" href="?page=voyages&subpage=listeTypesChargement"><i class="fa fa-boxes"></i> Types de chargement</a>
+            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeObjectifsVoyages') echo 'active'; ?>" href="?page=voyages&subpage=listeObjectifsVoyages"><i class="fa fa-bullseye"></i> Objectifs</a>
             <?php if (in_array('save', $rights_voyage)): ?>
                 <?php if (in_array('savetrajet', $rights_voyage)): ?>
-                    <a class="lt-sidebar-link new-item" href="?page=voyages&subpage=listeTrajets&action=new"><i class="fa fa-map-marker-alt"></i> Nouveau trajet</a>
+                    <a class="lt-sidebar-link new-item" href="?page=voyages&subpage=listeTrajets&action=new"><i class="fa fa-plus-circle"></i> Nouveau trajet</a>
                 <?php endif; ?>
                 <a class="lt-sidebar-link new-item" href="?page=voyages&action=new"><i class="fa fa-plus-circle"></i> Nouveau voyage</a>
-                <a class="lt-sidebar-link new-item" href="?page=voyages&subpage=listeObjectifsVoyages&action=new"><i class="fa fa-bullseye"></i> Objectifs de voyages</a>
+                <a class="lt-sidebar-link new-item" href="?page=voyages&subpage=listeTypesChargement&action=new"><i class="fa fa-boxes"></i> Nouveau type chargement</a>
+                <a class="lt-sidebar-link new-item" href="?page=voyages&subpage=listeObjectifsVoyages&action=new"><i class="fa fa-bullseye"></i> Nouvel objectif</a>
             <?php endif; ?>
             <?php if (in_array('report', $rights_voyage)): ?>
                 <div class="lt-sidebar-divider"></div>
@@ -274,6 +279,11 @@ if (!$renderPartial):
                     <hr>
                     <?php include("trajet.php");
                     echo getTableauTrajets(); ?>
+                <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listeTypesChargement'): ?>
+                    <div class="lt-page-title">Types de chargement</div>
+                    <hr>
+                    <?php include("type_chargement.php");
+                    echo getTableauTypesChargement(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listeObjectifsVoyages'): ?>
                     <div class="lt-page-title">Liste des Objectifs de voyage</div>
                     <hr>

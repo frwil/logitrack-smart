@@ -111,6 +111,28 @@
                             </select>
                         </div>
                     </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label class="form-label">Capacités de chargement</label>
+                        <div id="capacites-container-upd" class="mb-2"></div>
+                        <div class="input-group input-group-sm">
+                            <select id="capacite-unite-select-upd" class="form-select" style="max-width:40%">
+                                <option value="">-- Unité --</option>
+                                <?php $tcRepo2 = new TypeChargementRepository($con);
+                                $seen = [];
+                                foreach ($tcRepo2->findAll() as $tc):
+                                    if ($tc['unite_mesure'] === '' || isset($seen[$tc['unite_mesure']])) continue;
+                                    $seen[$tc['unite_mesure']] = true;
+                                    echo "<option value='" . h($tc['unite_mesure']) . "'>" . h($tc['unite_mesure']) . "</option>";
+                                endforeach; ?>
+                                <option value="__other__">Autre...</option>
+                            </select>
+                            <input type="text" id="capacite-unite-custom-upd" class="form-control" placeholder="Unité personnalisée" style="display:none;max-width:40%">
+                            <input type="number" id="capacite-max-input-upd" class="form-control" placeholder="Capacité max" min="0" step="0.01" style="max-width:40%">
+                            <button type="button" class="btn btn-outline-primary" onclick="addCapaciteRowUpd()"><i class="fa fa-plus"></i></button>
+                        </div>
+                    </div>
+                    <input type="hidden" name="capacites-vh" id="capacites-vh-upd" value="[]">
                 </form>
             </div>
             <div class="modal-footer">
@@ -121,7 +143,44 @@
     </div>
 </div>
 <script>
+    function addCapaciteRowUpd(unite, max) {
+        if (!unite) {
+            unite = $('#capacite-unite-select-upd').val()
+            if (unite === '__other__') unite = $('#capacite-unite-custom-upd').val().trim()
+            max = $('#capacite-max-input-upd').val()
+        }
+        if (!unite || !max || parseFloat(max) <= 0) return
+        var key = unite.replace(/"/g, '')
+        if ($('#cap-row-upd-' + CSS.escape(key)).length) return
+        var html = '<div class="badge bg-light text-dark me-1 mb-1 p-2" id="cap-row-upd-' + key + '">' +
+            unite + ' : <strong>' + max + '</strong> ' +
+            '<button type="button" class="btn-close btn-close-sm ms-1" onclick="$(\'#cap-row-upd-' + key + '\').remove();syncCapacitesJsonUpd()"></button>' +
+            '</div>'
+        $('#capacites-container-upd').append(html)
+        $('#capacite-max-input-upd').val('')
+        syncCapacitesJsonUpd()
+    }
+
+    function syncCapacitesJsonUpd() {
+        var caps = []
+        $('#capacites-container-upd .badge').each(function() {
+            var t = $(this).text().trim()
+            var m = t.match(/^(.+?) : (.+?) /)
+            if (m) caps.push({unite: m[1].trim(), max: parseFloat(m[2])})
+        })
+        $('#capacites-vh-upd').val(JSON.stringify(caps))
+    }
+
+    $('#capacite-unite-select-upd').change(function() {
+        var v = $(this).val()
+        if (v === '__other__') {
+            $('#capacite-unite-custom-upd').show().val('')
+            $('#capacite-unite-select-upd').hide()
+        }
+    })
+
     function updVehicule() {
+        syncCapacitesJsonUpd()
         var valid = true
         $('#form-upd-vehicule *[required]').each((e, el) => {
             $(el).removeClass('is-invalid')
@@ -154,6 +213,7 @@
         modalUpdVH.addEventListener('show.bs.modal', event => {
             // Button that triggered the modal
             const id = event.relatedTarget.getAttribute('data-bs-immat')
+            $('#capacites-container-upd').empty()
             $.ajax({
                 type: 'post',
                 data: 'im-vh-upd=' + id,
@@ -172,6 +232,12 @@
                 $('#capacite-vh-upd').val(v.capacite_consommation_vehicule)
                 $('#nbplace-vh-upd').val(v.nb_place)
                 $('#tcarb-vh-upd').val(v.type_carburant)
+                // Populate capacities
+                if (v.capacites && v.capacites.length) {
+                    v.capacites.forEach(function(c) {
+                        addCapaciteRowUpd(c.unite_mesure, c.capacite_max)
+                    })
+                }
             })
         })
     }

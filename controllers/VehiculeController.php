@@ -24,6 +24,8 @@ class VehiculeController extends BaseController
             $this->jsonError('Véhicule introuvable', 404);
         }
 
+        $id = (int)$row['id_vehicule'];
+        $row['capacites'] = $this->vehiculeRepo->findCapacites($id);
         unset($row[0], $row['id_vehicule']);
         $this->json(['data' => $row]);
     }
@@ -69,6 +71,7 @@ class VehiculeController extends BaseController
                     $this->post('tcarb-vh-upd')
                 );
                 $this->vehiculeRepo->upsertPermis($immat, (int)$this->post('qualif-permis-upd'));
+                $this->syncCapacites($immat);
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {
@@ -99,6 +102,7 @@ class VehiculeController extends BaseController
                     (int)$this->post('capacite-vh')
                 );
                 $this->vehiculeRepo->insertPermis($immat, (int)$this->post('qualif-permis'));
+                $this->syncCapacites($immat);
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {
@@ -106,6 +110,38 @@ class VehiculeController extends BaseController
                 $this->jsonError('Ce véhicule existe déjà', 409);
             }
             $this->jsonError('Erreur lors de l\'enregistrement');
+        }
+    }
+
+    private function syncCapacites(string $immat): void
+    {
+        $row = $this->vehiculeRepo->findByImmat($immat);
+        if (!$row) return;
+        $idVehicule = (int)$row['id_vehicule'];
+
+        $json = $this->post('capacites-vh');
+        if ($json === null) return;
+        $capacites = json_decode($json, true);
+        if (!is_array($capacites)) return;
+
+        $existing = $this->vehiculeRepo->findCapacites($idVehicule);
+        $existingKeys = [];
+        foreach ($existing as $c) $existingKeys[$c['unite_mesure']] = true;
+
+        $seen = [];
+        foreach ($capacites as $c) {
+            $unite = trim($c['unite'] ?? '');
+            $max   = (float)($c['max'] ?? 0);
+            if ($unite === '' || $max <= 0) continue;
+            $seen[$unite] = true;
+            $this->vehiculeRepo->upsertCapacite($idVehicule, $unite, $max);
+        }
+
+        // Remove capacities not in the new set
+        foreach ($existingKeys as $unite => $_) {
+            if (!isset($seen[$unite])) {
+                $this->vehiculeRepo->deleteCapacite($idVehicule, $unite);
+            }
         }
     }
 }

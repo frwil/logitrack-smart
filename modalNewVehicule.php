@@ -92,6 +92,28 @@
                             </select>
                         </div>
                     </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label class="form-label">Capacités de chargement</label>
+                        <div id="capacites-container" class="mb-2"></div>
+                        <div class="input-group input-group-sm">
+                            <select id="capacite-unite-select" class="form-select" style="max-width:40%">
+                                <option value="">-- Unité --</option>
+                                <?php $tcRepo2 = new TypeChargementRepository($con);
+                                $seen = [];
+                                foreach ($tcRepo2->findAll() as $tc):
+                                    if ($tc['unite_mesure'] === '' || isset($seen[$tc['unite_mesure']])) continue;
+                                    $seen[$tc['unite_mesure']] = true;
+                                    echo "<option value='" . h($tc['unite_mesure']) . "'>" . h($tc['unite_mesure']) . "</option>";
+                                endforeach; ?>
+                                <option value="__other__">Autre...</option>
+                            </select>
+                            <input type="text" id="capacite-unite-custom" class="form-control" placeholder="Unité personnalisée" style="display:none;max-width:40%">
+                            <input type="number" id="capacite-max-input" class="form-control" placeholder="Capacité max" min="0" step="0.01" style="max-width:40%">
+                            <button type="button" class="btn btn-outline-primary" onclick="addCapaciteRow()"><i class="fa fa-plus"></i></button>
+                        </div>
+                    </div>
+                    <input type="hidden" name="capacites-vh" id="capacites-vh" value="[]">
                 </form>
             </div>
             <div class="modal-footer">
@@ -106,7 +128,44 @@
         $('#modal-new-vehicule').modal('show')
     }
 
+    function addCapaciteRow(unite, max) {
+        if (!unite) {
+            unite = $('#capacite-unite-select').val()
+            if (unite === '__other__') unite = $('#capacite-unite-custom').val().trim()
+            max = $('#capacite-max-input').val()
+        }
+        if (!unite || !max || parseFloat(max) <= 0) return
+        var key = unite.replace(/"/g, '')
+        if ($('#cap-row-' + CSS.escape(key)).length) return
+        var html = '<div class="badge bg-light text-dark me-1 mb-1 p-2" id="cap-row-' + key + '">' +
+            unite + ' : <strong>' + max + '</strong> ' +
+            '<button type="button" class="btn-close btn-close-sm ms-1" onclick="$(\'#cap-row-' + key + '\').remove();syncCapacitesJson()"></button>' +
+            '</div>'
+        $('#capacites-container').append(html)
+        $('#capacite-max-input').val('')
+        syncCapacitesJson()
+    }
+
+    function syncCapacitesJson() {
+        var caps = []
+        $('#capacites-container .badge').each(function() {
+            var t = $(this).text().trim()
+            var m = t.match(/^(.+?) : (.+?) /)
+            if (m) caps.push({unite: m[1].trim(), max: parseFloat(m[2])})
+        })
+        $('#capacites-vh').val(JSON.stringify(caps))
+    }
+
+    $('#capacite-unite-select').change(function() {
+        var v = $(this).val()
+        if (v === '__other__') {
+            $('#capacite-unite-custom').show().val('')
+            $('#capacite-unite-select').hide()
+        }
+    })
+
     function saveVehicule() {
+        syncCapacitesJson()
         var valid = true
         $('#form-new-vehicule *[required]').each((e, el) => {
             $(el).removeClass('is-invalid')

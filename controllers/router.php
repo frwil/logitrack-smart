@@ -37,8 +37,10 @@ $maintenanceCtrl = new MaintenanceController($maintenanceRepo);
 $configCtrl = new ConfigController($configRepo);
 $marqueCtrl = new MarqueController($marqueRepo);
 $modeleCtrl = new ModeleController($modeleRepo);
+$typeChargementRepo = new TypeChargementRepository($con);
 $trajetCtrl = new TrajetController($trajetRepo);
 $objectifCtrl = new ObjectifController($objectifRepo);
+$typeChargementCtrl = new TypeChargementController();
 $userCtrl = new UserController($userRepo, $regionRepo, $entiteRepo);
 
 $routes = [
@@ -171,6 +173,12 @@ $routes = [
     'id-modele-forDel'    => [$modeleCtrl, 'delete'],
     'nom-modele'          => [$modeleCtrl, 'create'],
     'refresh-modele'      => [$modeleCtrl, 'refresh'],
+
+    // Type chargement
+    'id-typechargement-forModal' => [$typeChargementCtrl, 'fetchByHash'],
+    'id-typechargement'      => [$typeChargementCtrl, 'update'],
+    'id-typechargement-forDel' => [$typeChargementCtrl, 'delete'],
+    'lib-typechargement'     => [$typeChargementCtrl, 'create'],
 
     // Objectif
     'id-objectif-forModal' => [$objectifCtrl, 'fetchByHash'],
