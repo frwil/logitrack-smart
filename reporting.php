@@ -464,16 +464,9 @@ function badge(float $pct): string {
   $('#table_destinations').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[1, "desc"]] });
   $('#table_synthese').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[0, "desc"]] });
 
-  // Redraw DataTables when a hidden tab becomes visible (fixes empty tables)
-  $(document).on('shown.bs.tab', 'button[data-bs-toggle="tab"]', function (e) {
-    var target = $(e.target).attr('data-bs-target');
-    if (target) {
-      $(target).find('table').each(function() {
-        if ($.fn.DataTable.isDataTable(this)) {
-          $(this).DataTable().columns.adjust();
-        }
-      });
-    }
+  // Redraw DataTables when a hidden tab becomes visible
+  $(document).on('shown.bs.tab', 'button[data-bs-toggle="tab"]', function () {
+    $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust().draw();
   });
 
   <?php if (!empty($_POST['active_tab'])): ?>
