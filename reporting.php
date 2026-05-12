@@ -46,8 +46,8 @@ foreach ($allVoyages3 as $v) {
     $byVeh3[$vid][] = $v;
 }
 
-// — Tab 4 (Coût au km) —
-$d4 = $_POST['date_debut_ck'] ?? date('Y-m-01', strtotime('-3 months'));
+// — Tab 4 (Coût au km) — wider default: maintenance records are sparse
+$d4 = $_POST['date_debut_ck'] ?? date('Y-m-01', strtotime('-12 months'));
 $f4 = $_POST['date_fin_ck']   ?? date('Y-m-t');
 $costPerKmRows = $maintenanceRepo->costPerKm(getContextRegions(), getContextEntities(), $d4, $f4);
 
@@ -273,7 +273,7 @@ function badge(float $pct): string {
     <div class="tab-pane fade p-3" id="coutkm" role="tabpanel">
       <form method="post">
         <div class="mb-3 row">
-          <div class="col-6"><label for="date_debut_ck" class="form-label">Date de début</label><?php echo dateField('date_debut_ck', date('Y-m-01', strtotime('-3 months'))); ?></div>
+          <div class="col-6"><label for="date_debut_ck" class="form-label">Date de début</label><?php echo dateField('date_debut_ck', date('Y-m-01', strtotime('-12 months'))); ?></div>
           <div class="col-6"><label for="date_fin_ck" class="form-label">Date de fin</label><?php echo dateField('date_fin_ck', date('Y-m-t')); ?></div>
         </div>
         <input type="hidden" name="active_tab" value="coutkm">
@@ -463,6 +463,18 @@ function badge(float $pct): string {
   $('#table_immobilisation').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[5, "asc"]] });
   $('#table_destinations').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[1, "desc"]] });
   $('#table_synthese').DataTable({ language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[0, "desc"]] });
+
+  // Redraw DataTables when a hidden tab becomes visible (fixes empty tables)
+  $(document).on('shown.bs.tab', 'button[data-bs-toggle="tab"]', function (e) {
+    var target = $(e.target).attr('data-bs-target');
+    if (target) {
+      $(target).find('table').each(function() {
+        if ($.fn.DataTable.isDataTable(this)) {
+          $(this).DataTable().columns.adjust();
+        }
+      });
+    }
+  });
 
   <?php if (!empty($_POST['active_tab'])): ?>
   setTimeout(function(){

@@ -260,6 +260,7 @@ class VoyageRepository extends BaseRepository
                     type_chargement_voyage.id_type_chargement,
                     voyage.qte_chargement,
                     destination_voyage.distance_destination,
+                    destination_voyage.lib_destination,
                     voyage.qte_carburant
              FROM voyage
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
