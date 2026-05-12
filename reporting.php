@@ -23,7 +23,7 @@ foreach ($allVoyages1 as $v) {
 }
 
 // — Tab 2 dates (Taux de remplissage) —
-$d2 = $_POST['date_debut_r'] ?? date('Y-m-01');
+$d2 = $_POST['date_debut_r'] ?? date('Y-m-01', strtotime('-3 months'));
 $f2 = $_POST['date_fin_r']   ?? date('Y-m-t');
 $allVoyages2 = $voyageRepo->findAllForReportingByContext($d2, $f2, getContextRegions(), getContextEntities());
 $byVehTC2 = [];
@@ -36,7 +36,7 @@ foreach ($allVoyages2 as $v) {
 }
 
 // — Tab 3 dates (Consommation) —
-$d3 = $_POST['date_debut_c'] ?? date('Y-m-01');
+$d3 = $_POST['date_debut_c'] ?? date('Y-m-01', strtotime('-3 months'));
 $f3 = $_POST['date_fin_c']   ?? date('Y-m-t');
 $allVoyages3 = $voyageRepo->findAllForReportingByContext($d3, $f3, getContextRegions(), getContextEntities());
 $byVeh3 = [];
@@ -47,12 +47,12 @@ foreach ($allVoyages3 as $v) {
 }
 
 // — Tab 4 (Coût au km) —
-$d4 = $_POST['date_debut_ck'] ?? date('Y-m-01');
+$d4 = $_POST['date_debut_ck'] ?? date('Y-m-01', strtotime('-3 months'));
 $f4 = $_POST['date_fin_ck']   ?? date('Y-m-t');
 $costPerKmRows = $maintenanceRepo->costPerKm(getContextRegions(), getContextEntities(), $d4, $f4);
 
 // — Tab 5 dates (Immobilisation) —
-$d5 = $_POST['date_debut_i'] ?? date('Y-m-01');
+$d5 = $_POST['date_debut_i'] ?? date('Y-m-01', strtotime('-3 months'));
 $f5 = $_POST['date_fin_i']   ?? date('Y-m-t');
 $allVoyages5 = $voyageRepo->findAllForReportingByContext($d5, $f5, getContextRegions(), getContextEntities());
 $byVeh5 = [];
@@ -63,12 +63,12 @@ foreach ($allVoyages5 as $v) {
 }
 
 // — Tab 6 dates (Destinations) —
-$d6 = $_POST['date_debut_dest'] ?? date('Y-m-01');
+$d6 = $_POST['date_debut_dest'] ?? date('Y-m-01', strtotime('-3 months'));
 $f6 = $_POST['date_fin_dest']   ?? date('Y-m-t');
 $allVoyages6 = $voyageRepo->findAllForReportingByContext($d6, $f6, getContextRegions(), getContextEntities());
 
 // — Tab 7 (Synthèse périodique) —
-$d7 = $_POST['date_debut_s'] ?? date('Y-m-01');
+$d7 = $_POST['date_debut_s'] ?? date('Y-m-01', strtotime('-3 months'));
 $f7 = $_POST['date_fin_s']   ?? date('Y-m-t');
 $allVoyages7 = $voyageRepo->findAllForReportingByContext($d7, $f7, getContextRegions(), getContextEntities());
 $maintenanceMonthly = $maintenanceRepo->monthlyCostHistory(24, getContextRegions(), getContextEntities());
@@ -164,7 +164,7 @@ function badge(float $pct): string {
     <div class="tab-pane fade p-3" id="remplissage" role="tabpanel">
       <form method="post">
         <div class="mb-3 row">
-          <div class="col-6"><label for="date_debut_r" class="form-label">Date de début</label><?php echo dateField('date_debut_r', date('Y-m-01')); ?></div>
+          <div class="col-6"><label for="date_debut_r" class="form-label">Date de début</label><?php echo dateField('date_debut_r', date('Y-m-01', strtotime('-3 months'))); ?></div>
           <div class="col-6"><label for="date_fin_r" class="form-label">Date de fin</label><?php echo dateField('date_fin_r', date('Y-m-t')); ?></div>
         </div>
         <input type="hidden" name="active_tab" value="remplissage">
@@ -223,7 +223,7 @@ function badge(float $pct): string {
     <div class="tab-pane fade p-3" id="conso" role="tabpanel">
       <form method="post">
         <div class="mb-3 row">
-          <div class="col-6"><label for="date_debut_c" class="form-label">Date de début</label><?php echo dateField('date_debut_c', date('Y-m-01')); ?></div>
+          <div class="col-6"><label for="date_debut_c" class="form-label">Date de début</label><?php echo dateField('date_debut_c', date('Y-m-01', strtotime('-3 months'))); ?></div>
           <div class="col-6"><label for="date_fin_c" class="form-label">Date de fin</label><?php echo dateField('date_fin_c', date('Y-m-t')); ?></div>
         </div>
         <input type="hidden" name="active_tab" value="conso">
@@ -273,7 +273,7 @@ function badge(float $pct): string {
     <div class="tab-pane fade p-3" id="coutkm" role="tabpanel">
       <form method="post">
         <div class="mb-3 row">
-          <div class="col-6"><label for="date_debut_ck" class="form-label">Date de début</label><?php echo dateField('date_debut_ck', date('Y-m-01')); ?></div>
+          <div class="col-6"><label for="date_debut_ck" class="form-label">Date de début</label><?php echo dateField('date_debut_ck', date('Y-m-01', strtotime('-3 months'))); ?></div>
           <div class="col-6"><label for="date_fin_ck" class="form-label">Date de fin</label><?php echo dateField('date_fin_ck', date('Y-m-t')); ?></div>
         </div>
         <input type="hidden" name="active_tab" value="coutkm">
@@ -319,7 +319,7 @@ function badge(float $pct): string {
     <div class="tab-pane fade p-3" id="immobilisation" role="tabpanel">
       <form method="post">
         <div class="mb-3 row">
-          <div class="col-6"><label for="date_debut_i" class="form-label">Date de début</label><?php echo dateField('date_debut_i', date('Y-m-01')); ?></div>
+          <div class="col-6"><label for="date_debut_i" class="form-label">Date de début</label><?php echo dateField('date_debut_i', date('Y-m-01', strtotime('-3 months'))); ?></div>
           <div class="col-6"><label for="date_fin_i" class="form-label">Date de fin</label><?php echo dateField('date_fin_i', date('Y-m-t')); ?></div>
         </div>
         <input type="hidden" name="active_tab" value="immobilisation">
@@ -359,7 +359,7 @@ function badge(float $pct): string {
     <div class="tab-pane fade p-3" id="destinations" role="tabpanel">
       <form method="post">
         <div class="mb-3 row">
-          <div class="col-6"><label for="date_debut_dest" class="form-label">Date de début</label><?php echo dateField('date_debut_dest', date('Y-m-01')); ?></div>
+          <div class="col-6"><label for="date_debut_dest" class="form-label">Date de début</label><?php echo dateField('date_debut_dest', date('Y-m-01', strtotime('-3 months'))); ?></div>
           <div class="col-6"><label for="date_fin_dest" class="form-label">Date de fin</label><?php echo dateField('date_fin_dest', date('Y-m-t')); ?></div>
         </div>
         <input type="hidden" name="active_tab" value="destinations">
@@ -397,7 +397,7 @@ function badge(float $pct): string {
     <div class="tab-pane fade p-3" id="synthese" role="tabpanel">
       <form method="post">
         <div class="mb-3 row">
-          <div class="col-6"><label for="date_debut_s" class="form-label">Date de début</label><?php echo dateField('date_debut_s', date('Y-m-01')); ?></div>
+          <div class="col-6"><label for="date_debut_s" class="form-label">Date de début</label><?php echo dateField('date_debut_s', date('Y-m-01', strtotime('-3 months'))); ?></div>
           <div class="col-6"><label for="date_fin_s" class="form-label">Date de fin</label><?php echo dateField('date_fin_s', date('Y-m-t')); ?></div>
         </div>
         <input type="hidden" name="active_tab" value="synthese">
