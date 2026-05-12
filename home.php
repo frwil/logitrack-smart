@@ -212,7 +212,7 @@ if (!$renderPartial):
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviVidanges') echo 'active'; ?>" href="?page=maintenances&subpage=suiviVidanges"><i class="fa fa-oil-can"></i> Suivi vidanges</a>
             <?php endif; ?>
             <?php if (in_array('viewPrestataire', $rights_maintenance)): ?>
-            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'prestataire') echo 'active'; ?>" href="?page=maintenances&subpage=prestataire"><i class="fa fa-shop"></i> Prestataires</a>
+            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'prestataire') echo 'active'; ?>" href="?page=maintenances&subpage=prestataire"><i class="fa fa-store"></i> Prestataires</a>
             <?php endif; ?>
             <?php if (in_array('viewCentreCout', $rights_maintenance)): ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'centreCouts') echo 'active'; ?>" href="?page=maintenances&subpage=centreCouts"><i class="fa fa-euro-sign"></i> Centre de coûts</a>
