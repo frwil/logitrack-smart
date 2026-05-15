@@ -10,6 +10,7 @@
             <p>Gestion de flotte</p>
         </div>
         <form action="index.php" method="post" id="login-form">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
             <input type="hidden" name="login" value="1">
             <div class="login-error" id="login-error"></div>
             <div class="login-field">
