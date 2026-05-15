@@ -397,7 +397,7 @@ if (!$renderPartial):
             this.api().columns().every(function() {
                 var column = this;
                 // Skip # column — no filter, no sort
-                if (column.index() === 0 || $(column.header()).text().trim() === '#') return;
+                if ($(column.header()).text().trim() === '#') return;
                 var select = $('<select class="mymsel" multiple="multiple"><option value=""></option></select>')
                     .appendTo($(column.header()))
                     .on('change', function() {
