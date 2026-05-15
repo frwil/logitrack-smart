@@ -3,12 +3,18 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_samesite', 'Lax');
-// PHP built-in server has no session save path — use local tmp/ if it exists
+// Ensure session save path is valid and writable
 $localSessions = __DIR__ . '/tmp/sessions';
-if (!ini_get('session.save_path') && is_dir($localSessions)) {
+$currentPath = ini_get('session.save_path');
+if ((!$currentPath || !is_writable($currentPath)) && is_dir($localSessions)) {
     ini_set('session.save_path', $localSessions);
 }
-if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+// Only set Secure cookie on actual HTTPS connections
+$isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+if (!$isHttps && isset($_SERVER['REQUEST_SCHEME'])) {
+    $isHttps = $_SERVER['REQUEST_SCHEME'] === 'https';
+}
+if ($isHttps) {
     ini_set('session.cookie_secure', 1);
 }
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -90,11 +96,26 @@ $partial = isset($_GET['_partial']) && isset($_SESSION['usr-con']);
 <body>
     <script src="public/build/js/main.js"></script>
     <script>
+        $(document).ajaxError(function(event, jqXHR, settings) {
+            if (jqXHR.status === 403) {
+                try {
+                    var resp = JSON.parse(jqXHR.responseText);
+                    if (resp.error && resp.error.indexOf('CSRF') !== -1) {
+                        location.reload();
+                        return;
+                    }
+                } catch(e) {}
+            }
+        });
         $.ajaxPrefilter(function(options, originalOptions) {
             if (options.type && options.type.toLowerCase() === 'post') {
                 if (options.contentType && options.contentType.indexOf('application/json') !== -1) return;
-                options.data = options.data || '';
-                if (typeof options.data === 'string') {
+                if (options.data instanceof FormData) {
+                    options.data.append('csrf_token', window.CSRF_TOKEN);
+                } else if (typeof options.data === 'object' && options.data !== null) {
+                    options.data.csrf_token = window.CSRF_TOKEN;
+                } else {
+                    options.data = (options.data || '');
                     options.data += (options.data ? '&' : '') + 'csrf_token=' + encodeURIComponent(window.CSRF_TOKEN);
                 }
             }
@@ -102,7 +123,7 @@ $partial = isset($_GET['_partial']) && isset($_SESSION['usr-con']);
         $(document).on('submit', 'form[method="post"]', function() {
             var $form = $(this);
             if (!$form.find('input[name="csrf_token"]').length) {
-                $form.append('<input type="hidden" name="csrf_token" value="' + window.CSRF_TOKEN + '">');
+                $('<input type="hidden" name="csrf_token">').val(window.CSRF_TOKEN).appendTo($form);
             }
         });
     </script>
