@@ -399,23 +399,26 @@ if (!$renderPartial):
                 // Skip # column — no filter, no sort
                 if ($(column.header()).text().trim() === '#') return;
                 var select = $('<select class="mymsel" multiple="multiple"><option value=""></option></select>')
-                    .appendTo($(column.header()))
-                    .on('change', function() {
-                        var vals = $('option:selected', this).map(function(index, element) {
-                            return $.fn.dataTable.util.escapeRegex($(element).val());
-                        }).toArray().join('|');
-
-                        column
-                            .search(vals.length > 0 ? '^(' + vals + ')$' : '', true, false)
-                            .draw();
-                    });
+                    .appendTo($(column.header()));
+                select[0].dtColumn = column;
                 if ($(column.header()).children('.dt-column-title').html() == '') select.remove()
 
                 column.data().unique().sort().each(function(d, j) {
                     select.append('<option value="' + $("<div>" + d + "</div>").text() + '">' + $("<div>" + d + "</div>").text() + '</option>')
                 });
             });
-            initTomSelect('.mymsel', { maxItems: null, placeholder: 'Filtrer...' });
+            initTomSelect('.mymsel', {
+                maxItems: null,
+                placeholder: 'Filtrer...',
+                onChange: function(values) {
+                    var col = this.input && this.input.dtColumn;
+                    if (!col) return;
+                    var escaped = values.map(function(v) {
+                        return $.fn.dataTable.util.escapeRegex(v);
+                    }).join('|');
+                    col.search(escaped ? '^(' + escaped + ')$' : '', true, false).draw();
+                }
+            });
             this.api().columns.adjust();
 
         },
