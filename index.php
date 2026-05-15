@@ -33,7 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'):
 
     // CSRF check — also decode JSON body for reuse by the router.
     // php://input can only be read once, so we save the decoded result.
-    $csrf_token = $_POST['csrf_token'] ?? null;
+    $csrf_raw = $_POST['csrf_token'] ?? null;
+    $csrf_token = is_array($csrf_raw) ? end($csrf_raw) : $csrf_raw;
     $jsonPost = [];
     if ($csrf_token === null):
         $jsonPost = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -125,12 +126,14 @@ $partial = isset($_GET['_partial']) && isset($_SESSION['usr-con']);
             if (options.type && options.type.toLowerCase() === 'post') {
                 if (options.contentType && options.contentType.indexOf('application/json') !== -1) return;
                 if (options.data instanceof FormData) {
-                    options.data.append('csrf_token', window.CSRF_TOKEN);
+                    if (!options.data.has('csrf_token')) options.data.append('csrf_token', window.CSRF_TOKEN);
                 } else if (typeof options.data === 'object' && options.data !== null) {
                     options.data.csrf_token = window.CSRF_TOKEN;
                 } else {
                     options.data = (options.data || '');
-                    options.data += (options.data ? '&' : '') + 'csrf_token=' + encodeURIComponent(window.CSRF_TOKEN);
+                    if (options.data.indexOf('csrf_token=') === -1) {
+                        options.data += (options.data ? '&' : '') + 'csrf_token=' + encodeURIComponent(window.CSRF_TOKEN);
+                    }
                 }
             }
         });
