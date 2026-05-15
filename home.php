@@ -410,6 +410,7 @@ if (!$renderPartial):
             initTomSelect('.mymsel', {
                 maxItems: null,
                 placeholder: 'Filtrer...',
+                dropdownParent: 'body',
                 onChange: function(values) {
                     var col = this.input && this.input.dtColumn;
                     if (!col) return;
