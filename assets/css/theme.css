@@ -234,6 +234,11 @@ table, .table {
   transform: translateY(-6px) rotate(-45deg);
 }
 
+.lt-navbar-links {
+  display: flex;
+  align-items: center;
+}
+
 .lt-layout {
   display: flex;
   min-height: calc(100vh - 56px);
@@ -698,7 +703,6 @@ th .ts-wrapper .ts-control {
 
 @media (max-width: 768px) {
   .lt-navbar {
-    flex-wrap: wrap;
     padding: 0 0.75rem;
     min-height: 50px;
   }
@@ -709,12 +713,15 @@ th .ts-wrapper .ts-control {
 
   .lt-navbar-links {
     display: none;
-    flex-basis: 100%;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
     flex-direction: column;
-    background: rgba(0, 0, 0, 0.12);
-    margin: 0 -0.75rem;
+    background: linear-gradient(135deg, var(--lt-primary-dark), var(--lt-primary));
+    box-shadow: var(--lt-shadow-md);
     padding: 0.25rem 0;
-    order: 10;
+    z-index: 1039;
   }
 
   .lt-navbar-links.show {
@@ -726,16 +733,11 @@ th .ts-wrapper .ts-control {
     padding: 0.625rem 1rem;
     margin: 0;
     border-radius: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .lt-navbar-links .nav-link.active::after {
     display: none;
-  }
-
-  .lt-navbar .nav-link {
-    font-size: var(--lt-font-base);
-    padding: 0.625rem 1rem;
   }
 
   .lt-navbar-brand {
@@ -788,10 +790,6 @@ th .ts-wrapper .ts-control {
 
   .lt-navbar-brand i {
     margin-right: 0.25rem;
-  }
-
-  .lt-navbar-links {
-    margin: 0 -0.5rem;
   }
 
   .lt-navbar-user {
