@@ -416,6 +416,7 @@ if (!$renderPartial):
                 });
             });
             initTomSelect('.mymsel', { maxItems: null, placeholder: 'Filtrer...' });
+            this.api().columns.adjust();
 
         },
         <?php if (!isset($_GET['subpage'])) :
