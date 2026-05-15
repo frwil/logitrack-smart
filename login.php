@@ -7,7 +7,7 @@
                 <i class="fa fa-truck"></i>
             </div>
             <h2>LogiTrack</h2>
-            <p>Gestion de flotte — Groupe NJS</p>
+            <p>Gestion de flotte</p>
         </div>
         <form action="index.php" method="post" id="login-form">
             <input type="hidden" name="login" value="1">
@@ -57,7 +57,7 @@
                 <i class="icon fas fa-arrow-right"></i>
             </button>
         </form>
-        <div class="login-footer">Groupe NJS</div>
+        <div class="login-footer">LogiTrack</div>
     </div>
 </div>
 <script>

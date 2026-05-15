@@ -79,7 +79,7 @@ $partial = isset($_GET['_partial']) && isset($_SESSION['usr-con']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width" />
-    <title>LogiTrack — Groupe NJS</title>
+    <title>LogiTrack</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%235D54A4'/><text x='16' y='23' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='18' fill='white'>LT</text></svg>">
     <link rel="stylesheet" href="public/build/css/main.css">
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>

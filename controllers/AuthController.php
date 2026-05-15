@@ -91,7 +91,7 @@ class AuthController extends BaseController
                 ['users_rights_objet' => 'affectationVehicules', 'users_rights_valeur' => 'view,save,upd,del,print'],
                 ['users_rights_objet' => 'maintenances', 'users_rights_valeur' => 'view,save,upd,del,print,updPrestataire,viewCentreCout,viewPrestataire,viewVidange,delPrestataire,updCentreCout,delCentreCout,viewBonsReparation,savePrestataire,saveBonsReparation,updBonsReparation,delBonsReparation,viewReleveKms,saveReleveKms,saveCentreCout,delVidange,updVidange,historyVidange'],
                 ['users_rights_objet' => 'users', 'users_rights_valeur' => 'view,save,upd,del'],
-                ['users_rights_objet' => 'config', 'users_rights_valeur' => 'view,save,upd,del'],
+                ['users_rights_objet' => 'config', 'users_rights_valeur' => 'view,save,upd,del,backup'],
                 ['users_rights_objet' => 'report', 'users_rights_valeur' => 'view'],
             ];
         } else {

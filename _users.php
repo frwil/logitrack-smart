@@ -192,6 +192,10 @@ function getTableauUsers()
                                         ['Rapports',             'report',    '',         '', ''],
                                         ['Trajets',              '',          'savetrajet', '', ''],
                                     ];
+                                    // Config specific action rights
+                                    $configSubs = [
+                                        ['Sauvegarde DB',        'backup',    '',         '', ''],
+                                    ];
 
                                     if (!function_exists('renderRightsRow')): function renderRightsRow(string $objKey, string $label, array $perms): void {
                                         echo '<tr><td>' . h($label) . '</td>';
@@ -214,6 +218,10 @@ function getTableauUsers()
                                         elseif ($objKey === 'maintenances'):
                                             foreach ($maintenanceSubs as $sub):
                                                 renderRightsRow('maintenances', '↳ ' . $sub[0], [$sub[1], $sub[2], $sub[3], $sub[4]]);
+                                            endforeach;
+                                        elseif ($objKey === 'config'):
+                                            foreach ($configSubs as $sub):
+                                                renderRightsRow('config', '↳ ' . $sub[0], [$sub[1], $sub[2], $sub[3], $sub[4]]);
                                             endforeach;
                                         endif;
                                     endforeach; ?>

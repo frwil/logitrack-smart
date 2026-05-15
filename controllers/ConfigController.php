@@ -107,4 +107,78 @@ class ConfigController extends BaseController
         $this->repo->setParametre('devise', $v);
         $this->json();
     }
+
+    public function backupDatabase(): never
+    {
+        // Only superadmin or users with explicit 'backup' right on config
+        $isSuperadmin = $_SESSION['usr-con']['is-superadmin'] ?? false;
+        if (!$isSuperadmin) {
+            $configRights = [];
+            $userRights = $_SESSION['usr-con']['users-rights'] ?? [];
+            foreach ($userRights as $r) {
+                if (($r['users_rights_objet'] ?? '') === 'config') {
+                    $configRights = explode(',', $r['users_rights_valeur'] ?? '');
+                    break;
+                }
+            }
+            if (!in_array('backup', $configRights)) {
+                http_response_code(403);
+                $this->sendJson(['success' => false, 'error' => 'Accès non autorisé']);
+            }
+        }
+
+        $con = $GLOBALS['con'] ?? null;
+        if (!$con) $this->jsonError('Base de données indisponible');
+
+        ob_start();
+
+        echo "-- LogiTrack Database Backup\n";
+        echo "-- Generated: " . date('Y-m-d H:i:s') . "\n";
+        echo "-- Database: " . getenv('DB_NAME') . "\n\n";
+        echo "SET FOREIGN_KEY_CHECKS=0;\n";
+        echo "SET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';\n";
+        echo "SET NAMES utf8mb4;\n\n";
+
+        $tables = [];
+        $result = mysqli_query($con, "SHOW TABLES");
+        while ($row = mysqli_fetch_row($result)) {
+            $tables[] = $row[0];
+        }
+
+        foreach ($tables as $table) {
+            $row2 = mysqli_fetch_row(mysqli_query($con, "SHOW CREATE TABLE `$table`"));
+            echo "DROP TABLE IF EXISTS `$table`;\n";
+            echo $row2[1] . ";\n\n";
+
+            $dataResult = mysqli_query($con, "SELECT * FROM `$table`");
+            if ($dataResult && mysqli_num_rows($dataResult) > 0) {
+                echo "INSERT INTO `$table` VALUES\n";
+                $firstRow = true;
+                while ($dataRow = mysqli_fetch_row($dataResult)) {
+                    $vals = [];
+                    foreach ($dataRow as $val) {
+                        if ($val === null) {
+                            $vals[] = 'NULL';
+                        } else {
+                            $vals[] = "'" . mysqli_real_escape_string($con, $val) . "'";
+                        }
+                    }
+                    if (!$firstRow) echo ",\n";
+                    echo "(" . implode(',', $vals) . ")";
+                    $firstRow = false;
+                }
+                echo ";\n\n";
+            }
+        }
+
+        echo "SET FOREIGN_KEY_CHECKS=1;\n";
+
+        $sql = ob_get_clean();
+        $filename = 'logitrack_backup_' . date('Ymd_His') . '.sql';
+
+        header('Content-Type: application/sql; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . strlen($sql));
+        die($sql);
+    }
 }

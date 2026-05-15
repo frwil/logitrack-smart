@@ -591,6 +591,19 @@ function getTableauFolder()
                         </div>
                     </div>
                 </div>
+                <?php if (in_array('backup', $rights_config) || ($_SESSION['usr-con']['is-superadmin'] ?? false)): ?>
+                <div class="col-md-6">
+                    <div class="lt-card">
+                        <div class="lt-card-header"><h2 class="lt-card-title">Sauvegarde base de données</h2></div>
+                        <div class="p-3">
+                            <p class="text-muted">Téléchargez une sauvegarde complète de la base de données au format SQL.</p>
+                            <button type="button" class="btn btn-primary" id="btn-backup-db" onclick="backupDatabase()">
+                                <span id="btn-backup-text">Lancer la sauvegarde</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
             <script>
             function saveDevise() {
@@ -601,6 +614,42 @@ function getTableauFolder()
                     if (r.success) { alert('Devise enregistrée.'); } else { alert('Erreur.'); }
                 })
                 .fail(function() { alert('Erreur réseau.'); });
+            }
+
+            function backupDatabase() {
+                var $btn = $('#btn-backup-db');
+                $btn.prop('disabled', true);
+                $('#btn-backup-text').text('Sauvegarde en cours...');
+
+                fetch('index.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({'backup-db': '1', csrf_token: window.CSRF_TOKEN})
+                })
+                .then(function(resp) {
+                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                    var disposition = resp.headers.get('Content-Disposition') || '';
+                    var m = disposition.match(/filename="?([^"]+)"?/);
+                    var filename = m ? m[1] : 'logitrack_backup.sql';
+                    return resp.blob().then(function(blob) { return {blob: blob, filename: filename}; });
+                })
+                .then(function(r) {
+                    var url = URL.createObjectURL(r.blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = r.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                })
+                .catch(function(err) {
+                    alert('Erreur lors de la sauvegarde : ' + err.message);
+                })
+                .finally(function() {
+                    $btn.prop('disabled', false);
+                    $('#btn-backup-text').text('Lancer la sauvegarde');
+                });
             }
             </script>
             <?php endif; ?>

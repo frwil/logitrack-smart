@@ -154,6 +154,7 @@ $routes = [
 
     // Config — Paramètres
     'update-devise'       => [$configCtrl, 'updateDevise'],
+    'backup-db'           => [$configCtrl, 'backupDatabase'],
 
     // Trajet
     'id-destination-forModal' => [$trajetCtrl, 'fetchByHash'],
