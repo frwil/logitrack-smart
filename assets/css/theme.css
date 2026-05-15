@@ -691,17 +691,7 @@ th .ts-wrapper .ts-control {
   color: #b91c1c;
 }
 
-@media (max-width: 992px) {
-  .lt-sidebar {
-    width: 200px;
-  }
-
-  .lt-content {
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .lt-navbar {
     padding: 0 0.75rem;
     min-height: 50px;
