@@ -61,6 +61,12 @@ if (!$renderPartial):
         <a class="lt-navbar-brand" href="?page=vehicules">
             <i class="fa fa-truck"></i> LogiTrack
         </a>
+        <button class="lt-navbar-toggle" type="button" aria-label="Menu" onclick="document.querySelector('.lt-navbar-links').classList.toggle('show'); this.classList.toggle('open');">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="lt-navbar-links">
         <?php $rights_vehicule = array();
         if (isRightObjectAllowed('vehicules', $user_rights) != false): $rights_vehicule = explode(',', isRightObjectAllowed('vehicules', $user_rights)); ?>
             <a class="nav-link <?php if (!isset($_GET['page']) || $_GET['page'] == 'vehicules') echo "active"; ?>" href="?page=vehicules">Véhicules</a>
@@ -88,6 +94,7 @@ if (!$renderPartial):
         if (isRightObjectAllowed('report', $user_rights) != false): $rights_report = explode(',', isRightObjectAllowed('report', $user_rights)); ?>
             <a class="nav-link <?php if (isset($_GET['page']) && $_GET['page'] == 'reports') echo "active"; ?>" href="?page=reports">Rapports</a>
         <?php endif; ?>
+        </div><!-- .lt-navbar-links -->
     </div>
     <div class="d-flex align-items-center gap-2">
         <span class="lt-navbar-user">
