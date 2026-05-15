@@ -5,6 +5,9 @@ ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_samesite', 'Lax');
 // Ensure session save path is valid and writable
 $localSessions = __DIR__ . '/tmp/sessions';
+if (!is_dir($localSessions)) {
+    @mkdir($localSessions, 0700, true);
+}
 $currentPath = ini_get('session.save_path');
 if ((!$currentPath || !is_writable($currentPath)) && is_dir($localSessions)) {
     ini_set('session.save_path', $localSessions);
@@ -52,8 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'):
     $session_token = $_SESSION['csrf_token'] ?? '(none)';
     $csrf_match = hash_equals($session_token, (string)$csrf_token);
     // Log every CSRF check for diagnostics
-    $log = __DIR__ . '/tmp/csrf_errors.log';
-    @file_put_contents($log, date('Y-m-d H:i:s')
+    $log_line = date('Y-m-d H:i:s')
         . ' ' . ($csrf_match ? 'OK' : 'FAIL')
         . ' sid=' . substr(session_id(), 0, 12)
         . ' src=' . $csrf_from
@@ -61,7 +63,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'):
         . ' rcv=' . substr((string)$csrf_token, 0, 16)
         . ' exp=' . substr($session_token, 0, 16)
         . ' post_keys=' . implode(',', array_slice(array_keys($_POST), 0, 10))
-        . "\n", FILE_APPEND);
+        . "\n";
+    $log_dir = __DIR__ . '/tmp';
+    $log_file = $log_dir . '/csrf_errors.log';
+    if (is_dir($log_dir) || @mkdir($log_dir, 0700, true)) {
+        @file_put_contents($log_file, $log_line, FILE_APPEND);
+    }
+    // Also write to PHP error log as fallback
+    if (!$csrf_match) {
+        @error_log('CSRF FAIL: ' . $log_line);
+    }
     if (!$csrf_match):
         http_response_code(403);
         header('Content-Type: application/json; charset=utf-8');
