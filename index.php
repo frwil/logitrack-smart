@@ -40,9 +40,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'):
         $csrf_token = $jsonPost['csrf_token'] ?? null;
     endif;
     if (!hash_equals($_SESSION['csrf_token'], (string)$csrf_token)):
+        // Log mismatch for diagnostics
+        $log = __DIR__ . '/tmp/csrf_errors.log';
+        @file_put_contents($log, date('Y-m-d H:i:s') . ' session_id=' . session_id()
+            . ' expected=' . substr($_SESSION['csrf_token'], 0, 8) . '...'
+            . ' received=' . substr((string)$csrf_token, 0, 8) . '...'
+            . ' php_sapi=' . PHP_SAPI . "\n", FILE_APPEND);
         http_response_code(403);
         header('Content-Type: application/json; charset=utf-8');
-        die(json_encode(['success' => false, 'error' => 'CSRF validation failed — reload the page']));
+        die(json_encode(['success' => false, 'error' => 'CSRF validation failed — reload the page', 'reload' => true]));
     endif;
 
     // Merge JSON body into $_POST so controllers can read JSON-sent data via post()
@@ -96,13 +102,21 @@ $partial = isset($_GET['_partial']) && isset($_SESSION['usr-con']);
 <body>
     <script src="public/build/js/main.js"></script>
     <script>
-        $(document).ajaxError(function(event, jqXHR, settings) {
-            if (jqXHR.status === 403) {
+        if (!window.CSRF_TOKEN) {
+            if (!sessionStorage.getItem('csrf-reloaded')) {
+                sessionStorage.setItem('csrf-reloaded', '1');
+                location.reload();
+            }
+        } else {
+            sessionStorage.removeItem('csrf-reloaded');
+        }
+        $(document).ajaxError(function(event, jqXHR) {
+            if (jqXHR.status === 403 && !sessionStorage.getItem('csrf-reloaded')) {
                 try {
                     var resp = JSON.parse(jqXHR.responseText);
-                    if (resp.error && resp.error.indexOf('CSRF') !== -1) {
+                    if (resp.reload) {
+                        sessionStorage.setItem('csrf-reloaded', '1');
                         location.reload();
-                        return;
                     }
                 } catch(e) {}
             }
