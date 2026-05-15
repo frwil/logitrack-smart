@@ -34,19 +34,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'):
     // CSRF check — also decode JSON body for reuse by the router.
     // php://input can only be read once, so we save the decoded result.
     $csrf_raw = $_POST['csrf_token'] ?? null;
-    $csrf_token = is_array($csrf_raw) ? end($csrf_raw) : $csrf_raw;
+    $csrf_from = 'post';
+    if (is_array($csrf_raw)) {
+        $csrf_token = end($csrf_raw);
+        $csrf_note = 'array(' . count($csrf_raw) . ')';
+    } else {
+        $csrf_token = $csrf_raw;
+        $csrf_note = 'string';
+    }
     $jsonPost = [];
     if ($csrf_token === null):
         $jsonPost = json_decode(file_get_contents('php://input'), true) ?? [];
         $csrf_token = $jsonPost['csrf_token'] ?? null;
+        $csrf_from = 'json';
+        $csrf_note = 'json';
     endif;
-    if (!hash_equals($_SESSION['csrf_token'], (string)$csrf_token)):
-        // Log mismatch for diagnostics
-        $log = __DIR__ . '/tmp/csrf_errors.log';
-        @file_put_contents($log, date('Y-m-d H:i:s') . ' session_id=' . session_id()
-            . ' expected=' . substr($_SESSION['csrf_token'], 0, 8) . '...'
-            . ' received=' . substr((string)$csrf_token, 0, 8) . '...'
-            . ' php_sapi=' . PHP_SAPI . "\n", FILE_APPEND);
+    $session_token = $_SESSION['csrf_token'] ?? '(none)';
+    $csrf_match = hash_equals($session_token, (string)$csrf_token);
+    // Log every CSRF check for diagnostics
+    $log = __DIR__ . '/tmp/csrf_errors.log';
+    @file_put_contents($log, date('Y-m-d H:i:s')
+        . ' ' . ($csrf_match ? 'OK' : 'FAIL')
+        . ' sid=' . substr(session_id(), 0, 12)
+        . ' src=' . $csrf_from
+        . ' type=' . $csrf_note
+        . ' rcv=' . substr((string)$csrf_token, 0, 16)
+        . ' exp=' . substr($session_token, 0, 16)
+        . ' post_keys=' . implode(',', array_slice(array_keys($_POST), 0, 10))
+        . "\n", FILE_APPEND);
+    if (!$csrf_match):
         http_response_code(403);
         header('Content-Type: application/json; charset=utf-8');
         die(json_encode(['success' => false, 'error' => 'CSRF validation failed — reload the page', 'reload' => true]));
