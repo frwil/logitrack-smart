@@ -392,7 +392,7 @@ if (!$renderPartial):
     }
     function initDataTable() {
         window.table = $('table:not(".no-datatable")').DataTable({
-        columnDefs: [{ targets: 0, searchable: false, orderable: false }],
+        columnDefs: [{ targets: 0, orderable: false }],
         initComplete: function() {
             this.api().columns().every(function() {
                 var column = this;
