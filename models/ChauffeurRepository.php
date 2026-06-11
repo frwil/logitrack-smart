@@ -17,11 +17,11 @@ class ChauffeurRepository extends BaseRepository
         );
     }
 
-    public function insert(string $nom): int|string
+    public function insert(string $nom, int $idTypePermis): int|string
     {
         return $this->insertGetId(
-            "INSERT INTO chauffeur (nom_chauffeur) VALUES (?)",
-            [$nom]
+            "INSERT INTO chauffeur (nom_chauffeur, id_type_permis) VALUES (?, ?)",
+            [$nom, $idTypePermis]
         );
     }
 

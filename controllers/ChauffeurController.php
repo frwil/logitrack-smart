@@ -51,8 +51,10 @@ class ChauffeurController extends BaseController
     {
         $nom = trim(strtoupper($this->post('nom-chauffeur')));
         if ($nom === '') $this->jsonError('Le champ est obligatoire');
+        $idTypePermis = (int)$this->post('type-permis');
+        if ($idTypePermis <= 0) $this->jsonError('Le type de permis est obligatoire');
         try {
-            $this->repo->insert($nom);
+            $this->repo->insert($nom, $idTypePermis);
             $this->json();
         } catch (\mysqli_sql_exception $e) {
             if ($e->getCode() == 1062) $this->jsonError('1062');
