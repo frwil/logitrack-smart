@@ -188,6 +188,7 @@ $routes = [
     'id-objectif'         => [$objectifCtrl, 'update'],
     'id-objectif-forDel'  => [$objectifCtrl, 'delete'],
     'date-objectif'       => [$objectifCtrl, 'create'],
+    'dateV'               => [$objectifCtrl, 'checkDateForVoyage'],
 
     // Users
     'new-user'             => [$userCtrl, 'create'],

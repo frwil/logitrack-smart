@@ -23,6 +23,21 @@ class ObjectifController extends BaseController
         ); $this->json(); } catch (\mysqli_sql_exception $e) { $this->jsonError('Erreur'); }
     }
 
+    /** Check if objectives exist for a given date (used by voyage modal). */
+    public function checkDateForVoyage(): never
+    {
+        $date = $this->post('dateV');
+        if (!$date) $this->jsonError('Date manquante');
+        $regionIds = getContextRegions();
+        try {
+            $count = count($this->repo->findByDateAndRegions($date, $regionIds));
+            $this->json(['count' => $count]);
+        } catch (\Throwable $e) {
+            error_log('ObjectifController::checkDateForVoyage error: ' . $e->getMessage());
+            $this->jsonError('Erreur lors de la vérification : ' . $e->getMessage());
+        }
+    }
+
     public function create(): never {
         $date = $this->post('date-objectif');
         $objectif = (int)$this->post('objectif');
