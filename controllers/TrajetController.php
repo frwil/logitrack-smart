@@ -38,4 +38,22 @@ class TrajetController extends BaseController
         }
         $this->json(['html' => $html]);
     }
+
+    /** Return available destinations (excluding already selected) as <option> HTML — used by voyage modal. */
+    public function availableForVoyage(): never
+    {
+        $trajets = json_decode($this->post('trajets'), true);
+        if (empty($trajets)) $trajets = [];
+        try {
+            $rows = $this->repo->findAllExcept($trajets);
+            $html = '';
+            foreach ($rows as $r) {
+                $html .= "<option value='" . $r['id_destination'] . "' dest-km='" . h((string)$r['distance_destination']) . "'>" . h($r['lib_destination']) . " (" . h((string)$r['distance_destination']) . " km)</option>";
+            }
+            $this->json(['html' => $html]);
+        } catch (\Throwable $e) {
+            error_log('TrajetController::availableForVoyage error: ' . $e->getMessage());
+            $this->jsonError('Erreur lors du chargement des trajets : ' . $e->getMessage());
+        }
+    }
 }

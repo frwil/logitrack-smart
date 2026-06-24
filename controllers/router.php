@@ -162,6 +162,7 @@ $routes = [
     'id-destination-forDel' => [$trajetCtrl, 'delete'],
     'nom-destination'     => [$trajetCtrl, 'create'],
     'refresh-destination' => [$trajetCtrl, 'refreshOptions'],
+    'trajets'             => [$trajetCtrl, 'availableForVoyage'],
 
     // Marque
     'id-marque-forModal'  => [$marqueCtrl, 'fetchByHash'],
