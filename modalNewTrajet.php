@@ -1,14 +1,4 @@
-<?php
-/* POST handled by TrajetController — see controllers/router.php */
-if (isset($_POST['refresh-destination'])):
-    $trajetRepo = new TrajetRepository($con);
-    $liste = "";
-    foreach ($trajetRepo->findAll() as $r):
-        $liste .= "<option value='" . $r['id_destination'] . "'>" . h($r['lib_destination']) . "</option>";
-    endforeach;
-    die(json_encode(['success' => true, 'html' => $liste]));
-endif;
-?>
+<?php /* POST handled by TrajetController — see controllers/router.php */ ?>
 <div class="modal fade" id="modal-new-destination" tabindex="-1" aria-labelledby="modal-new-marqeLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">

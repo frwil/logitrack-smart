@@ -1,29 +1,4 @@
-<?php $entityBody = json_decode(file_get_contents('php://input'),true);
-if(isset($entityBody['chrelevekms'])):
-    $_POST=$entityBody;
-    $maintenanceRepo = new MaintenanceRepository($con);
-    $count = $maintenanceRepo->countRelevesByAffectationAndDateRange($_POST['chrelevekms'], $_POST['datevg'], $_POST['finvg']);
-    die(json_encode(['success' => true, 'count' => $count]));
-endif;
-if(isset($_POST['dateV'])):
-    $objectifRepo = new ObjectifRepository($con);
-    $regionIds = getContextRegions();
-    $rows = $objectifRepo->findByDateAndRegions($_POST['dateV'], $regionIds);
-    $count = count($rows);
-    die(json_encode(['success' => true, 'count' => $count]));
-endif;
-if (isset($_POST['trajets'])):
-    $trajets = json_decode($_POST['trajets']);
-    if (empty($trajets)) $trajets = [];
-    $trajetRepo = new TrajetRepository($con);
-    $rows = $trajetRepo->findAllExcept($trajets);
-    $liste = "";
-    foreach ($rows as $r):
-        $liste .= "<option value='" . $r['id_destination'] . "' dest-km='" . h($r['distance_destination']) . "'>" . h($r['lib_destination']) . " (" . h($r['distance_destination']) . " km)</option>";
-    endforeach;
-    die(json_encode(['success' => true, 'html' => $liste]));
-endif;
-/* POST handled by VoyageController — see controllers/router.php */
+<?php /* All POST handlers migrated to controllers/router.php — dateV, trajets, chrelevekms */ ?>
 ?>
 <div class="modal fade" id="modal-new-voyage" tabindex="-1" aria-labelledby="modal-new-voyageLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">

@@ -1,13 +1,6 @@
 <?php
 /* POST handled by ChauffeurController — see controllers/router.php */
-if (isset($_POST['refresh-marque'])):
-    $marqueRepo = new MarqueRepository($con);
-    $liste = "";
-    foreach ($marqueRepo->findAll() as $r):
-        $liste .= "<option value='" . h($r['id_marque']) . "'>" . h($r['nom_marque']) . "</option>";
-    endforeach;
-    die(json_encode(['success' => true, 'html' => $liste]));
-endif;
+?>
 ?>
 <div class="modal fade" id="modal-new-chauffeur" tabindex="-1" aria-labelledby="modal-new-chauffeurLabel" aria-hidden="true">
     <div class="modal-dialog">

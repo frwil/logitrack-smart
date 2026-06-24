@@ -353,6 +353,24 @@ class MaintenanceController extends BaseController
         }
     }
 
+    /** Check if a relevé kilométrage exists for an affectation in a date range (voyage modal). */
+    public function checkReleveKmsForVoyage(): never
+    {
+        $affectationId = (int)$this->post('chrelevekms');
+        $dateDebut = $this->post('datevg');
+        $dateFin = $this->post('finvg');
+        if (!$affectationId || !$dateDebut || !$dateFin) {
+            $this->jsonError('Paramètres manquants');
+        }
+        try {
+            $count = $this->maintenanceRepo->countRelevesByAffectationAndDateRange($affectationId, $dateDebut, $dateFin);
+            $this->json(['count' => $count]);
+        } catch (\Throwable $e) {
+            error_log('MaintenanceController::checkReleveKmsForVoyage error: ' . $e->getMessage());
+            $this->jsonError('Erreur lors de la vérification : ' . $e->getMessage());
+        }
+    }
+
     // ---- Bon de réparation ----
 
     public function fetchBonReparation(): never

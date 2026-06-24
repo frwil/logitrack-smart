@@ -1,14 +1,4 @@
-<?php
-/* POST handled by MarqueController — see controllers/router.php */
-if (isset($_POST['refresh-marque'])):
-    $marqueRepo = new MarqueRepository($con);
-    $liste = "";
-    foreach ($marqueRepo->findAll() as $r):
-        $liste .= "<option value='" . h($r['id_marque']) . "'>" . h($r['nom_marque']) . "</option>";
-    endforeach;
-    die(json_encode(['success' => true, 'html' => $liste]));
-endif;
-?>
+<?php /* POST handled by MarqueController — see controllers/router.php */ ?>
 <div class="modal fade" id="modal-new-marque" tabindex="-1" aria-labelledby="modal-new-marqeLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">

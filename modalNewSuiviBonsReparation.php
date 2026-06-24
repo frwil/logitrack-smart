@@ -1,15 +1,4 @@
-<?php /* POST handled by BonReparationController — see controllers/router.php */
-if (isset($_POST['load-cc-br'])):
-    $maintenanceRepo = new MaintenanceRepository($con);
-    $centresCouts = $maintenanceRepo->findAllCentresCouts();
-    $options = "";
-    foreach ($centresCouts as $r):
-        $options .= "<option value='" . $r['id_centre_cout'] . "'>" . h($r['lib_centre_cout']) . "</option>";
-    endforeach;
-    if (count($centresCouts) == 0) $options = "<option value=''></option>";
-    die(json_encode(['success' => true, 'html' => $options]));
-endif;
-?>
+<?php /* POST handled by MaintenanceController — see controllers/router.php */ ?>
 <div class="modal fade" id="modal-new-suiviBonsReparation" tabindex="-1" aria-labelledby="modal-new-suiviBonsReparationLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">

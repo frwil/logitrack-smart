@@ -1,15 +1,4 @@
-<?php
-/* POST handled by ModeleController — see controllers/router.php */
-
-if (isset($_POST['refresh-modele'])):
-    $modeleRepo = new ModeleRepository($con);
-    $liste = "";
-    foreach ($modeleRepo->findAll() as $r):
-        $liste .= "<option value='" . h($r['id_modele_vehicule']) . "'>" . h($r['nom_modele_vehicule']) . "</option>";
-    endforeach;
-    die(json_encode(['success' => true, 'html' => $liste]));
-endif;
-?>
+<?php /* POST handled by ModeleController — see controllers/router.php */ ?>
 <div class="modal fade" id="modal-new-modele" tabindex="-1" aria-labelledby="modal-new-modeleLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">

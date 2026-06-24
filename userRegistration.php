@@ -1,27 +1,4 @@
-<?php
-if (isset($_POST['name-user'])) {
-    try {
-        $userRepo = new UserRepository($con);
-        $userRepo->transactional(function () use ($userRepo) {
-            $passHashed = password_hash($_POST['pass-user'], PASSWORD_DEFAULT);
-            $userRepo->insertUser(
-                $_POST['name-user'],
-                $passHashed,
-                $_POST['fullname-user'] === '' ? null : $_POST['fullname-user'],
-                $_POST['email-user'] === '' ? null : $_POST['email-user']
-            );
-            $userRepo->insertUserRegion($_POST['name-user'], (int)$_POST['region-user']);
-        });
-        die(json_encode(['success' => true]));
-    } catch (\mysqli_sql_exception $e) {
-        error_log("User registration failed: " . $e->getMessage());
-        die(json_encode(['success' => false, 'error' => "Erreur lors de l'enregistrement"]));
-    } catch (\Throwable $e) {
-        error_log("User registration failed: " . $e->getMessage());
-        die(json_encode(['success' => false, 'error' => "Erreur lors de l'enregistrement"]));
-    }
-}
-?>
+<?php /* POST handled by UserController — see controllers/router.php */ ?>
 <div class="d-flex justify-content-center">
     <div class="lt-card" style="max-width:500px;width:100%">
         <div class="lt-card-title mb-3">Nouvel utilisateur</div>

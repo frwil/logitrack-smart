@@ -133,6 +133,7 @@ $routes = [
     'load-chauffeur-impact'    => [$maintenanceCtrl, 'chauffeurImpact'],
     'load-repair-conflicts'    => [$maintenanceCtrl, 'repairConflicts'],
     'load-dashboard-all'      => [$maintenanceCtrl, 'dashboardAll'],
+    'chrelevekms'             => [$maintenanceCtrl, 'checkReleveKmsForVoyage'],
     'load-health-scores'      => [$maintenanceCtrl, 'healthScoresHtml'],
     'load-upcoming-vidanges'  => [$maintenanceCtrl, 'upcomingVidangesHtml'],
 
@@ -193,6 +194,7 @@ $routes = [
 
     // Users
     'new-user'             => [$userCtrl, 'create'],
+    'name-user'            => [$userCtrl, 'create'],
     'id-user-forModal'     => [$userCtrl, 'fetchByHash'],
     'id-user-upd'          => [$userCtrl, 'update'],
     'id-user-forDel'       => [$userCtrl, 'delete'],
