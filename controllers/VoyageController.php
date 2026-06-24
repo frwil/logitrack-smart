@@ -42,8 +42,9 @@ class VoyageController extends BaseController
                 );
             });
             $this->json();
-        } catch (\mysqli_sql_exception $e) {
-            $this->jsonError('Erreur lors de la modification');
+        } catch (\Throwable $e) {
+            error_log('VoyageController::update error: ' . $e->getMessage());
+            $this->jsonError('Erreur lors de la modification : ' . $e->getMessage());
         }
     }
 
@@ -78,8 +79,9 @@ class VoyageController extends BaseController
                 }
             });
             $this->json();
-        } catch (\mysqli_sql_exception $e) {
-            $this->jsonError("Erreur lors de l'enregistrement");
+        } catch (\Throwable $e) {
+            error_log('VoyageController::create error: ' . $e->getMessage());
+            $this->jsonError("Erreur lors de l'enregistrement : " . $e->getMessage());
         }
     }
 
