@@ -84,10 +84,16 @@ class AffectationRepository extends BaseRepository
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
         return $this->select(
-            "SELECT * FROM affectation_vehicule
+            "SELECT affectation_vehicule.*,
+                    vehicule.immatriculation_vehicule,
+                    chauffeur.nom_chauffeur,
+                    region.nom_region,
+                    entite.nom_entite
+             FROM affectation_vehicule
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
              LEFT JOIN region ON affectation_vehicule.id_region = region.id_region
+             LEFT JOIN entite ON affectation_vehicule.id_entite = entite.id_entite
              WHERE is_ferme = 0 AND is_deleted = 0 AND $where",
             $params
         );

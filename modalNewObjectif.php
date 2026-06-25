@@ -21,14 +21,19 @@
                         <select id="regions-objectif" name="regions[]" multiple required>
                             <?php
                             $regionRepo = new RegionRepository($con);
-                            // Only show regions from the current user's session context
                             $contextNonAdmin = $regionRepo->findNonAdminByIds(getContextRegions());
+                            $prefillRegion = isset($_GET['prefill_region']) ? (int)$_GET['prefill_region'] : null;
                             foreach ($contextNonAdmin as $r):
-                                echo "<option value='{$r['id_region']}' selected>" . h($r['nom_region']) . "</option>";
+                                // Pre-select only the prefill region if provided, otherwise all context regions
+                                $sel = $prefillRegion ? ((int)$r['id_region'] === $prefillRegion) : true;
+                                echo "<option value='{$r['id_region']}'" . ($sel ? ' selected' : '') . ">" . h($r['nom_region']) . "</option>";
                             endforeach;
                             ?>
                         </select>
                     </div>
+                    <?php if (isset($_GET['prefill_entite']) && (int)$_GET['prefill_entite'] > 0): ?>
+                    <input type="hidden" name="prefill-entite" value="<?php echo (int)$_GET['prefill_entite']; ?>">
+                    <?php endif; ?>
                 </form>
             </div>
             <div class="modal-footer">

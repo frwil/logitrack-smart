@@ -46,7 +46,10 @@ class ObjectifController extends BaseController
         $date = $this->post('date-objectif');
         $objectif = (int)$this->post('objectif');
         if (!$date || !$objectif) $this->jsonError('Tous les champs sont obligatoires');
-        $entities = getContextEntities();
+
+        // Use entity from voyage form prefill if provided, otherwise session context
+        $prefillEntite = $this->post('prefill-entite');
+        $entities = $prefillEntite ? [(int)$prefillEntite] : getContextEntities();
         if (empty($entities)) $this->jsonError('Aucune entité sélectionnée');
 
         // Use posted regions if provided, otherwise use non-admin context regions

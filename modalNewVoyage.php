@@ -29,7 +29,11 @@
                                 <select id="id-vehicule-vg" name="id-vehicule-vg" required>
                                     <?php $affectationRepo = new AffectationRepository($con);
                                     foreach ($affectationRepo->findActiveByContext(getContextRegions(), getContextEntities()) as $r):
-                                        echo "<option value='" . $r['id_affectation'] . "'>" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                                        $regionName = $r['nom_region'] ?? '';
+                                        $entiteName = $r['nom_entite'] ?? '';
+                                        $extra = $regionName ? " — $regionName" : '';
+                                        $extra .= $entiteName ? " / $entiteName" : '';
+                                        echo "<option value='" . $r['id_affectation'] . "' data-id-region='" . (int)$r['id_region'] . "' data-id-entite='" . (int)$r['id_entite'] . "'>" . h($r['immatriculation_vehicule']) . " (" . h($r['nom_chauffeur']) . ")" . h($extra) . "</option>";
                                     endforeach;
                                     ?>
                                 </select>
@@ -203,7 +207,13 @@
         //return false;
         if($('#date-check').val()=='1'){
             if(confirm("Cette journée n'a pas d'objectif défini.\n Bien vouloir définir l'objectif de la journée avant d'enregistrer des voyages.\n Voulez-vous définir un objectif pour cette journée ?")){
-                location='?page=voyages&subpage=listeObjectifsVoyages&action=new'
+                var selected = $('#id-vehicule-vg option:selected');
+                var region = selected.attr('data-id-region');
+                var entite = selected.attr('data-id-entite');
+                var url = '?page=voyages&subpage=listeObjectifsVoyages&action=new';
+                if (region) url += '&prefill_region=' + region;
+                if (entite) url += '&prefill_entite=' + entite;
+                location = url;
             }
             return false
         }
