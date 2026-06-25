@@ -46,7 +46,7 @@ class VoyageRepository extends BaseRepository
     public function findBatchByDateRange(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): array
     {
         [$where, $ctxParams] = db_context_filter($regionIds, $entiteIds);
-        $params = array_merge([$dateFrom, $dateTo], $ctxParams);
+        $params = array_merge($ctxParams, [$dateFrom, $dateTo]);
         return $this->select(
             "SELECT v.id_voyage, v.date_voyage, v.id_affectation, v.qte_carburant, v.qte_chargement,
                     vv.id_destination, dv.lib_destination, dv.distance_destination,
@@ -68,7 +68,7 @@ class VoyageRepository extends BaseRepository
     public function findBatchVoyagesVehicules(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): array
     {
         [$where, $ctxParams] = db_context_filter($regionIds, $entiteIds);
-        $params = array_merge([$dateFrom, $dateTo], $ctxParams);
+        $params = array_merge($ctxParams, [$dateFrom, $dateTo]);
         return $this->select(
             "SELECT v.id_voyage, v.date_voyage, v.qte_carburant, vv.id_destination,
                     dv.lib_destination, dv.distance_destination,
@@ -89,7 +89,7 @@ class VoyageRepository extends BaseRepository
     {
         [$phR, $pR] = db_in($regionIds);
         [$phE, $pE] = db_in($entiteIds);
-        $params = array_merge([$dateFrom, $dateTo], $pR, $pE);
+        $params = array_merge($pR, $pE, [$dateFrom, $dateTo]);
         return $this->select(
             "SELECT v.date_voyage, affectation_vehicule.id_region, affectation_vehicule.id_entite,
                     COUNT(DISTINCT v.id_voyage) AS nb_voyages,
