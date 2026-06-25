@@ -16,6 +16,9 @@
                         <input type="number" id="objectif" name="objectif" required class="form-control">
                         <label for="objectif">Objectif de voyages</label>
                     </div>
+                    <div class="alert alert-info small py-2">
+                        Un objectif sera créé pour chaque combinaison région × entité de votre contexte actuel.
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -43,9 +46,9 @@
                 showSuccess("Objectif enregisté pour la date du "+$('#date-objectif').val()+" !!")
                 $('#modal-new-objectif').modal('hide')
                 $('#form-new-objectif *').val('')
-                location="?page=voyages&subpage=listeObjectifsVoyages&action=new"
+                location="?page=voyages&subpage=listeObjectifsVoyages"
             } else if (e.error == '1062') {
-                showError("Un objectif a déjà été défini pour cette journée.")
+                showError("Un objectif a déjà été défini pour cette journée, région et entité.")
             } else {
                 showError(e.error || "Erreur lors de l'enregistrement")
             }

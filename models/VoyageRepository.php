@@ -84,13 +84,14 @@ class VoyageRepository extends BaseRepository
         );
     }
 
-    /** Count voyages and sum distances per date per region — replaces D×R queries in evaluation view. */
-    public function countBatchByDateAndRegions(array $regionIds, string $dateFrom, string $dateTo): array
+    /** Count voyages and sum distances per date per region/entity — replaces D×R queries in evaluation view. */
+    public function countBatchByDateAndRegions(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): array
     {
-        [$ph, $p] = db_in($regionIds);
-        $params = array_merge([$dateFrom, $dateTo], $p);
+        [$phR, $pR] = db_in($regionIds);
+        [$phE, $pE] = db_in($entiteIds);
+        $params = array_merge([$dateFrom, $dateTo], $pR, $pE);
         return $this->select(
-            "SELECT v.date_voyage, affectation_vehicule.id_region,
+            "SELECT v.date_voyage, affectation_vehicule.id_region, affectation_vehicule.id_entite,
                     COUNT(DISTINCT v.id_voyage) AS nb_voyages,
                     COALESCE(SUM(dv.distance_destination), 0) AS total_dist
              FROM voyage v
@@ -98,9 +99,10 @@ class VoyageRepository extends BaseRepository
              LEFT JOIN voyage_vehicule vv ON vv.id_voyage = v.id_voyage
              LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
              WHERE affectation_vehicule.is_deleted = 0
-             AND affectation_vehicule.id_region IN ($ph)
+             AND affectation_vehicule.id_region IN ($phR)
+             AND affectation_vehicule.id_entite IN ($phE)
              AND v.date_voyage BETWEEN ? AND ?
-             GROUP BY v.date_voyage, affectation_vehicule.id_region",
+             GROUP BY v.date_voyage, affectation_vehicule.id_region, affectation_vehicule.id_entite",
             $params
         );
     }
@@ -346,8 +348,13 @@ class VoyageRepository extends BaseRepository
         $objParams = [];
         if (!empty($regionIds)) {
             [$ph, $p] = db_in($regionIds);
-            $objWhere = "AND id_region IN ($ph)";
-            $objParams = $p;
+            $objWhere .= " AND id_region IN ($ph)";
+            $objParams = array_merge($objParams, $p);
+        }
+        if (!empty($entiteIds)) {
+            [$ph, $p] = db_in($entiteIds);
+            $objWhere .= " AND id_entite IN ($ph)";
+            $objParams = array_merge($objParams, $p);
         }
         $row = $this->selectOne(
             "SELECT SUM(objectif) AS total FROM objectif_periode_region
@@ -439,8 +446,13 @@ class VoyageRepository extends BaseRepository
         $objParams = [];
         if (!empty($regionIds)) {
             [$ph, $p] = db_in($regionIds);
-            $objWhere = "AND id_region IN ($ph)";
-            $objParams = $p;
+            $objWhere .= " AND id_region IN ($ph)";
+            $objParams = array_merge($objParams, $p);
+        }
+        if (!empty($entiteIds)) {
+            [$ph, $p] = db_in($entiteIds);
+            $objWhere .= " AND id_entite IN ($ph)";
+            $objParams = array_merge($objParams, $p);
         }
         $objectifs = $this->select(
             "SELECT date_objectif_periode AS date, SUM(objectif) AS total FROM objectif_periode_region
@@ -620,8 +632,13 @@ class VoyageRepository extends BaseRepository
         $objParams = [];
         if (!empty($regionIds)) {
             [$ph, $p] = db_in($regionIds);
-            $objWhere = "AND id_region IN ($ph)";
-            $objParams = $p;
+            $objWhere .= " AND id_region IN ($ph)";
+            $objParams = array_merge($objParams, $p);
+        }
+        if (!empty($entiteIds)) {
+            [$ph, $p] = db_in($entiteIds);
+            $objWhere .= " AND id_entite IN ($ph)";
+            $objParams = array_merge($objParams, $p);
         }
         $row = $this->selectOne(
             "SELECT SUM(objectif) AS total FROM objectif_periode_region

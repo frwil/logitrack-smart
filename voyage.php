@@ -380,29 +380,36 @@ function getTableauEvaluationVoyages()
         $d->modify('+1 day');
     }
 
-    $regionIds = array_map('intval', explode(',', $_SESSION['usr-con']['users_region']));
+    $regionIds = getContextRegions();
+    $entiteIds = getContextEntities();
     $regionRepo = new RegionRepository($con);
     $objectifRepo = new ObjectifRepository($con);
     $voyageRepo = new VoyageRepository($con);
     $reg = $regionRepo->findNonAdminByIds($regionIds);
 
     // 2 batch queries instead of D×R×2
-    $allObjectifs = $objectifRepo->findByDateRangeAndRegions($dateFrom, $dateTo, $regionIds);
-    $allCounts = $voyageRepo->countBatchByDateAndRegions($regionIds, $dateFrom, $dateTo);
+    $allObjectifs = $objectifRepo->findByDateRangeAndRegions($dateFrom, $dateTo, $regionIds, $entiteIds);
+    $allCounts = $voyageRepo->countBatchByDateAndRegions($regionIds, $entiteIds, $dateFrom, $dateTo);
 
-    // Index objectifs by [date][region]
+    // Index objectifs by [date][region] (aggregate across entities)
     $objByDateRegion = [];
     foreach ($allObjectifs as $o) {
-        $objByDateRegion[$o['date_objectif_periode']][(int)$o['id_region']] = (int)$o['objectif'];
+        $rid = (int)$o['id_region'];
+        if (!isset($objByDateRegion[$o['date_objectif_periode']][$rid])) {
+            $objByDateRegion[$o['date_objectif_periode']][$rid] = 0;
+        }
+        $objByDateRegion[$o['date_objectif_periode']][$rid] += (int)$o['objectif'];
     }
 
-    // Index counts by [date][region]
+    // Index counts by [date][region] (aggregate across entities)
     $cntByDateRegion = [];
     foreach ($allCounts as $c) {
-        $cntByDateRegion[$c['date_voyage']][(int)$c['id_region']] = [
-            'nb' => (int)$c['nb_voyages'],
-            'dist' => (float)$c['total_dist'],
-        ];
+        $rid = (int)$c['id_region'];
+        if (!isset($cntByDateRegion[$c['date_voyage']][$rid])) {
+            $cntByDateRegion[$c['date_voyage']][$rid] = ['nb' => 0, 'dist' => 0.0];
+        }
+        $cntByDateRegion[$c['date_voyage']][$rid]['nb'] += (int)$c['nb_voyages'];
+        $cntByDateRegion[$c['date_voyage']][$rid]['dist'] += (float)$c['total_dist'];
     }
 
     $tableau = "<table class='table table-striped no-datatable' id='table-evaluation'><thead><tr><th rowspan=2>Date</th>";

@@ -29,8 +29,9 @@ class ObjectifController extends BaseController
         $date = $this->post('dateV');
         if (!$date) $this->jsonError('Date manquante');
         $regionIds = getContextRegions();
+        $entiteIds = getContextEntities();
         try {
-            $count = count($this->repo->findByDateAndRegions($date, $regionIds));
+            $count = count($this->repo->findByDateAndRegions($date, $regionIds, $entiteIds));
             $this->json(['count' => $count]);
         } catch (\Throwable $e) {
             error_log('ObjectifController::checkDateForVoyage error: ' . $e->getMessage());
@@ -43,16 +44,20 @@ class ObjectifController extends BaseController
         $objectif = (int)$this->post('objectif');
         if (!$date || !$objectif) $this->jsonError('Tous les champs sont obligatoires');
         $regions = getContextRegions();
+        $entities = getContextEntities();
         if (empty($regions)) $this->jsonError('Aucune région sélectionnée');
+        if (empty($entities)) $this->jsonError('Aucune entité sélectionnée');
         try {
-            $this->repo->transactional(function () use ($date, $objectif, $regions) {
+            $this->repo->transactional(function () use ($date, $objectif, $regions, $entities) {
                 foreach ($regions as $rid) {
-                    $this->repo->insert($date, $objectif, $rid);
+                    foreach ($entities as $eid) {
+                        $this->repo->insert($date, $objectif, $rid, $eid);
+                    }
                 }
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {
-            if ($e->getCode() == 1062) $this->jsonError('Cet objectif existe déjà pour cette période et région');
+            if ($e->getCode() == 1062) $this->jsonError('Cet objectif existe déjà pour cette période, région et entité');
             $this->jsonError("Erreur lors de l'enregistrement");
         }
     }
