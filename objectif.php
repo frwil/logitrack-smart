@@ -3,9 +3,11 @@
     global $con;
     global $rights_voyage;
     $repo = new ObjectifRepository($con);
+    $regionRepo = new RegionRepository($con);
     $dateFrom = isset($_POST['date-f']) ? $_POST['date-f'] : date('Y-m-01');
     $dateTo = isset($_POST['date-t']) ? $_POST['date-t'] : date('Y-m-t');
-    $rows = $repo->findByDateRangeAndRegionsWithNames($dateFrom, $dateTo, getContextRegions(), getContextEntities());
+    $regionIds = array_map('intval', array_column($regionRepo->findNonAdminByIds(getContextRegions()), 'id_region'));
+    $rows = $repo->findByDateRangeAndRegionsWithNames($dateFrom, $dateTo, $regionIds, getContextEntities());
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Date</th><th>Région</th><th>Entité</th><th>Objectif voyages</th><th></th></tr></thead><tbody>";
     $i = 1;
     foreach ($rows as $r):

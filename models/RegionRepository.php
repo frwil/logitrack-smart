@@ -33,4 +33,10 @@ class RegionRepository extends BaseRepository
             $params
         );
     }
+
+    /** Find all operational (non-admin) regions. */
+    public function findAllNonAdmin(): array
+    {
+        return $this->select("SELECT * FROM region WHERE is_admin < 1 AND is_active = 1", []);
+    }
 }

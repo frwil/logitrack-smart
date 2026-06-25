@@ -30,6 +30,9 @@ class ObjectifController extends BaseController
         if (!$date) $this->jsonError('Date manquante');
         $regionIds = getContextRegions();
         $entiteIds = getContextEntities();
+        // Exclude admin regions (e.g. Cameroun)
+        $regionRepo = new RegionRepository($GLOBALS['con']);
+        $regionIds = array_map('intval', array_column($regionRepo->findNonAdminByIds($regionIds), 'id_region'));
         try {
             $count = count($this->repo->findByDateAndRegions($date, $regionIds, $entiteIds));
             $this->json(['count' => $count]);
@@ -43,10 +46,21 @@ class ObjectifController extends BaseController
         $date = $this->post('date-objectif');
         $objectif = (int)$this->post('objectif');
         if (!$date || !$objectif) $this->jsonError('Tous les champs sont obligatoires');
-        $regions = getContextRegions();
         $entities = getContextEntities();
-        if (empty($regions)) $this->jsonError('Aucune région sélectionnée');
         if (empty($entities)) $this->jsonError('Aucune entité sélectionnée');
+
+        // Use posted regions if provided, otherwise use non-admin context regions
+        $postedRegions = $this->post('regions');
+        if ($postedRegions) {
+            $regions = is_array($postedRegions) ? array_map('intval', $postedRegions) : array_map('intval', explode(',', $postedRegions));
+            // Ensure only non-admin regions
+            $regionRepo = new RegionRepository($GLOBALS['con']);
+            $regions = array_map('intval', array_column($regionRepo->findNonAdminByIds($regions), 'id_region'));
+        } else {
+            $regionRepo = new RegionRepository($GLOBALS['con']);
+            $regions = array_map('intval', array_column($regionRepo->findNonAdminByIds(getContextRegions()), 'id_region'));
+        }
+        if (empty($regions)) $this->jsonError('Aucune région sélectionnée');
         try {
             $this->repo->transactional(function () use ($date, $objectif, $regions, $entities) {
                 foreach ($regions as $rid) {
