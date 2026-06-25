@@ -164,6 +164,7 @@
     function openModalVoyage() {
         $('#modal-new-voyage').modal('show')
         $('#titre-vg').val('Voyage-<?php echo date('ym'); ?>' + Str_Random(5).toUpperCase())
+        $('#date-check').val(0)
     }
 
     async function checkReleveKms(id,dvg,fvg){
@@ -244,6 +245,8 @@
         }).done((e)=>{
             if(e.count=='0'){
                 $('#date-check').val(1)
+            } else {
+                $('#date-check').val(0)
             }
         }).fail((jqXHR)=>{
             showError(jqXHR.responseJSON?.error || "Erreur lors de la vérification")
