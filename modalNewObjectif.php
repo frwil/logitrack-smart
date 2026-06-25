@@ -21,13 +21,10 @@
                         <select id="regions-objectif" name="regions[]" multiple required>
                             <?php
                             $regionRepo = new RegionRepository($con);
-                            $nonAdminRegions = $regionRepo->findAllNonAdmin();
-                            $contextRegions = getContextRegions();
-                            $contextNonAdmin = $regionRepo->findNonAdminByIds($contextRegions);
-                            $contextIds = array_map('intval', array_column($contextNonAdmin, 'id_region'));
-                            foreach ($nonAdminRegions as $r):
-                                $sel = in_array((int)$r['id_region'], $contextIds) ? 'selected' : '';
-                                echo "<option value='{$r['id_region']}' $sel>" . h($r['nom_region']) . "</option>";
+                            // Only show regions from the current user's session context
+                            $contextNonAdmin = $regionRepo->findNonAdminByIds(getContextRegions());
+                            foreach ($contextNonAdmin as $r):
+                                echo "<option value='{$r['id_region']}' selected>" . h($r['nom_region']) . "</option>";
                             endforeach;
                             ?>
                         </select>
