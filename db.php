@@ -91,7 +91,18 @@ function getContextRegions(): array
 {
     $sel = $_SESSION['usr-con']['region-sel'] ?? [];
     if (!empty($sel)) {
-        return $sel;
+        $selInt = array_map('intval', $sel);
+        // If an admin region (e.g. CAMEROUN) is selected, expand to include
+        // all non-admin operational regions so that data is visible.
+        $con = $GLOBALS['con'] ?? null;
+        if ($con) {
+            $repo = new RegionRepository($con);
+            $nonAdminIds = array_map('intval', array_column($repo->findAllNonAdmin(), 'id_region'));
+            if (array_diff($selInt, $nonAdminIds)) {
+                return array_unique(array_merge($selInt, $nonAdminIds));
+            }
+        }
+        return $selInt;
     }
     // Fallback: all allowed regions (superadmin gets all, others get assigned)
     if ($_SESSION['usr-con']['is-superadmin'] ?? false) {
