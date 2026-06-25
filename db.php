@@ -112,7 +112,18 @@ function getContextRegions(): array
             return array_map('intval', array_column($repo->findAll(), 'id_region'));
         }
     }
-    return array_map('intval', explode(',', $_SESSION['usr-con']['users_region'] ?? ''));
+    $userRegions = array_map('intval', explode(',', $_SESSION['usr-con']['users_region'] ?? ''));
+    // If an admin region (e.g. CAMEROUN) is in the user's assigned regions,
+    // expand to include all non-admin operational regions.
+    $con = $GLOBALS['con'] ?? null;
+    if ($con && !empty($userRegions)) {
+        $repo = new RegionRepository($con);
+        $nonAdminIds = array_map('intval', array_column($repo->findAllNonAdmin(), 'id_region'));
+        if (array_diff($userRegions, $nonAdminIds)) {
+            return array_unique(array_merge($userRegions, $nonAdminIds));
+        }
+    }
+    return $userRegions;
 }
 
 function getContextEntities(): array
