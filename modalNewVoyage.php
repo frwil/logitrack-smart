@@ -48,6 +48,12 @@
                         </div>
                         <div class="col-6">
                             <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="numero-scelle-vg" name="numero-scelle-vg" placeholder="N° scellé">
+                                <label for="numero-scelle-vg">N° de scellé</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
                                 <input type="number" class="form-control" id="qtecarburant-vg" value="0" name="qtecarburant-vg" required min="0">
                                 <label for="qtecarburant-vg">Carburant consommé (en Litres)</label>
                             </div>

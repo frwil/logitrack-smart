@@ -38,7 +38,8 @@ class VoyageController extends BaseController
                     (float)$this->post('cb-upd-voyage'),
                     $this->post('cv-upd-voyage'),
                     (int)$this->post('tc-upd-voyage'),
-                    (float)$this->post('qtec-upd-voyage')
+                    (float)$this->post('qtec-upd-voyage'),
+                    $this->post('numero-scelle-upd-voyage') ?: null
                 );
             });
             $this->json();
@@ -72,7 +73,8 @@ class VoyageController extends BaseController
                     (float)$this->post('qtecarburant-vg'),
                     $this->post('id-convoyeur-vg'),
                     (int)$this->post('typechargement-vg'),
-                    (float)$this->post('qtechargement-vg')
+                    (float)$this->post('qtechargement-vg'),
+                    $this->post('numero-scelle-vg') ?: null
                 );
                 foreach ($trajets as $destId) {
                     $this->voyageRepo->insertVoyageVehicule((int)$voyageId, (int)$destId);

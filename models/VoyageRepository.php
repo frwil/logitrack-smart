@@ -49,6 +49,7 @@ class VoyageRepository extends BaseRepository
         $params = array_merge($ctxParams, [$dateFrom, $dateTo]);
         return $this->select(
             "SELECT v.id_voyage, v.date_voyage, v.id_affectation, v.qte_carburant, v.qte_chargement,
+                    v.numero_scelle,
                     vv.id_destination, dv.lib_destination, dv.distance_destination,
                     tcv.lib_type_chargement,
                     affectation_vehicule.id_vehicule
@@ -171,7 +172,8 @@ class VoyageRepository extends BaseRepository
         float $qteCarburant,
         string $convoyeur,
         int $typeChargementId,
-        float $qteChargement
+        float $qteChargement,
+        ?string $numeroScelle = null
     ): bool {
         return $this->exec(
             "UPDATE voyage SET
@@ -179,9 +181,10 @@ class VoyageRepository extends BaseRepository
              qte_carburant = ?,
              convoyeur = ?,
              id_type_chargement = ?,
-             qte_chargement = ?
+             qte_chargement = ?,
+             numero_scelle = ?
              WHERE id_voyage = ?",
-            [$date, $qteCarburant, $convoyeur, $typeChargementId, $qteChargement, $id]
+            [$date, $qteCarburant, $convoyeur, $typeChargementId, $qteChargement, $numeroScelle, $id]
         );
     }
 
@@ -200,12 +203,13 @@ class VoyageRepository extends BaseRepository
         float $qteCarburant,
         string $convoyeur,
         int $typeChargementId,
-        float $qteChargement
+        float $qteChargement,
+        ?string $numeroScelle = null
     ): int|string {
         return $this->insertGetId(
-            "INSERT INTO voyage (titre_voyage, date_voyage, id_affectation, qte_carburant, convoyeur, id_type_chargement, qte_chargement)
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [$titre, $date, $affectationId, $qteCarburant, $convoyeur, $typeChargementId, $qteChargement]
+            "INSERT INTO voyage (titre_voyage, date_voyage, id_affectation, qte_carburant, convoyeur, id_type_chargement, qte_chargement, numero_scelle)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [$titre, $date, $affectationId, $qteCarburant, $convoyeur, $typeChargementId, $qteChargement, $numeroScelle]
         );
     }
 

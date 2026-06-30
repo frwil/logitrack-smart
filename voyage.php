@@ -76,8 +76,9 @@
                 $btns = '';
                 if ($hasUpd) $btns .= "<button class='btn btn-light btn-sm' onclick='updvg(\"$vgHash\",\"$affHash\")'><i class='fa fa-pencil-alt'></i></button>";
                 if ($hasDel) $btns .= "<button class='btn btn-danger btn-sm' onclick='delvg(\"$vgHash\")'><i class='fa fa-times'></i></button>";
+                $scelle = !empty($r1['numero_scelle']) ? " <span class='badge text-bg-warning'>🔒 " . h($r1['numero_scelle']) . "</span>" : '';
                 $cell .= "<li class='list-group-item'>" . $sep
-                    . h($r1['lib_destination']) . " - " . h($r1['distance_destination']) . "km - "
+                    . h($r1['lib_destination']) . $scelle . " - " . h($r1['distance_destination']) . "km - "
                     . h($r1['qte_carburant']) . "L - " . h($r1['qte_chargement'])
                     . " (" . h($r1['lib_type_chargement']) . ") "
                     . "<div class='btn-group'>$btns</div></li>";
@@ -490,6 +491,7 @@ function getTableauEvaluationVoyages()
                     if ($(el).attr('value') != vh) $(el).remove()
                 })
             $('#cv-upd-voyage').val(v.convoyeur)
+            $('#numero-scelle-upd-voyage').val(v.numero_scelle || '')
             $('#cb-upd-voyage').val(v.qte_carburant)
             $('#tc-upd-voyage option[value="'+v.tc+'"]').prop('selected',true)
             $('#qtec-upd-voyage').val(v.qte_chargement)
@@ -601,6 +603,12 @@ function getTableauEvaluationVoyages()
                         <div class="form-floating mb-3">
                             <input type="text" id="cv-upd-voyage" name="cv-upd-voyage" class="form-control">
                             <label for="cv-upd-voyage">Convoyeur</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-floating mb-3">
+                            <input type="text" id="numero-scelle-upd-voyage" name="numero-scelle-upd-voyage" class="form-control" placeholder="N° scellé">
+                            <label for="numero-scelle-upd-voyage">N° de scellé</label>
                         </div>
                     </div>
                     <div class="col-6">
