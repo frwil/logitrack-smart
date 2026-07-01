@@ -22,13 +22,79 @@ if ($isHttps) {
 }
 if (session_status() === PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-if (isset($_GET['logout'])) unset($_SESSION['usr-con']);
+if (isset($_GET['logout'])) {
+    destroySessionAndRedirect();
+}
 
 require_once __DIR__ . '/env_loader.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/sanitize.php';
 require_once __DIR__ . '/models/autoload.php';
 require_once __DIR__ . '/controllers/autoload.php';
+
+/**
+ * Helper: destroy the session fully and either redirect (normal request)
+ * or return JSON (AJAX / _partial request) so the front-end can handle reload.
+ *
+ * Called when: user clicks logout, inactivity timeout, or account deactivated.
+ */
+function destroySessionAndRedirect(string $errorMsg = 'Session expirée'): never
+{
+    $_SESSION = [];
+    session_destroy();
+    $params = session_get_cookie_params();
+    setcookie(
+        session_name(),
+        '',
+        time() - 42000,
+        $params['path'],
+        $params['domain'],
+        $params['secure'],
+        $params['httponly']
+    );
+
+    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+           && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+    $isPartial = isset($_GET['_partial']);
+
+    if ($isAjax || $isPartial) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        die(json_encode([
+            'success' => false,
+            'error'   => $errorMsg,
+            'reload'  => true,
+        ]));
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
+/**
+ * Inactivity timeout in seconds.
+ * If the user makes no request for this long, the session is destroyed.
+ * Override via SESSION_INACTIVITY_TIMEOUT in .env or system environment.
+ * Minimum: 60 seconds (1 minute).
+ */
+define('SESSION_INACTIVITY_TIMEOUT', max(60, (int)(getenv('SESSION_INACTIVITY_TIMEOUT') ?: 3600)));
+
+// === Inactivity timeout check ===
+// Runs before CSRF check (POST) and before page rendering (GET).
+// Uses only session data — no DB query needed.
+if (isset($_SESSION['usr-con'])) {
+    $lastActivity = $_SESSION['usr-con']['last_activity'] ?? 0;
+
+    if ($lastActivity === 0) {
+        // Existing session from before this feature was deployed,
+        // or first page after login. Set timer without checking.
+        $_SESSION['usr-con']['last_activity'] = time();
+    } elseif ((time() - $lastActivity) > SESSION_INACTIVITY_TIMEOUT) {
+        destroySessionAndRedirect('Session expirée, veuillez vous reconnecter');
+    } else {
+        $_SESSION['usr-con']['last_activity'] = time();
+    }
+}
 
 set_time_limit(60);
 
@@ -96,6 +162,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'):
         if (mysqli_connect_errno()) {
             throw new \RuntimeException('Database connection failed');
         }
+
+        // Deactivated-user check: if a logged-in user was deactivated since their
+        // last request, kill the session before any controller action executes.
+        if (isset($_SESSION['usr-con'])) {
+            $guardUserRepo = new UserRepository($con);
+            $sessionUser = $guardUserRepo->findById((int)$_SESSION['usr-con']['id_user']);
+            if (!$sessionUser || empty($sessionUser['is_active'])) {
+                destroySessionAndRedirect('Compte désactivé, veuillez contacter l\'administrateur');
+            }
+        }
+
         require_once __DIR__ . '/controllers/router.php';
     } catch (\Throwable $e) {
         http_response_code(500);
@@ -110,6 +187,16 @@ if ($con) {
     mysqli_options($con, MYSQLI_OPT_READ_TIMEOUT, 30);
     mysqli_real_connect($con, getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME'));
 }
+
+// Deactivated-user check for GET / page loads.
+if (isset($_SESSION['usr-con'])) {
+    $guardUserRepo = new UserRepository($con);
+    $sessionUser = $guardUserRepo->findById((int)$_SESSION['usr-con']['id_user']);
+    if (!$sessionUser || empty($sessionUser['is_active'])) {
+        destroySessionAndRedirect('Compte désactivé, veuillez contacter l\'administrateur');
+    }
+}
+
 $partial = isset($_GET['_partial']) && isset($_SESSION['usr-con']);
 ?>
 <?php if (!$partial): ?>
@@ -225,6 +312,7 @@ $partial = isset($_GET['_partial']) && isset($_SESSION['usr-con']);
 
         $_SESSION['usr-con'] = $user;
         $_SESSION['usr-con']['users-rights'] = $userRepo->findRights((int)$_SESSION['usr-con']['id_user']);
+        $_SESSION['usr-con']['last_activity'] = time();
         ?>
         <?php $user_rights = $_SESSION['usr-con']['users-rights']; ?>
 

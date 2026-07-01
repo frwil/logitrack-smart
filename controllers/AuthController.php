@@ -35,6 +35,11 @@ class AuthController extends BaseController
             $this->jsonError('Nom d\'utilisateur ou mot de passe incorrect', 401);
         }
 
+        // Check if the account is active (admin may have deactivated it).
+        if (empty($user['is_active'])) {
+            $this->jsonError('Compte désactivé. Veuillez contacter l\'administrateur.', 403);
+        }
+
         $role = $user['role'] ?? 'user';
         $isAdmin = $role === 'admin' || $role === 'superadmin';
         $isSuperadmin = $role === 'superadmin';
@@ -101,6 +106,7 @@ class AuthController extends BaseController
         unset($user['pass_user']);
 
         $_SESSION['usr-con'] = $user;
+        $_SESSION['usr-con']['last_activity'] = time();
         session_regenerate_id(true);
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
