@@ -153,6 +153,23 @@ class ConfigRepository extends BaseRepository
         );
     }
 
+    /** Find vehicles that have documents from multiple active dossiers. */
+    public function findVehiclesWithMultipleActiveDossiers(): array
+    {
+        return $this->select(
+            "SELECT dvd.id_vehicule, v.immatriculation_vehicule,
+                    COUNT(DISTINCT dvd.id_dossier_vehicule) as nb_dossiers,
+                    COUNT(*) as nb_docs
+             FROM dossier_vehicule_document dvd
+             JOIN vehicule v ON v.id_vehicule = dvd.id_vehicule
+             WHERE dvd.is_active = 1
+             GROUP BY dvd.id_vehicule, v.immatriculation_vehicule
+             HAVING nb_dossiers > 1
+             ORDER BY nb_dossiers DESC",
+            []
+        );
+    }
+
     /** All documents in a folder by ref_dossier. */
     public function findFolderByRef(string $refDossier): array
     {
