@@ -84,13 +84,21 @@ class ConfigController extends BaseController
     public function updateFolder(): never {
         $this->requireConfigSubRight('updFolders', 'upd');
         try { $this->repo->transactional(function() {
-            $this->repo->deleteFolderDocumentsByRef($this->post('ref-folder'));
+            $vh = $this->post('vh-folder-upd');
+            $ref = $this->post('ref-folder');
+            // Remove old documents for this dossier
+            $this->repo->deleteFolderDocumentsByRef($ref);
+            // Deactivate any remaining active docs for this vehicle (other dossiers)
+            $this->repo->exec(
+                "UPDATE dossier_vehicule_document SET is_active = 0
+                 WHERE id_vehicule = (SELECT id_vehicule FROM affectation_vehicule WHERE id_affectation = ?)
+                 AND is_active = 1",
+                [(int)$vh]
+            );
             $ids = $this->post('doc-list-id', []);
             $names = $this->post('doc-list-name', []);
             $dts = $this->post('dt-list-name', []);
             $refDocs = $this->post('refd-list-name', []);
-            $vh = $this->post('vh-folder-upd');
-            $ref = $this->post('ref-folder');
             for ($i = 0; $i < count($names); $i++) {
                 $this->repo->exec(
                     "INSERT INTO dossier_vehicule_document (id_document, date_expiration_document, id_vehicule, id_dossier_vehicule, ref_document, is_active)
@@ -106,11 +114,18 @@ class ConfigController extends BaseController
         try { $this->repo->transactional(function() {
             $ref = $this->post('ref-folder');
             $this->repo->ensureDossierVehicule($ref);
+            $vh = $this->post('vh-folder');
+            // Deactivate any existing active docs for this vehicle
+            $this->repo->exec(
+                "UPDATE dossier_vehicule_document SET is_active = 0
+                 WHERE id_vehicule = (SELECT id_vehicule FROM affectation_vehicule WHERE id_affectation = ?)
+                 AND is_active = 1",
+                [(int)$vh]
+            );
             $ids = $this->post('doc-list-id', []);
             $names = $this->post('doc-list-name', []);
             $dts = $this->post('dt-list-name', []);
             $refDocs = $this->post('refd-list-name', []);
-            $vh = $this->post('vh-folder');
             for ($i = 0; $i < count($names); $i++) {
                 $this->repo->exec(
                     "INSERT INTO dossier_vehicule_document (id_document, date_expiration_document, id_vehicule, id_dossier_vehicule, ref_document, is_active)
