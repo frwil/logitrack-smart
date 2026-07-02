@@ -101,10 +101,10 @@ $routes = [
     'nom-pt'              => [$maintenanceCtrl, 'createPrestataire'],
 
     // Maintenance — Centre coûts
-    'nom-cc'              => [$maintenanceCtrl, 'createCentreCout'],
     'id-upd-cc'           => [$maintenanceCtrl, 'updateCentreCout'],
-    'c-cc-s'              => [$maintenanceCtrl, 'fetchCentreCout'],
     'del-cc-id'           => [$maintenanceCtrl, 'deleteCentreCout'],
+    'c-cc-s'              => [$maintenanceCtrl, 'fetchCentreCout'],
+    'nom-cc'              => [$maintenanceCtrl, 'createCentreCout'],
 
     // Maintenance — Relevé KMS
     'semPer'              => [$maintenanceCtrl, 'fetchPeriodes'],
@@ -115,10 +115,10 @@ $routes = [
     'per-releve'          => [$maintenanceCtrl, 'fetchSemaines'],
 
     // Maintenance — Bon de réparation
-    'num-br'              => [$maintenanceCtrl, 'createBonReparation'],
     'c-br-s'              => [$maintenanceCtrl, 'fetchBonReparation'],
     'id-upd-br'           => [$maintenanceCtrl, 'updateBonReparation'],
     'del-br-id'           => [$maintenanceCtrl, 'deleteBonReparation'],
+    'num-br'              => [$maintenanceCtrl, 'createBonReparation'],
     'load-cc-br'          => [$maintenanceCtrl, 'fetchAllCentresCouts'],
 
     // Maintenance — Dashboard analytics
@@ -192,13 +192,13 @@ $routes = [
     'date-objectif'       => [$objectifCtrl, 'create'],
     'dateV'               => [$objectifCtrl, 'checkDateForVoyage'],
 
-    // Users
-    'new-user'             => [$userCtrl, 'create'],
-    'name-user'            => [$userCtrl, 'create'],
-    'id-user-forModal'     => [$userCtrl, 'fetchByHash'],
+    // Users — specific action keys must precede generic form-field keys
     'id-user-upd'          => [$userCtrl, 'update'],
     'id-user-forDel'       => [$userCtrl, 'delete'],
     'id-user-active'       => [$userCtrl, 'toggleActive'],
+    'id-user-forModal'     => [$userCtrl, 'fetchByHash'],
+    'new-user'             => [$userCtrl, 'create'],
+    'name-user'            => [$userCtrl, 'create'],
 ];
 
 // $jsonPost is already decoded in index.php (CSRF check reads php://input first).
