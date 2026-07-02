@@ -93,8 +93,8 @@ class ConfigController extends BaseController
             $ref = $this->post('ref-folder');
             for ($i = 0; $i < count($names); $i++) {
                 $this->repo->exec(
-                    "INSERT INTO dossier_vehicule_document (id_document, date_expiration_document, id_vehicule, id_dossier_vehicule, ref_document)
-                     VALUES (?, ?, (SELECT id_vehicule FROM affectation_vehicule WHERE id_affectation = ?), (SELECT id_dossier_vehicule FROM dossier_vehicule WHERE ref_dossier = ?), ?)",
+                    "INSERT INTO dossier_vehicule_document (id_document, date_expiration_document, id_vehicule, id_dossier_vehicule, ref_document, is_active)
+                     VALUES (?, ?, (SELECT id_vehicule FROM affectation_vehicule WHERE id_affectation = ?), (SELECT id_dossier_vehicule FROM dossier_vehicule WHERE ref_dossier = ?), ?, 1)",
                     [(int)$ids[$i], $dts[$i], (int)$vh, $ref, $refDocs[$i]]
                 );
             }
@@ -113,8 +113,8 @@ class ConfigController extends BaseController
             $vh = $this->post('vh-folder');
             for ($i = 0; $i < count($names); $i++) {
                 $this->repo->exec(
-                    "INSERT INTO dossier_vehicule_document (id_document, date_expiration_document, id_vehicule, id_dossier_vehicule, ref_document)
-                     VALUES (?, ?, (SELECT id_vehicule FROM affectation_vehicule WHERE id_affectation = ?), (SELECT id_dossier_vehicule FROM dossier_vehicule WHERE ref_dossier = ?), ?)",
+                    "INSERT INTO dossier_vehicule_document (id_document, date_expiration_document, id_vehicule, id_dossier_vehicule, ref_document, is_active)
+                     VALUES (?, ?, (SELECT id_vehicule FROM affectation_vehicule WHERE id_affectation = ?), (SELECT id_dossier_vehicule FROM dossier_vehicule WHERE ref_dossier = ?), ?, 1)",
                     [(int)$ids[$i], $dts[$i], (int)$vh, $ref, $refDocs[$i]]
                 );
             }
