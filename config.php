@@ -2,17 +2,24 @@
     $('div.container-fluid .col-2').remove()
     $('div.container-fluid .col-10').removeClass('col-10').addClass('col-12')
 </script>
+<?php
+// Config sub-module specificity arrays for backward-compatible rights checks
+$permisSpecifics  = ['viewPermis','savePermis','updPermis','delPermis'];
+$docsSpecifics    = ['viewDocs','saveDocs','updDocs','delDocs'];
+$foldersSpecifics = ['viewFolders','saveFolders','updFolders','delFolders'];
+?>
 <?php function getTableauDriveLicence()
 {
     global $con;
     global $rights_config;
+    global $permisSpecifics;
     $repo = new ConfigRepository($con);
     $rows = $repo->findAllTypePermis();
     $tableau = "<table class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-drivelicence'><thead><tr><th>#</th><th>Catégorie</th><th>Description</th><th></th></tr></thead><tbody>";
     $i = 1;
     foreach ($rows as $r):
         $hash = $r['id_type_permis'];
-        $tableau .= "<tr><td>$i</td><td>" . h($r['lib_type_permis']) . "</td><td>" . h($r['desc_type_permis']) . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_config) ? "<button class='btn btn-primary' data-bs-toggle='modal' data-bs-target='#modal-driveLicence-upd' data-bs-idtype='$hash' title='Modifier'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array('del', $rights_config) ? "<button class='btn btn-danger' title='Supprimer' onclick='delDriveLicence(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+        $tableau .= "<tr><td>$i</td><td>" . h($r['lib_type_permis']) . "</td><td>" . h($r['desc_type_permis']) . "</td><td><div class='btn-group'>" . (hasSubRight('updPermis', 'upd', $rights_config, $permisSpecifics) ? "<button class='btn btn-primary' data-bs-toggle='modal' data-bs-target='#modal-driveLicence-upd' data-bs-idtype='$hash' title='Modifier'><i class='fa fa-pencil-alt'></i></button>" : "") . (hasSubRight('delPermis', 'del', $rights_config, $permisSpecifics) ? "<button class='btn btn-danger' title='Supprimer' onclick='delDriveLicence(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         $i++;
     endforeach;
     $tableau .= "</tbody></table>";
@@ -23,13 +30,14 @@ function getTableauDocs()
 {
     global $con;
     global $rights_config;
+    global $docsSpecifics;
     $repo = new ConfigRepository($con);
     $rows = $repo->findAllDocuments();
     $tableau = "<table class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-docs'><thead><tr><th>#</th><th>Désignation</th><th>Validité (en mois)</th><th></th></tr></thead><tbody>";
     $i = 1;
     foreach ($rows as $r):
         $hash = $r['id_document'];
-        $tableau .= "<tr><td>$i</td><td>" . h($r['nom_document']) . "</td><td>" . h($r['validite_document']) . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_config) ? "<a class='btn btn-primary' href='?page=configuration&subpage=documentslist&action=upd&id=$hash' title='Modifier'><i class='fa fa-pencil-alt'></i></a>" : "") . (in_array('del', $rights_config) ? "<button class='btn btn-danger' title='Supprimer' onclick='delDoc(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+        $tableau .= "<tr><td>$i</td><td>" . h($r['nom_document']) . "</td><td>" . h($r['validite_document']) . "</td><td><div class='btn-group'>" . (hasSubRight('updDocs', 'upd', $rights_config, $docsSpecifics) ? "<a class='btn btn-primary' href='?page=configuration&subpage=documentslist&action=upd&id=$hash' title='Modifier'><i class='fa fa-pencil-alt'></i></a>" : "") . (hasSubRight('delDocs', 'del', $rights_config, $docsSpecifics) ? "<button class='btn btn-danger' title='Supprimer' onclick='delDoc(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         $i++;
     endforeach;
     $tableau .= "</tbody></table>";
@@ -40,6 +48,7 @@ function getTableauFolder()
 {
     global $con;
     global $rights_config;
+    global $foldersSpecifics;
     $configRepo = new ConfigRepository($con);
     $folderRows = $configRepo->findAllFoldersByContext(getContextRegions(), getContextEntities());
     $tableau = "<table style='font-size:0.8125rem' class='table table-striped responsive " . ((isset($_GET['action']) && $_GET['action'] == 'tableexport') ? "no-datatable" : "") . "' id='table-folder' ><thead><tr><th>Chassis</th><th>Véhicule</th><th>Marque</th><th>1ère mise en circulation</th><th>Entité</th><th>Places assises</th><th>Source d'énergie</th>";
@@ -62,7 +71,7 @@ function getTableauFolder()
         endforeach;
         $permisRows = $configRepo->findPermisByVehiculeId((int)$r['id_vehicule']);
         $permis = implode(',', array_column($permisRows, 'lib_type_permis'));
-        $tableau .= "<td>" . h($r['nom_chauffeur']) . "</td><td>" . h($permis) . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_config) && $ref_dossier != "" ? "<a class='btn btn-primary' title='Modifier' href='?page=configuration&subpage=folderdetails&action=upd&id=" . h($ref_dossier) . "'><i class='fa fa-pencil-alt'></i></a>" : "") . "</div></td></tr>";
+        $tableau .= "<td>" . h($r['nom_chauffeur']) . "</td><td>" . h($permis) . "</td><td><div class='btn-group'>" . (hasSubRight('updFolders', 'upd', $rights_config, $foldersSpecifics) && $ref_dossier != "" ? "<a class='btn btn-primary' title='Modifier' href='?page=configuration&subpage=folderdetails&action=upd&id=" . h($ref_dossier) . "'><i class='fa fa-pencil-alt'></i></a>" : "") . (hasSubRight('delFolders', 'del', $rights_config, $foldersSpecifics) && $ref_dossier != "" ? "<button class='btn btn-danger' title='Supprimer' onclick='delFolder(\"".h($ref_dossier)."\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
     endforeach;
     $tableau .= "</tbody></table><div id='output'></div>";
     return $tableau;
@@ -119,12 +128,12 @@ function getTableauFolder()
     </div>
 <?php else : ?>
     <?php if ($_GET['subpage'] == 'drivelicence') : ?>
-        <?php if (!in_array('view', $rights_config)): ?>
+        <?php if (!hasSubRight('viewPermis', 'view', $rights_config, $permisSpecifics)): ?>
             <div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>
         <?php else: ?>
         <?php if (isset($_GET['action']) && $_GET['action'] == 'new') include("modalNewDriveLicence.php"); ?>
         <div class="lt-page-title">Catégories de Permis de conduire</div>
-        <?php if (in_array('save', $rights_config)): ?>
+        <?php if (hasSubRight('savePermis', 'save', $rights_config, $permisSpecifics)): ?>
         <a href="?page=configuration&subpage=drivelicence&action=new" class="btn btn-primary">Nouvelle catégorie de permis</a>&nbsp;
         <?php endif; ?>
         <a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-drivelicence" class="btn btn-primary">Exporter</a>
@@ -249,12 +258,12 @@ function getTableauFolder()
         </script>
     <?php endif; ?>
     <?php elseif ($_GET['subpage'] == 'documentslist') : ?>
-        <?php if (!in_array('view', $rights_config)): ?>
+        <?php if (!hasSubRight('viewDocs', 'view', $rights_config, $docsSpecifics)): ?>
             <div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>
         <?php else: ?>
         <?php if (isset($_GET['action']) && $_GET['action'] == 'new') include("modalNewDocs.php"); ?>
         <div class="lt-page-title">Documents de véhicule</div>
-        <?php if (in_array('save', $rights_config)): ?>
+        <?php if (hasSubRight('saveDocs', 'save', $rights_config, $docsSpecifics)): ?>
         <a href="?page=configuration&subpage=documentslist&action=new" class="btn btn-primary">Nouveau document de véhicules</a>&nbsp;
         <?php endif; ?>
         <a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-docs" class="btn btn-primary">Exporter</a>
@@ -363,19 +372,36 @@ function getTableauFolder()
         <?php endif; ?>
     <?php endif; ?>
     <?php elseif ($_GET['subpage'] == 'folderdetails') : ?>
-        <?php if (!in_array('view', $rights_config)): ?>
+        <?php if (!hasSubRight('viewFolders', 'view', $rights_config, $foldersSpecifics)): ?>
             <div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>
         <?php else: ?>
         <?php if (isset($_GET['action']) && $_GET['action'] == 'new') include("modalNewFolder.php"); ?>
         <div class="lt-page-title">Dossier de véhicule</div>
-        <?php if (in_array('save', $rights_config)): ?>
+        <?php if (hasSubRight('saveFolders', 'save', $rights_config, $foldersSpecifics)): ?>
         <a href="?page=configuration&subpage=folderdetails&action=new" class="btn btn-primary">Nouveau dossier de véhicule</a>&nbsp;
         <?php endif; ?>
         <a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-folder" class="btn btn-primary">Exporter</a>
         <hr>
         <?php echo getTableauFolder(); ?>
         <script>
-
+            function delFolder(ref) {
+                if (confirm("Etes-vous sûr de vouloir supprimer ce dossier ?")) {
+                    $.ajax({
+                        type: 'post',
+                        data: 'ref-folder-del=' + ref,
+                        dataType: 'json'
+                    }).done((e) => {
+                        if (e.success) {
+                            showSuccess('Dossier supprimé!')
+                            location.reload()
+                        } else {
+                            showError(e.error || "Echec de l'opération")
+                        }
+                    }).fail((jqXHR) => {
+                        showError(jqXHR.responseJSON?.error || "Echec de l'opération")
+                    })
+                }
+            }
         </script>
         <?php if (isset($_GET['action']) && $_GET['action'] == 'new') : ?>
             <script>

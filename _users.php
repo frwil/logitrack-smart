@@ -190,11 +190,14 @@ function getTableauUsers()
                                     // Voyages specific action rights
                                     $voyagesSubs = [
                                         ['Rapports',             'report',    '',         '', ''],
-                                        ['Trajets',              '',          'savetrajet', '', ''],
+                                        ['Trajets',              'viewtrajet', 'savetrajet', 'updtrajet', 'deltrajet'],
                                     ];
                                     // Config specific action rights
                                     $configSubs = [
                                         ['Sauvegarde DB',        'backup',    '',         '', ''],
+                                        ['Permis de conduire',   'viewPermis', 'savePermis', 'updPermis', 'delPermis'],
+                                        ['Documents',            'viewDocs',   'saveDocs',   'updDocs',   'delDocs'],
+                                        ['Dossiers véhicules',   'viewFolders','saveFolders','updFolders','delFolders'],
                                     ];
 
                                     if (!function_exists('renderRightsRow')): function renderRightsRow(string $objKey, string $label, array $perms): void {

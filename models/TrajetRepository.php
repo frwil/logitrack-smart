@@ -62,4 +62,37 @@ class TrajetRepository extends BaseRepository
             [$id]
         );
     }
+
+    /** Count how many voyage_vehicule rows reference this destination. */
+    public function countVoyageUsage(int $id): int
+    {
+        $row = $this->selectOne(
+            "SELECT COUNT(*) AS cnt FROM voyage_vehicule WHERE id_destination = ?",
+            [$id]
+        );
+        return (int)($row['cnt'] ?? 0);
+    }
+
+    /**
+     * Force-delete a destination that is used in voyages.
+     * Cascade: deletes voyage_vehicule rows → orphaned voyages → the destination itself.
+     * Must be called inside a transaction.
+     */
+    public function forceDeleteById(int $id): bool
+    {
+        // 1. Remove all voyage-destination links for this destination
+        $this->exec(
+            "DELETE FROM voyage_vehicule WHERE id_destination = ?",
+            [$id]
+        );
+        // 2. Remove orphaned voyages (no remaining voyage_vehicule links)
+        $this->exec(
+            "DELETE FROM voyage WHERE id_voyage NOT IN (SELECT DISTINCT id_voyage FROM voyage_vehicule)"
+        );
+        // 3. Delete the destination itself
+        return $this->exec(
+            "DELETE FROM destination_voyage WHERE id_destination = ?",
+            [$id]
+        );
+    }
 }

@@ -1,5 +1,5 @@
 <?php /* POST handled by TrajetController — see controllers/router.php */ ?>
-<div class="modal fade" id="modal-new-destination" tabindex="-1" aria-labelledby="modal-new-marqeLabel" aria-hidden="true">
+<div class="modal fade" id="modal-new-destination" tabindex="-1" aria-labelledby="modal-new-destinationLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -13,7 +13,7 @@
                         <label for="nom-destination">Libellé trajet</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="number" id="distance-destination" name="distance-destination" required class="form-control">
+                        <input type="number" id="distance-destination" name="distance-destination" min="1" required class="form-control">
                         <label for="distance-destination">Distance trajet</label>
                     </div>
                 </form>
@@ -28,7 +28,9 @@
 <script>
     function openModalTrajet() {
         $('#modal-new-destination').modal('show')
-        setTimeout(()=>{$('#nom-destination').focus()},1000)
+        $('#modal-new-destination').off('shown.bs.modal').on('shown.bs.modal', function () {
+            $('#nom-destination').focus()
+        })
     }
 
     function refreshTrajetOptions() {

@@ -5,6 +5,27 @@ class ConfigController extends BaseController
 
     public function __construct(ConfigRepository $repo) { $this->repo = $repo; }
 
+    /** Check a config sub-right with backward-compat fallback. */
+    private function hasConfigSubRight(string $specific, string $fallback): bool
+    {
+        $rights = getUserRightsFor('config');
+        $allConfigSpecifics = [
+            'backup',
+            'viewPermis','savePermis','updPermis','delPermis',
+            'viewDocs','saveDocs','updDocs','delDocs',
+            'viewFolders','saveFolders','updFolders','delFolders',
+        ];
+        return hasSubRight($specific, $fallback, $rights, $allConfigSpecifics);
+    }
+
+    /** Require a config sub-right — die with 403 if missing. */
+    private function requireConfigSubRight(string $specific, string $fallback): void
+    {
+        if (!$this->hasConfigSubRight($specific, $fallback)) {
+            $this->jsonError('Accès non autorisé', 403);
+        }
+    }
+
     // -- Type permis --
     public function fetchTypePermis(): never {
         $row = $this->repo->findTypePermisById((int)$this->post('c-dl-s'));
@@ -13,16 +34,19 @@ class ConfigController extends BaseController
         $this->json(['data' => $row]);
     }
     public function updateTypePermis(): never {
+        $this->requireConfigSubRight('updPermis', 'upd');
         try { $this->repo->transactional(fn() =>
             $this->repo->updateTypePermisById((int)$this->post('id-type-permis'), $this->post('lib-type-upd'), $this->post('desc-type-upd') ?: null)
         ); $this->json(); } catch (\mysqli_sql_exception $e) { $this->jsonError('Erreur'); }
     }
     public function deleteTypePermis(): never {
+        $this->requireConfigSubRight('delPermis', 'del');
         try { $this->repo->transactional(fn() =>
             $this->repo->deleteTypePermisById((int)$this->post('dl-id'))
         ); $this->json(); } catch (\mysqli_sql_exception $e) { $this->jsonError('Erreur'); }
     }
     public function createTypePermis(): never {
+        $this->requireConfigSubRight('savePermis', 'save');
         $lib = trim($this->post('lib-type'));
         if ($lib === '') $this->jsonError('Le libellé est obligatoire');
         try { $this->repo->insertTypePermis($lib, $this->post('desc-type') ?: null); $this->json(); }
@@ -34,11 +58,13 @@ class ConfigController extends BaseController
 
     // -- Document --
     public function updateDocument(): never {
+        $this->requireConfigSubRight('updDocs', 'upd');
         try { $this->repo->transactional(fn() =>
             $this->repo->updateDocumentById((int)$this->post('id-doc'), $this->post('nom-doc-upd'), (int)$this->post('valid-doc-upd'))
         ); $this->json(); } catch (\mysqli_sql_exception $e) { $this->jsonError('Erreur'); }
     }
     public function createDocument(): never {
+        $this->requireConfigSubRight('saveDocs', 'save');
         $nom = trim($this->post('nom-doc'));
         if ($nom === '') $this->jsonError('La désignation est obligatoire');
         try { $this->repo->insertDocument($nom, (int)$this->post('valid-doc')); $this->json(); }
@@ -48,6 +74,7 @@ class ConfigController extends BaseController
         }
     }
     public function deleteDocument(): never {
+        $this->requireConfigSubRight('delDocs', 'del');
         try { $this->repo->transactional(fn() =>
             $this->repo->deleteDocumentById((int)$this->post('id-doc-del'))
         ); $this->json(); } catch (\mysqli_sql_exception $e) { $this->jsonError('Erreur'); }
@@ -55,6 +82,7 @@ class ConfigController extends BaseController
 
     // -- Folder --
     public function updateFolder(): never {
+        $this->requireConfigSubRight('updFolders', 'upd');
         try { $this->repo->transactional(function() {
             $this->repo->deleteFolderDocumentsByRef($this->post('ref-folder'));
             $ids = $this->post('doc-list-id', []);
@@ -74,6 +102,7 @@ class ConfigController extends BaseController
     }
 
     public function createFolder(): never {
+        $this->requireConfigSubRight('saveFolders', 'save');
         try { $this->repo->transactional(function() {
             $ref = $this->post('ref-folder');
             $this->repo->ensureDossierVehicule($ref);
@@ -93,6 +122,7 @@ class ConfigController extends BaseController
     }
 
     public function deleteFolder(): never {
+        $this->requireConfigSubRight('delFolders', 'del');
         try { $this->repo->transactional(function() {
             $this->repo->deleteFolderDocumentsByRef($this->post('ref-folder-del'));
             $this->repo->deleteDossierByRef($this->post('ref-folder-del'));
@@ -113,14 +143,7 @@ class ConfigController extends BaseController
         // Only superadmin or users with explicit 'backup' right on config
         $isSuperadmin = $_SESSION['usr-con']['is-superadmin'] ?? false;
         if (!$isSuperadmin) {
-            $configRights = [];
-            $userRights = $_SESSION['usr-con']['users-rights'] ?? [];
-            foreach ($userRights as $r) {
-                if (($r['users_rights_objet'] ?? '') === 'config') {
-                    $configRights = explode(',', $r['users_rights_valeur'] ?? '');
-                    break;
-                }
-            }
+            $configRights = getUserRightsFor('config');
             if (!in_array('backup', $configRights)) {
                 http_response_code(403);
                 $this->sendJson(['success' => false, 'error' => 'Accès non autorisé']);

@@ -461,7 +461,7 @@ function getTableauEvaluationVoyages()
 ?>
 <?php include('modalNewVoyage.php'); ?>
 <?php /* POST handled by VoyageController — see controllers/router.php */ ?>
-<?php if (isset($_GET['action']) && $_GET['action'] == 'new'): ?>
+<?php if (isset($_GET['action']) && $_GET['action'] == 'new' && !isset($_GET['subpage'])): ?>
     <script>
         setTimeout(() => {
             openModalVoyage()

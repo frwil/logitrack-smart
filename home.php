@@ -190,7 +190,10 @@ if (!$renderPartial):
             <?php endif; ?>
         <?php elseif (isset($_GET['page']) && $_GET['page'] == 'voyages' && in_array('view', $rights_voyage)): ?>
             <div class="lt-sidebar-title">Listes</div>
+            <?php $trajetSpecifics = ['viewtrajet','savetrajet','updtrajet','deltrajet']; ?>
+            <?php if (hasSubRight('viewtrajet', 'view', $rights_voyage, $trajetSpecifics)): ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeTrajets') echo 'active'; ?>" href="?page=voyages&subpage=listeTrajets"><i class="fa fa-map-marker-alt"></i> Trajets</a>
+            <?php endif; ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeTypesChargement') echo 'active'; ?>" href="?page=voyages&subpage=listeTypesChargement"><i class="fa fa-boxes"></i> Types de chargement</a>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeObjectifsVoyages') echo 'active'; ?>" href="?page=voyages&subpage=listeObjectifsVoyages"><i class="fa fa-bullseye"></i> Objectifs</a>
             <?php if (in_array('save', $rights_voyage)): ?>

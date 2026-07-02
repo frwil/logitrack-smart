@@ -154,3 +154,36 @@ function devise(): string
     }
     return $devise;
 }
+
+/**
+ * Get the exploded rights array for a given module object from session.
+ * Returns empty array if no rights found for that object.
+ */
+function getUserRightsFor(string $object): array
+{
+    foreach ($_SESSION['usr-con']['users-rights'] ?? [] as $r) {
+        if (($r['users_rights_objet'] ?? '') === $object) {
+            return explode(',', $r['users_rights_valeur'] ?? '');
+        }
+    }
+    return [];
+}
+
+/**
+ * Backward-compatible sub-right check.
+ *
+ * If the user has the $specific right in their $rights array → true.
+ * If the user has ANY of the $knownSpecifics but NOT $specific → false (explicit deny).
+ * If the user has NONE of the $knownSpecifics → fall back to $fallback (old user compat).
+ */
+function hasSubRight(string $specific, string $fallback, array $rights, array $knownSpecifics): bool
+{
+    if (in_array($specific, $rights, true)) {
+        return true;
+    }
+    $hasAnySpecific = !empty(array_intersect($knownSpecifics, $rights));
+    if (!$hasAnySpecific) {
+        return in_array($fallback, $rights, true);
+    }
+    return false;
+}

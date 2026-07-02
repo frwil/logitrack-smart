@@ -8,11 +8,12 @@
     $i = 1;
     foreach ($rows as $r):
         $tableau .= "<tr><td>$i</td><td>" . h($r['lib_destination']) . "</td><td>" . h($r['distance_destination']) . "</td><td><div class='btn-group'>";
-        if (in_array('upd', $rights_voyage)):
+        if (hasSubRight('updtrajet', 'upd', $rights_voyage, ['viewtrajet','savetrajet','updtrajet','deltrajet'])):
             $tableau .= "<button class='btn btn-secondary' title='Modifier le trajet' onclick='showModalUpdateTrajet(\"".$r['id_destination']."\")'><i class='fa fa-pencil-alt'></i></button>";
         endif;
-        if (in_array('del', $rights_voyage)):
-            $tableau .= "<button class='btn btn-danger' title='Supprimer le trajet' onclick='delTrajet(\"".($r['id_destination'])."\")'><i class='fa fa-times'></i></button>";
+        $isSuper = $_SESSION['usr-con']['is-superadmin'] ?? false;
+        if ($isSuper && hasSubRight('deltrajet', 'del', $rights_voyage, ['viewtrajet','savetrajet','updtrajet','deltrajet'])):
+            $tableau .= "<button class='btn btn-danger' title='Supprimer le trajet' onclick='deleteTrajet(\"".($r['id_destination'])."\")'><i class='fa fa-times'></i></button>";
         endif;
         $tableau .= "</div></td></tr>";
         $i++;
@@ -78,6 +79,23 @@
                 if (e.success) {
                     showSuccess('Trajet supprimé!!')
                     location.reload()
+                } else if (e.canForceDelete) {
+                    if (confirm("Ce trajet est utilisé dans " + e.usageCount + " voyage(s). Voulez-vous forcer la suppression ? Les voyages liés seront également supprimés.")) {
+                        $.ajax({
+                            type: 'post',
+                            data: 'id-destination-forDel=' + id + '&force-destination-del=1',
+                            dataType: 'json'
+                        }).done((f) => {
+                            if (f.success) {
+                                showSuccess('Trajet et voyages liés supprimés!')
+                                location.reload()
+                            } else {
+                                showError(f.error || "Echec de l'opération")
+                            }
+                        }).fail((jqXHR) => {
+                            showError(jqXHR.responseJSON?.error || "Echec de l'opération")
+                        })
+                    }
                 } else {
                     showError(e.error || "Echec de l'opération")
                 }
@@ -102,7 +120,7 @@
                         <label for="nom-upd-destination">Destination</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="number" id="distance-destination-upd" name="distance-destination-upd" min=0 required class="form-control">
+                        <input type="number" id="distance-destination-upd" name="distance-destination-upd" min="1" required class="form-control">
                         <label for="distance-destination-upd">Distance (en km)</label>
                     </div>
                 </form>
