@@ -292,6 +292,31 @@ class ConfigRepository extends BaseRepository
         return $row ? $row['fichier'] : null;
     }
 
+    /** Folder statistics for dashboard cards. */
+    public function getFolderStats(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $sql = "SELECT
+                    COUNT(DISTINCT v.id_vehicule) as total_vehicules,
+                    COUNT(DISTINCT CASE WHEN dvd_active.id_vehicule IS NOT NULL THEN v.id_vehicule END) as avec_dossier,
+                    COUNT(DISTINCT dv_active.id_dossier_vehicule) as total_dossiers
+                FROM vehicule v
+                INNER JOIN affectation_vehicule av ON av.id_vehicule = v.id_vehicule AND av.is_ferme = 0 AND av.is_deleted = 0
+                LEFT JOIN (SELECT DISTINCT id_vehicule FROM dossier_vehicule_document WHERE is_active = 1) dvd_active ON dvd_active.id_vehicule = v.id_vehicule
+                LEFT JOIN (SELECT DISTINCT id_dossier_vehicule, id_vehicule FROM dossier_vehicule_document WHERE is_active = 1) dv_active ON dv_active.id_vehicule = v.id_vehicule
+                WHERE $where";
+        $row = $this->selectOne($sql, $params);
+        $total = (int)($row['total_vehicules'] ?? 0);
+        $avec  = (int)($row['avec_dossier'] ?? 0);
+        $dossiers = (int)($row['total_dossiers'] ?? 0);
+        return [
+            'total_vehicules' => $total,
+            'avec_dossier'    => $avec,
+            'sans_dossier'    => $total - $avec,
+            'total_dossiers'  => $dossiers,
+        ];
+    }
+
     // ---- Paramètres globaux (key-value) ----
 
     public function getParametre(string $cle, string $default = ''): string

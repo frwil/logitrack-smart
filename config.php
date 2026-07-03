@@ -385,25 +385,50 @@ function getTableauFolder()
         <a href="?page=configuration&subpage=folderdetails&action=new" class="btn btn-primary">Nouveau dossier de véhicule</a>&nbsp;
         <?php endif; ?>
         <a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-folder" class="btn btn-primary">Exporter</a>
+        <?php
+        $folderStats = $configRepo->getFolderStats(getContextRegions(), getContextEntities());
+        ?>
+        <div class="row g-3 my-3">
+            <div class="col-md-3">
+                <div class="lt-card lt-stat-card">
+                    <div class="lt-stat-icon"><i class="fa fa-truck"></i></div>
+                    <div class="lt-stat-value"><?= $folderStats['total_vehicules'] ?></div>
+                    <div class="lt-stat-label">Véhicules</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="lt-card lt-stat-card lt-stat-success">
+                    <div class="lt-stat-icon"><i class="fa fa-folder-open"></i></div>
+                    <div class="lt-stat-value"><?= $folderStats['avec_dossier'] ?></div>
+                    <div class="lt-stat-label">Avec dossier actif</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="lt-card lt-stat-card lt-stat-warning">
+                    <div class="lt-stat-icon"><i class="fa fa-folder"></i></div>
+                    <div class="lt-stat-value"><?= $folderStats['sans_dossier'] ?></div>
+                    <div class="lt-stat-label">Sans dossier</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="lt-card lt-stat-card">
+                    <div class="lt-stat-icon"><i class="fa fa-file-alt"></i></div>
+                    <div class="lt-stat-value"><?= $folderStats['total_dossiers'] ?></div>
+                    <div class="lt-stat-label">Dossiers actifs</div>
+                </div>
+            </div>
+        </div>
         <hr>
         <div class="alert alert-light border small py-2 mb-2">
             <strong><i class="fa fa-info-circle"></i> Légende :</strong>
-            <span class="ms-2 me-3"><span class="badge" style="background:rgb(0,95,119);color:#fff">Véhicule</span> = dossier existant</span>
-            <span class="me-3"><span class="badge bg-light text-dark border">Véhicule</span> = sans dossier</span>
-            <span class="me-3"><a class="btn btn-success btn-sm"><i class="fa fa-plus"></i></a> Ajouter</span>
-            <span class="me-3"><a class="btn btn-info btn-sm"><i class="fa fa-history"></i></a> Historique</span>
-            <span class="me-3"><a class="btn btn-primary btn-sm"><i class="fa fa-pencil-alt"></i></a> Modifier</span>
-            <span class="me-3"><button class="btn btn-danger btn-sm"><i class="fa fa-times"></i></button> Supprimer</span>
+            <span class="ms-2 me-3"><span class="badge" style="background:rgb(0,95,119);color:#fff">Ligne colorée</span> = véhicule avec dossier actif</span>
+            <span class="me-3"><span class="badge bg-light text-dark border">Ligne normale</span> = véhicule sans dossier</span>
         </div>
         <?php echo getTableauFolder(); ?>
         <div class="alert alert-light border small py-2 mt-2">
             <strong><i class="fa fa-info-circle"></i> Légende :</strong>
-            <span class="ms-2 me-3"><span class="badge" style="background:rgb(0,95,119);color:#fff">Véhicule</span> = dossier existant</span>
-            <span class="me-3"><span class="badge bg-light text-dark border">Véhicule</span> = sans dossier</span>
-            <span class="me-3"><a class="btn btn-success btn-sm"><i class="fa fa-plus"></i></a> Ajouter</span>
-            <span class="me-3"><a class="btn btn-info btn-sm"><i class="fa fa-history"></i></a> Historique</span>
-            <span class="me-3"><a class="btn btn-primary btn-sm"><i class="fa fa-pencil-alt"></i></a> Modifier</span>
-            <span class="me-3"><button class="btn btn-danger btn-sm"><i class="fa fa-times"></i></button> Supprimer</span>
+            <span class="ms-2 me-3"><span class="badge" style="background:rgb(0,95,119);color:#fff">Ligne colorée</span> = véhicule avec dossier actif</span>
+            <span class="me-3"><span class="badge bg-light text-dark border">Ligne normale</span> = véhicule sans dossier</span>
         </div>
         <script>
             function delFolder(ref) {
