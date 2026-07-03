@@ -7,6 +7,10 @@
 $permisSpecifics  = ['viewPermis','savePermis','updPermis','delPermis'];
 $docsSpecifics    = ['viewDocs','saveDocs','updDocs','delDocs'];
 $foldersSpecifics = ['viewFolders','saveFolders','updFolders','delFolders'];
+$rights_config = [];
+if (isRightObjectAllowed('config', $user_rights) != false) {
+    $rights_config = explode(',', isRightObjectAllowed('config', $user_rights));
+}
 ?>
 <?php function getTableauDriveLicence()
 {
