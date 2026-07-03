@@ -301,7 +301,7 @@ class ConfigRepository extends BaseRepository
                     COUNT(DISTINCT CASE WHEN dvd_active.id_vehicule IS NOT NULL THEN v.id_vehicule END) as avec_dossier,
                     COUNT(DISTINCT dv_active.id_dossier_vehicule) as total_dossiers
                 FROM vehicule v
-                INNER JOIN affectation_vehicule av ON av.id_vehicule = v.id_vehicule AND av.is_ferme = 0 AND av.is_deleted = 0
+                INNER JOIN affectation_vehicule ON affectation_vehicule.id_vehicule = v.id_vehicule AND affectation_vehicule.is_ferme = 0 AND affectation_vehicule.is_deleted = 0
                 LEFT JOIN (SELECT DISTINCT id_vehicule FROM dossier_vehicule_document WHERE is_active = 1) dvd_active ON dvd_active.id_vehicule = v.id_vehicule
                 LEFT JOIN (SELECT DISTINCT id_dossier_vehicule, id_vehicule FROM dossier_vehicule_document WHERE is_active = 1) dv_active ON dv_active.id_vehicule = v.id_vehicule
                 WHERE $where";
