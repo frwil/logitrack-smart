@@ -86,6 +86,14 @@ class ConfigController extends BaseController
         try { $this->repo->transactional(function() {
             $vh = $this->post('vh-folder-upd');
             $ref = $this->post('ref-folder');
+            // Capture existing fichier values before deletion, keyed by id_document
+            $existingDocs = $this->repo->findFolderByRef($ref);
+            $fichierMap = [];
+            foreach ($existingDocs as $ed) {
+                if (!empty($ed['fichier'])) {
+                    $fichierMap[(int)$ed['id_document']] = $ed['fichier'];
+                }
+            }
             // Remove old documents for this dossier
             $this->repo->deleteFolderDocumentsByRef($ref);
             // Deactivate any remaining active docs for this vehicle (other dossiers)
@@ -100,10 +108,11 @@ class ConfigController extends BaseController
             $dts = $this->post('dt-list-name', []);
             $refDocs = $this->post('refd-list-name', []);
             for ($i = 0; $i < count($names); $i++) {
+                $fichier = $fichierMap[(int)$ids[$i]] ?? null;
                 $this->repo->exec(
-                    "INSERT INTO dossier_vehicule_document (id_document, date_expiration_document, id_vehicule, id_dossier_vehicule, ref_document, is_active)
-                     VALUES (?, ?, (SELECT id_vehicule FROM affectation_vehicule WHERE id_affectation = ?), (SELECT id_dossier_vehicule FROM dossier_vehicule WHERE ref_dossier = ?), ?, 1)",
-                    [(int)$ids[$i], $dts[$i], (int)$vh, $ref, $refDocs[$i]]
+                    "INSERT INTO dossier_vehicule_document (id_document, date_expiration_document, id_vehicule, id_dossier_vehicule, ref_document, is_active, fichier)
+                     VALUES (?, ?, (SELECT id_vehicule FROM affectation_vehicule WHERE id_affectation = ?), (SELECT id_dossier_vehicule FROM dossier_vehicule WHERE ref_dossier = ?), ?, 1, ?)",
+                    [(int)$ids[$i], $dts[$i], (int)$vh, $ref, $refDocs[$i], $fichier]
                 );
             }
         }); $this->json(); } catch (\mysqli_sql_exception $e) { $this->jsonError('Erreur'); }
@@ -142,6 +151,123 @@ class ConfigController extends BaseController
             $this->repo->deleteFolderDocumentsByRef($this->post('ref-folder-del'));
             $this->repo->deleteDossierByRef($this->post('ref-folder-del'));
         }); $this->json(); } catch (\mysqli_sql_exception $e) { $this->jsonError('Erreur'); }
+    }
+
+    // -- Folder file upload / delete --
+
+    public function uploadFolderFile(): never
+    {
+        $this->requireConfigSubRight('updFolders', 'upd');
+
+        $refDossier = $this->post('ref-dossier');
+        $idDocument = (int)$this->post('id-document');
+        if (!$refDossier || !$idDocument) {
+            $this->jsonError('Paramètres manquants');
+        }
+
+        // Validate file presence
+        if (!isset($_FILES['fichier']) || $_FILES['fichier']['error'] !== UPLOAD_ERR_OK) {
+            $this->jsonError('Aucun fichier valide reçu');
+        }
+
+        $file = $_FILES['fichier'];
+
+        // Validate file size (max 10 MB)
+        $maxSize = 10 * 1024 * 1024;
+        if ($file['size'] > $maxSize) {
+            $this->jsonError('Le fichier ne doit pas dépasser 10 Mo');
+        }
+
+        // Validate file extension
+        $allowedExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'gif'];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowedExtensions, true)) {
+            $this->jsonError('Type de fichier non autorisé. Types acceptés : PDF, PNG, JPG, GIF');
+        }
+
+        // Validate MIME type server-side (additional security)
+        $allowedMimes = ['application/pdf', 'image/png', 'image/jpeg', 'image/gif'];
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+        if (!in_array($mime, $allowedMimes, true)) {
+            $this->jsonError('Type MIME du fichier non autorisé');
+        }
+
+        // Create dossier upload directory if it doesn't exist
+        $uploadDir = __DIR__ . '/../uploads/dossiers/' . $refDossier;
+        if (!is_dir($uploadDir)) {
+            if (!@mkdir($uploadDir, 0755, true)) {
+                $this->jsonError("Impossible de créer le répertoire de destination");
+            }
+        }
+
+        // Generate unique filename: {id_document}_{timestamp}.{ext}
+        $filename = $idDocument . '_' . time() . '.' . $ext;
+        $destPath = $uploadDir . '/' . $filename;
+
+        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
+            $this->jsonError("Erreur lors de l'enregistrement du fichier");
+        }
+
+        // Delete old file for this document if replacing
+        $docId = $this->repo->findDossierDocumentId($refDossier, $idDocument);
+        if ($docId) {
+            $oldFile = $this->repo->findDocumentFichier($docId);
+            if ($oldFile) {
+                $oldPath = __DIR__ . '/../uploads/dossiers/' . $oldFile;
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+            // Update DB: store relative path "ref_dossier/filename"
+            $relativePath = $refDossier . '/' . $filename;
+            $this->repo->updateDocumentFichier($docId, $relativePath);
+        }
+
+        $this->json([
+            'fichier' => $relativePath ?? ($refDossier . '/' . $filename),
+            'url' => 'uploads/dossiers/' . ($relativePath ?? ($refDossier . '/' . $filename)),
+        ]);
+    }
+
+    public function deleteFolderFile(): never
+    {
+        $this->requireConfigSubRight('updFolders', 'upd');
+
+        $refDossier = $this->post('ref-dossier');
+        $idDocument = (int)$this->post('id-document');
+        if (!$refDossier || !$idDocument) {
+            $this->jsonError('Paramètres manquants');
+        }
+
+        $docId = $this->repo->findDossierDocumentId($refDossier, $idDocument);
+        if (!$docId) {
+            $this->jsonError('Document introuvable');
+        }
+
+        // Get current file path from DB
+        $relativePath = $this->repo->findDocumentFichier($docId);
+        if (!$relativePath) {
+            $this->jsonError('Aucun fichier associé à ce document');
+        }
+
+        // Delete file from disk
+        $fullPath = __DIR__ . '/../uploads/dossiers/' . $relativePath;
+        if (file_exists($fullPath)) {
+            @unlink($fullPath);
+        }
+
+        // Remove empty dossier directory if no more files
+        $dirPath = __DIR__ . '/../uploads/dossiers/' . dirname($relativePath);
+        if (is_dir($dirPath) && count(scandir($dirPath)) <= 2) {
+            @rmdir($dirPath);
+        }
+
+        // Update DB
+        $this->repo->updateDocumentFichier($docId, null);
+
+        $this->json();
     }
 
     // -- Paramètres --

@@ -71,7 +71,7 @@ function getTableauFolder()
         endforeach;
         $permisRows = $configRepo->findPermisByVehiculeId((int)$r['id_vehicule']);
         $permis = implode(',', array_column($permisRows, 'lib_type_permis'));
-        $tableau .= "<td>" . h($r['nom_chauffeur']) . "</td><td>" . h($permis) . "</td><td><div class='btn-group'>" . (hasSubRight('updFolders', 'upd', $rights_config, $foldersSpecifics) && $ref_dossier != "" ? "<a class='btn btn-primary' title='Modifier' href='?page=configuration&subpage=folderdetails&action=upd&id=" . h($ref_dossier) . "'><i class='fa fa-pencil-alt'></i></a>" : "") . (hasSubRight('delFolders', 'del', $rights_config, $foldersSpecifics) && $ref_dossier != "" ? "<button class='btn btn-danger' title='Supprimer' onclick='delFolder(\"".h($ref_dossier)."\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+        $tableau .= "<td>" . h($r['nom_chauffeur']) . "</td><td>" . h($permis) . "</td><td><div class='btn-group'>" . ($ref_dossier != "" ? "<a class='btn btn-info' title='Historique des dossiers' href='?page=configuration&subpage=dossierHistory&vehicle=" . h($r['id_vehicule']) . "'><i class='fa fa-history'></i></a>" : "") . (hasSubRight('updFolders', 'upd', $rights_config, $foldersSpecifics) && $ref_dossier != "" ? "<a class='btn btn-primary' title='Modifier' href='?page=configuration&subpage=folderdetails&action=upd&id=" . h($ref_dossier) . "'><i class='fa fa-pencil-alt'></i></a>" : "") . (hasSubRight('delFolders', 'del', $rights_config, $foldersSpecifics) && $ref_dossier != "" ? "<button class='btn btn-danger' title='Supprimer' onclick='delFolder(\"".h($ref_dossier)."\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
     endforeach;
     $tableau .= "</tbody></table><div id='output'></div>";
     return $tableau;
@@ -480,19 +480,26 @@ function getTableauFolder()
                     $('#modal-folder').modal('show')
                 }, 3000)
 
-                function populateFolder(doc, dt, refd, dname) {
+                function populateFolder(doc, dt, refd, dname, fichier) {
                     docname = dname
                     doc = {
                         id: doc,
                         name: docname,
                         dtexpiry: dt,
-                        refdoc: refd
+                        refdoc: refd,
+                        fichier: fichier || null
                     }
 
                     docs.push(doc)
                     liste = "";
                     for (i = 0; i < docs.length; i++) {
-                        liste += "<div class='input-group' id='" + docs[i].id + "'><input type='hidden' name='doc-list-id[]' value='" + docs[i].id + "'><input class='form-control' type='text' readonly required id='" + docs[i].id + "' name='doc-list-name[]' value='" + docs[i].name + "'><input type='date' class='form-control' readonly required id='dt-" + docs[i].id + "' name='dt-list-name[]' value='" + docs[i].dtexpiry + "'><input type='text' class='form-control' required id='refd-" + docs[i].id + "' name='refd-list-name[]' value='" + docs[i].refdoc + "'><button class='btn btn-danger' type='button' title='Retirer du dossier' onclick='remToFolder(\"" + docs[i].id + "\")'><i class='fa fa-times'></i></button></div>"
+                        var fileBadge = '';
+                        if (docs[i].fichier) {
+                            fileBadge = "<a href='uploads/dossiers/" + docs[i].fichier + "' target='_blank' class='btn btn-sm btn-success' title='Voir le fichier'><i class='fa fa-file'></i></a>";
+                        } else {
+                            fileBadge = "<span class='text-muted small'>Aucun fichier</span>";
+                        }
+                        liste += "<div class='input-group' id='" + docs[i].id + "'><input type='hidden' name='doc-list-id[]' value='" + docs[i].id + "'><input class='form-control' type='text' readonly required id='" + docs[i].id + "' name='doc-list-name[]' value='" + docs[i].name + "'><input type='date' class='form-control' readonly required id='dt-" + docs[i].id + "' name='dt-list-name[]' value='" + docs[i].dtexpiry + "'><input type='text' class='form-control' required id='refd-" + docs[i].id + "' name='refd-list-name[]' value='" + docs[i].refdoc + "'><div class='input-group-text' style='min-width:90px'>" + fileBadge + "</div><button class='btn btn-danger' type='button' title='Retirer du dossier' onclick='remToFolder(\"" + docs[i].id + "\")'><i class='fa fa-times'></i></button></div>"
                     }
                     $('#doc-list').html(liste)
                 }
@@ -531,7 +538,7 @@ function getTableauFolder()
                     }
                     liste = "";
                     for (i = 0; i < docs.length; i++) {
-                        liste += "<div class='input-group' id='" + docs[i].id + "'><input type='hidden' name='doc-list-id[]' value='" + docs[i].id + "'><input class='form-control' type='text' readonly required id='" + docs[i].id + "' name='doc-list-name[]' value='" + docs[i].name + "'><input type='date' class='form-control' readonly required id='dt-" + docs[i].id + "' name='dt-list-name[]' value='" + docs[i].dtexpiry + "'><input type='text' class='form-control' readonly required id='refd-" + docs[i].id + "' name='refd-list-name[]' value='" + docs[i].refdoc + "'><button class='btn btn-danger' type='button' title='Retirer du dossier' onclick='remToFolder(\"" + docs[i].id + "\")'><i class='fa fa-times'></i></button></div>"
+                        liste += "<div class='input-group' id='" + docs[i].id + "'><input type='hidden' name='doc-list-id[]' value='" + docs[i].id + "'><input class='form-control' type='text' readonly required id='" + docs[i].id + "' name='doc-list-name[]' value='" + docs[i].name + "'><input type='date' class='form-control' readonly required id='dt-" + docs[i].id + "' name='dt-list-name[]' value='" + docs[i].dtexpiry + "'><input type='text' class='form-control' readonly required id='refd-" + docs[i].id + "' name='refd-list-name[]' value='" + docs[i].refdoc + "'><div class='input-group-text' style='min-width:90px'><span class='text-muted small'>Aucun fichier</span></div><button class='btn btn-danger' type='button' title='Retirer du dossier' onclick='remToFolder(\"" + docs[i].id + "\")'><i class='fa fa-times'></i></button></div>"
                     }
                     $('#doc-list').html(liste)
                     $('#ref-doc').val('')
@@ -589,12 +596,198 @@ function getTableauFolder()
                     }
                 }
                 <?php for ($i = 0; $i < count($folder); $i++) : ?>
-                    populateFolder('<?php echo $folder[$i]['iddoc']; ?>', '<?php echo $folder[$i]['date_expiration_document']; ?>', '<?php echo $folder[$i]['ref_document']; ?>', '<?php echo $folder[$i]['nom_document']; ?>')
+                    populateFolder('<?php echo $folder[$i]['iddoc']; ?>', '<?php echo $folder[$i]['date_expiration_document']; ?>', '<?php echo $folder[$i]['ref_document']; ?>', '<?php echo $folder[$i]['nom_document']; ?>', <?php echo !empty($folder[$i]['fichier']) ? "'" . h($folder[$i]['fichier']) . "'" : 'null'; ?>)
                 <?php endfor; ?>
             </script>
 
         <?php endif; ?>
     <?php endif; ?>
+    <?php elseif ($_GET['subpage'] == 'dossierHistory') : ?>
+        <?php if (!hasSubRight('viewFolders', 'view', $rights_config, $foldersSpecifics)): ?>
+            <div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>
+        <?php else:
+            $vehicleId = isset($_GET['vehicle']) ? (int)$_GET['vehicle'] : 0;
+            if (!$vehicleId): ?>
+                <div class='alert alert-danger'>Véhicule non spécifié</div>
+            <?php else:
+                $configRepo = new ConfigRepository($con);
+                $vehicule = $configRepo->findVehiculeInfo($vehicleId);
+                if (!$vehicule): ?>
+                    <div class='alert alert-danger'>Véhicule introuvable</div>
+                <?php else:
+                    $allDossiers = $configRepo->findAllDossiersByVehicule($vehicleId);
+                    // Group documents by ref_dossier
+                    $grouped = [];
+                    $dossierMeta = [];
+                    foreach ($allDossiers as $d) {
+                        $ref = $d['ref_dossier'];
+                        $grouped[$ref][] = $d;
+                        if (!isset($dossierMeta[$ref])) {
+                            $dossierMeta[$ref] = [
+                                'is_active' => (bool)$d['is_active'],
+                                'id_dossier_vehicule' => $d['id_dossier_vehicule'],
+                            ];
+                        }
+                    }
+                    ?>
+                    <div class="lt-page-title">
+                        <a href="?page=configuration&subpage=folderdetails" class="btn btn-secondary btn-sm me-2">&larr; Retour</a>
+                        Historique des dossiers — <?= h($vehicule['immatriculation_vehicule']) ?>
+                    </div>
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3"><strong>Véhicule :</strong> <?= h($vehicule['immatriculation_vehicule']) ?></div>
+                                <div class="col-md-3"><strong>Marque :</strong> <?= h($vehicule['nom_marque']) ?></div>
+                                <div class="col-md-3"><strong>Chauffeur :</strong> <?= h($vehicule['nom_chauffeur']) ?></div>
+                                <div class="col-md-3"><strong>Entité :</strong> <?= h($vehicule['nom_entite']) ?></div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php if (empty($grouped)): ?>
+                        <div class='alert alert-info'>Aucun dossier trouvé pour ce véhicule.</div>
+                    <?php else: ?>
+                        <div class="accordion" id="dossierHistoryAccordion">
+                        <?php $first = true;
+                        foreach ($grouped as $ref => $docs):
+                            $meta = $dossierMeta[$ref];
+                            $badge = $meta['is_active']
+                                ? '<span class="badge bg-success">Actif</span>'
+                                : '<span class="badge bg-secondary">Archivé</span>';
+                            $collapseId = 'collapse-' . md5($ref);
+                            $headingId = 'heading-' . md5($ref);
+                        ?>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="<?= $headingId ?>">
+                                    <button class="accordion-button <?= $first ? '' : 'collapsed' ?>" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#<?= $collapseId ?>">
+                                        <?= h($ref) ?> <?= $badge ?>
+                                    </button>
+                                </h2>
+                                <div id="<?= $collapseId ?>" class="accordion-collapse collapse <?= $first ? 'show' : '' ?>"
+                                     data-bs-parent="#dossierHistoryAccordion">
+                                    <div class="accordion-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Document</th>
+                                                        <th>Date expiration</th>
+                                                        <th>Réf. document</th>
+                                                        <th>Fichier</th>
+                                                        <th></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                <?php foreach ($docs as $doc): ?>
+                                                    <tr>
+                                                        <td><?= h($doc['nom_document']) ?></td>
+                                                        <td><?= h($doc['date_expiration_document']) ?></td>
+                                                        <td><?= h($doc['ref_document']) ?></td>
+                                                        <td>
+                                                            <?php if (!empty($doc['fichier'])): ?>
+                                                                <a href="uploads/dossiers/<?= h($doc['fichier']) ?>" target="_blank" class="btn btn-sm btn-success" title="Télécharger">
+                                                                    <i class="fa fa-download"></i> Voir
+                                                                </a>
+                                                                <?php if (hasSubRight('updFolders', 'upd', $rights_config, $foldersSpecifics)): ?>
+                                                                <button class="btn btn-sm btn-danger" title="Supprimer le fichier"
+                                                                        onclick="deleteFolderFile('<?= h($ref) ?>', <?= (int)$doc['id_document'] ?>, this)">
+                                                                    <i class="fa fa-trash"></i>
+                                                                </button>
+                                                                <?php endif; ?>
+                                                            <?php else: ?>
+                                                                <?php if (hasSubRight('updFolders', 'upd', $rights_config, $foldersSpecifics)): ?>
+                                                                <button class="btn btn-sm btn-outline-primary" title="Ajouter un fichier"
+                                                                        onclick="document.getElementById('file-input-<?= (int)$doc['id_dossier_vehicule_document'] ?>').click()">
+                                                                    <i class="fa fa-upload"></i> Ajouter
+                                                                </button>
+                                                                <input type="file" id="file-input-<?= (int)$doc['id_dossier_vehicule_document'] ?>"
+                                                                       class="d-none" accept=".pdf,.png,.jpg,.jpeg,.gif"
+                                                                       onchange="uploadFolderFile(<?= (int)$doc['id_document'] ?>, '<?= h($ref) ?>', this)">
+                                                                <?php endif; ?>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td>
+                                                            <?php if (hasSubRight('updFolders', 'upd', $rights_config, $foldersSpecifics)): ?>
+                                                                <a class="btn btn-sm btn-primary" title="Modifier le dossier"
+                                                                   href="?page=configuration&subpage=folderdetails&action=upd&id=<?= h($ref) ?>">
+                                                                    <i class="fa fa-pencil-alt"></i>
+                                                                </a>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php $first = false;
+                        endforeach; ?>
+                        </div>
+                    <?php endif;
+                endif;
+            endif;
+        endif; ?>
+        <script>
+        function uploadFolderFile(idDocument, refDossier, fileInput) {
+            if (!fileInput.files || !fileInput.files[0]) return;
+            var formData = new FormData();
+            formData.append('vh-folder-file-upload', '1');
+            formData.append('id-document', idDocument);
+            formData.append('ref-dossier', refDossier);
+            formData.append('fichier', fileInput.files[0]);
+
+            var $btn = $(fileInput).siblings('button');
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+            $.ajax({
+                type: 'post',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json'
+            }).done(function(e) {
+                if (e.success) {
+                    showSuccess('Fichier ajouté !');
+                    location.reload();
+                } else {
+                    showError(e.error || "Erreur lors de l'upload");
+                    $btn.prop('disabled', false).html('<i class="fa fa-upload"></i> Ajouter');
+                }
+            }).fail(function(jqXHR) {
+                showError(jqXHR.responseJSON?.error || "Erreur lors de l'upload");
+                $btn.prop('disabled', false).html('<i class="fa fa-upload"></i> Ajouter');
+            });
+        }
+
+        function deleteFolderFile(refDossier, idDocument, btn) {
+            if (!confirm("Supprimer ce fichier ?")) return;
+            $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+            $.ajax({
+                type: 'post',
+                data: {
+                    'vh-folder-file-delete': '1',
+                    'ref-dossier': refDossier,
+                    'id-document': idDocument
+                },
+                dataType: 'json'
+            }).done(function(e) {
+                if (e.success) {
+                    showSuccess('Fichier supprimé !');
+                    location.reload();
+                } else {
+                    showError(e.error || "Erreur");
+                    $(btn).prop('disabled', false).html('<i class="fa fa-trash"></i>');
+                }
+            }).fail(function(jqXHR) {
+                showError(jqXHR.responseJSON?.error || "Erreur");
+                $(btn).prop('disabled', false).html('<i class="fa fa-trash"></i>');
+            });
+        }
+        </script>
         <?php elseif ($_GET['subpage'] == 'parametres') : ?>
             <?php if (!in_array('view', $rights_config)): ?>
                 <div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>

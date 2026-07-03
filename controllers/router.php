@@ -149,9 +149,11 @@ $routes = [
     'id-doc-del'          => [$configCtrl, 'deleteDocument'],
 
     // Config — Folder
-    'vh-folder-upd'       => [$configCtrl, 'updateFolder'],
-    'vh-folder'           => [$configCtrl, 'createFolder'],
-    'ref-folder-del'      => [$configCtrl, 'deleteFolder'],
+    'vh-folder-upd'          => [$configCtrl, 'updateFolder'],
+    'vh-folder'              => [$configCtrl, 'createFolder'],
+    'ref-folder-del'         => [$configCtrl, 'deleteFolder'],
+    'vh-folder-file-upload'  => [$configCtrl, 'uploadFolderFile'],
+    'vh-folder-file-delete'  => [$configCtrl, 'deleteFolderFile'],
 
     // Config — Paramètres
     'update-devise'       => [$configCtrl, 'updateDevise'],

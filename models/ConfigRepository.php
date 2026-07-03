@@ -216,6 +216,82 @@ class ConfigRepository extends BaseRepository
         );
     }
 
+    // ---- Dossier history & file management ----
+
+    /** All dossiers (active + inactive) for a vehicle with their documents. */
+    public function findAllDossiersByVehicule(int $vehiculeId): array
+    {
+        return $this->select(
+            "SELECT dv.id_dossier_vehicule, dv.ref_dossier,
+                    dvd.id_dossier_vehicule_document, dvd.id_document,
+                    dvd.date_expiration_document, dvd.ref_document,
+                    dvd.is_active, dvd.fichier,
+                    doc.nom_document, doc.validite_document
+             FROM dossier_vehicule dv
+             INNER JOIN dossier_vehicule_document dvd
+                 ON dvd.id_dossier_vehicule = dv.id_dossier_vehicule
+             LEFT JOIN document_vehicule doc
+                 ON doc.id_document = dvd.id_document
+             WHERE dvd.id_vehicule = ?
+             ORDER BY dv.id_dossier_vehicule DESC, dvd.id_document",
+            [$vehiculeId]
+        );
+    }
+
+    /** Vehicle info for dossier history page header. */
+    public function findVehiculeInfo(int $vehiculeId): ?array
+    {
+        return $this->selectOne(
+            "SELECT v.id_vehicule, v.immatriculation_vehicule, v.chassis_vehicule,
+                    v.premiere_utilisation, v.nb_place, v.type_carburant,
+                    m.nom_marque, e.nom_entite,
+                    (SELECT nom_chauffeur FROM chauffeur WHERE id_chauffeur = (
+                        SELECT id_chauffeur FROM affectation_vehicule
+                        WHERE id_vehicule = v.id_vehicule AND is_ferme = 0 AND is_deleted = 0
+                        LIMIT 1
+                    )) AS nom_chauffeur
+             FROM vehicule v
+             LEFT JOIN marque_vehicule m ON m.id_marque = v.id_marque
+             LEFT JOIN entite e ON e.id_entite = v.id_entite
+             WHERE v.id_vehicule = ?",
+            [$vehiculeId]
+        );
+    }
+
+    /** Find the PK of a dossier document by ref_dossier + id_document. */
+    public function findDossierDocumentId(string $refDossier, int $idDocument): ?int
+    {
+        $row = $this->selectOne(
+            "SELECT dvd.id_dossier_vehicule_document
+             FROM dossier_vehicule_document dvd
+             JOIN dossier_vehicule dv ON dv.id_dossier_vehicule = dvd.id_dossier_vehicule
+             WHERE dv.ref_dossier = ? AND dvd.id_document = ?
+             ORDER BY dvd.id_dossier_vehicule_document DESC
+             LIMIT 1",
+            [$refDossier, $idDocument]
+        );
+        return $row ? (int)$row['id_dossier_vehicule_document'] : null;
+    }
+
+    /** Update the fichier path for a dossier document. */
+    public function updateDocumentFichier(int $docId, ?string $fichier): bool
+    {
+        return $this->exec(
+            "UPDATE dossier_vehicule_document SET fichier = ? WHERE id_dossier_vehicule_document = ?",
+            [$fichier, $docId]
+        );
+    }
+
+    /** Get the current fichier path for a document (used before deletion). */
+    public function findDocumentFichier(int $docId): ?string
+    {
+        $row = $this->selectOne(
+            "SELECT fichier FROM dossier_vehicule_document WHERE id_dossier_vehicule_document = ?",
+            [$docId]
+        );
+        return $row ? $row['fichier'] : null;
+    }
+
     // ---- Paramètres globaux (key-value) ----
 
     public function getParametre(string $cle, string $default = ''): string

@@ -138,7 +138,7 @@
         }
         liste="";
         for(i=0;i<docs.length;i++){
-            liste+="<div class='input-group' id='"+docs[i].id+"'><input type='hidden' name='doc-list-id[]' value='"+docs[i].id+"'><input class='form-control' type='text' readonly required id='"+docs[i].id+"' name='doc-list-name[]' value='"+docs[i].name+"'><input type='date' class='form-control' readonly required id='dt-"+docs[i].id+"' name='dt-list-name[]' value='"+docs[i].dtexpiry+"'><input type='text' class='form-control' readonly required id='refd-"+docs[i].id+"' name='refd-list-name[]' value='"+docs[i].refdoc+"'><button class='btn btn-danger' type='button' title='Retirer du dossier' onclick='remToFolder(\""+docs[i].id+"\")'><i class='fa fa-times'></i></button></div>"
+            liste+="<div class='input-group' id='"+docs[i].id+"'><input type='hidden' name='doc-list-id[]' value='"+docs[i].id+"'><input class='form-control' type='text' readonly required id='"+docs[i].id+"' name='doc-list-name[]' value='"+docs[i].name+"'><input type='date' class='form-control' readonly required id='dt-"+docs[i].id+"' name='dt-list-name[]' value='"+docs[i].dtexpiry+"'><input type='text' class='form-control' readonly required id='refd-"+docs[i].id+"' name='refd-list-name[]' value='"+docs[i].refdoc+"'><div class='input-group-text' style='min-width:90px'><span class='text-muted small'>Aucun fichier</span></div><button class='btn btn-danger' type='button' title='Retirer du dossier' onclick='remToFolder(\""+docs[i].id+"\")'><i class='fa fa-times'></i></button></div>"
         }
         $('#doc-list').html(liste)
         $('#ref-doc').val('')
