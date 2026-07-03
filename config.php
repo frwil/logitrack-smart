@@ -382,21 +382,6 @@ function getTableauFolder()
         <?php endif; ?>
         <a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-folder" class="btn btn-primary">Exporter</a>
         <hr>
-        <?php
-        // --- TEMPORARY: vérification intégrité dossiers actifs ---
-        $cfgRepo = new ConfigRepository($con);
-        $dupCheck = $cfgRepo->findVehiclesWithMultipleActiveDossiers();
-        if (!empty($dupCheck)) {
-            echo '<div class="alert alert-danger"><strong>⚠️ Anomalie :</strong> Véhicules avec plusieurs dossiers actifs :<ul>';
-            foreach ($dupCheck as $d) {
-                echo '<li>' . h($d['immatriculation_vehicule']) . ' — ' . (int)$d['nb_dossiers'] . ' dossiers actifs (' . (int)$d['nb_docs'] . ' docs)</li>';
-            }
-            echo '</ul></div>';
-        } else {
-            echo '<div class="alert alert-success"><strong>✅ OK :</strong> Aucun véhicule avec plusieurs dossiers actifs.</div>';
-        }
-        // --- FIN TEMPORARY ---
-        ?>
         <?php echo getTableauFolder(); ?>
         <script>
             function delFolder(ref) {
