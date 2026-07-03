@@ -386,7 +386,25 @@ function getTableauFolder()
         <?php endif; ?>
         <a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-folder" class="btn btn-primary">Exporter</a>
         <hr>
+        <div class="alert alert-light border small py-2 mb-2">
+            <strong><i class="fa fa-info-circle"></i> Légende :</strong>
+            <span class="ms-2 me-3"><span class="badge" style="background:rgb(0,95,119);color:#fff">Véhicule</span> = dossier existant</span>
+            <span class="me-3"><span class="badge bg-light text-dark border">Véhicule</span> = sans dossier</span>
+            <span class="me-3"><a class="btn btn-success btn-sm"><i class="fa fa-plus"></i></a> Ajouter</span>
+            <span class="me-3"><a class="btn btn-info btn-sm"><i class="fa fa-history"></i></a> Historique</span>
+            <span class="me-3"><a class="btn btn-primary btn-sm"><i class="fa fa-pencil-alt"></i></a> Modifier</span>
+            <span class="me-3"><button class="btn btn-danger btn-sm"><i class="fa fa-times"></i></button> Supprimer</span>
+        </div>
         <?php echo getTableauFolder(); ?>
+        <div class="alert alert-light border small py-2 mt-2">
+            <strong><i class="fa fa-info-circle"></i> Légende :</strong>
+            <span class="ms-2 me-3"><span class="badge" style="background:rgb(0,95,119);color:#fff">Véhicule</span> = dossier existant</span>
+            <span class="me-3"><span class="badge bg-light text-dark border">Véhicule</span> = sans dossier</span>
+            <span class="me-3"><a class="btn btn-success btn-sm"><i class="fa fa-plus"></i></a> Ajouter</span>
+            <span class="me-3"><a class="btn btn-info btn-sm"><i class="fa fa-history"></i></a> Historique</span>
+            <span class="me-3"><a class="btn btn-primary btn-sm"><i class="fa fa-pencil-alt"></i></a> Modifier</span>
+            <span class="me-3"><button class="btn btn-danger btn-sm"><i class="fa fa-times"></i></button> Supprimer</span>
+        </div>
         <script>
             function delFolder(ref) {
                 if (confirm("Etes-vous sûr de vouloir supprimer ce dossier ?")) {
