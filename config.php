@@ -386,6 +386,7 @@ function getTableauFolder()
         <?php endif; ?>
         <a href="?page=configuration&subpage=<?php echo h($_GET['subpage']); ?>&action=tableexport&id=table-folder" class="btn btn-primary">Exporter</a>
         <?php
+        $configRepo = new ConfigRepository($con);
         $folderStats = $configRepo->getFolderStats(getContextRegions(), getContextEntities());
         ?>
         <div class="row g-3 my-3">
