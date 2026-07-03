@@ -9,7 +9,7 @@
             <div class="modal-body">
                 <form method="post" action="#" id="form-new-folder">
                     <div class="form-floating mb-3">
-                        <input type="text" class="form-control" required id="ref-folder" name="ref-folder" readonly value="DV-<?php echo 'DV-' . date('Ymd-His-') . bin2hex(random_bytes(4)); ?>">
+                        <input type="text" class="form-control" required id="ref-folder" name="ref-folder" readonly value="<?php echo 'DV-' . date('Ymd-His-') . bin2hex(random_bytes(4)); ?>">
                         <label for="ref-folder">Référence dossier</label>
                     </div>
                     <div class="mb-3">
