@@ -502,6 +502,27 @@ if (!$renderPartial):
         },paging: false,
         scrollCollapse: true,
         scrollY: 300";
+        endif;
+        if ((isset($_GET['page']) && $_GET['page'] == 'affectationVehicules') && (!isset($_GET['subpage']) || $_GET['subpage'] == 'listeAffectationsVehicules')):
+            echo "scrollX:true, paging: false, scrollCollapse: true, scrollY: 300, layout: {
+        topStart: {
+            buttons: [{
+            extend: 'excelHtml5',
+            className:'btn btn-primary',
+            text:'Excel',
+            title:'Affectations_vehicules',
+            exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
+            }, {
+            extend: 'pdfHtml5',
+            className:'btn btn-primary',
+            text:'PDF',
+            title:'Affectations de véhicules',
+            orientation: 'landscape',
+            pageSize: 'A4',
+            exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
+            }]
+        }
+    }";
         endif; ?>
         });
     }

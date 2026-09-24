@@ -13,6 +13,11 @@ import './css/rowGroup.dataTables.css'
 import 'datatables.net-buttons'
 import 'datatables.net-buttons/js/buttons.html5.min.mjs'
 import './css/buttons.dataTables.css'
+// PDF export (pdfHtml5 button) — pdfmake must be on window before DataTables init
+import pdfMake from 'pdfmake/build/pdfmake'
+import pdfFonts from 'pdfmake/build/vfs_fonts'
+pdfMake.vfs = pdfFonts
+window.pdfMake = pdfMake
 import 'datatables.net-fixedcolumns'
 import './css/fixedColumns.dataTables.css'
 import 'tom-select/dist/css/tom-select.css'
