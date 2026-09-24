@@ -93,7 +93,7 @@ class VoyagePrestataireRepository extends BaseRepository
                     vp.id_entite, vp.id_region, vp.convoyeur, vp.id_type_chargement,
                     vp.qte_chargement, vp.numero_scelle,
                     COALESCE(NULLIF(vp.nom_chauffeur, ''), pt.nom_chauffeur) AS nom_chauffeur,
-                    pt.immatriculation, pt.nom_copilote,
+                    pt.immatriculation,
                     pt.nom_societe, pt.adresse_societe, pt.telephone_societe,
                     e.nom_entite, r.nom_region, tcv.lib_type_chargement, tcv.unite_mesure
              FROM voyage_prestataire vp
@@ -116,7 +116,7 @@ class VoyagePrestataireRepository extends BaseRepository
                     vp.id_entite, vp.id_region, vp.convoyeur, vp.id_type_chargement,
                     vp.qte_chargement, vp.numero_scelle,
                     COALESCE(NULLIF(vp.nom_chauffeur, ''), pt.nom_chauffeur) AS nom_chauffeur,
-                    pt.immatriculation, pt.nom_copilote,
+                    pt.immatriculation,
                     pt.nom_societe, pt.adresse_societe, pt.telephone_societe,
                     e.nom_entite, r.nom_region, tcv.lib_type_chargement, tcv.unite_mesure,
                     GROUP_CONCAT(CONCAT(dv.lib_destination, ' (', dv.distance_destination, 'km)')

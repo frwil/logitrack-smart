@@ -30,20 +30,15 @@ class PrestataireTransportController extends BaseController
         $this->requireVoyageRight('save');
         $immat = strtoupper(trim($this->post('immat-pt-transport')));
         $societe = trim($this->post('societe-pt-transport'));
-        $chauffeur = trim($this->post('chauffeur-pt-transport'));
-        if ($immat === '' || $societe === '' || $chauffeur === '') $this->jsonError('Société, immatriculation et chauffeur obligatoires');
+        if ($immat === '' || $societe === '') $this->jsonError('Société et immatriculation obligatoires');
         try {
             $id = $this->prestataireRepo->insert(
                 $immat,
                 $societe,
-                $chauffeur,
-                $this->post('copilote-pt-transport') ?: null,
                 $this->post('adresse-pt-transport') ?: null,
-                $this->post('telephone-pt-transport') ?: null,
-                (float)($this->post('capacite-pt-transport') ?: 0),
-                $this->post('unite-pt-transport') ?: ''
+                $this->post('telephone-pt-transport') ?: null
             );
-            $this->json(['id' => (int)$id, 'label' => $societe . ' — ' . $immat . ' (' . $chauffeur . ')', 'chauffeur' => $chauffeur]);
+            $this->json(['id' => (int)$id, 'label' => $societe . ' — ' . $immat]);
         } catch (\mysqli_sql_exception $e) {
             if ($e->getCode() == 1062) $this->jsonError('Ce prestataire existe déjà (immatriculation en doublon)');
             $this->jsonError("Erreur lors de l'enregistrement");

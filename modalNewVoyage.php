@@ -69,7 +69,7 @@
                                     <select id="id-prestataire-vg" name="id-prestataire-vg">
                                         <?php $ptRepo = new PrestataireTransportRepository($con);
                                         foreach ($ptRepo->findAll() as $r):
-                                            echo "<option value='" . $r['id_prestataire_transport'] . "' data-chauffeur='" . h($r['nom_chauffeur']) . "'>" . h($r['nom_societe']) . " — " . h($r['immatriculation']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                                            echo "<option value='" . $r['id_prestataire_transport'] . "'>" . h($r['nom_societe']) . " — " . h($r['immatriculation']) . "</option>";
                                         endforeach;
                                         ?>
                                     </select>
@@ -236,16 +236,10 @@
         $('#date-check').val(0)
         $('input[name="mode-vg"][value="flotte"]').prop('checked', true)
         toggleModeVg()
-        $('#id-prestataire-vg').trigger('change')
     }
 
     // Bascule flotte / prestataire externe
     $('input[name="mode-vg"]').change(toggleModeVg)
-
-    // Pré-remplit le chauffeur avec celui du prestataire choisi
-    $('#id-prestataire-vg').change(function () {
-        $('#chauffeur-vg').val($(this).find('option:selected').attr('data-chauffeur') || '')
-    })
 
     function toggleModeVg() {
         const externe = $('input[name="mode-vg"]:checked').val() === 'externe'

@@ -121,7 +121,6 @@ function getTableauVoyagesPrestataires()
 
     foreach ($rows as $r):
         $chauffeur = $r['nom_chauffeur'];
-        if (!empty($r['nom_copilote'])) $chauffeur .= ' / ' . $r['nom_copilote'];
         $qte = h($r['qte_chargement']);
         if (!empty($r['unite_mesure'])) $qte .= ' ' . h($r['unite_mesure']);
         $societeTitle = trim(($r['adresse_societe'] ?? '') . ' ' . ($r['telephone_societe'] ?? ''));
@@ -136,7 +135,11 @@ function getTableauVoyagesPrestataires()
     endforeach;
 
     if (empty($rows)) {
-        $tableau .= "<tr><td colspan='" . (($hasUpd || $hasDel) ? 12 : 11) . "' class='text-center'>Aucun voyage prestataire sur la période</td></tr>";
+        // Ligne complète (pas de colspan — incompatible DataTables)
+        $tableau .= "<tr><td>Aucun voyage prestataire sur la période</td>";
+        $cols = ($hasUpd || $hasDel) ? 12 : 11;
+        for ($i = 1; $i < $cols; $i++) $tableau .= "<td></td>";
+        $tableau .= "</tr>";
     }
     $tableau .= "</tbody></table>";
     return $tableau;

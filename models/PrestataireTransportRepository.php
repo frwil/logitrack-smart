@@ -23,11 +23,11 @@ class PrestataireTransportRepository extends BaseRepository
     }
 
     /** Insert a carrier; returns new id. Throws mysqli_sql_exception 1062 on duplicate immatriculation. */
-    public function insert(string $immatriculation, string $nomSociete, string $nomChauffeur, ?string $nomCopilote, ?string $adresseSociete, ?string $telephoneSociete, float $capacite, string $unite): int|string
+    public function insert(string $immatriculation, string $nomSociete, ?string $adresseSociete, ?string $telephoneSociete): int|string
     {
         return $this->insertGetId(
-            "INSERT INTO prestataire_transport (immatriculation, nom_societe, nom_chauffeur, nom_copilote, adresse_societe, telephone_societe, capacite_transport, unite_mesure) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [$immatriculation, $nomSociete, $nomChauffeur, $nomCopilote, $adresseSociete, $telephoneSociete, $capacite, $unite]
+            "INSERT INTO prestataire_transport (immatriculation, nom_societe, nom_chauffeur, adresse_societe, telephone_societe) VALUES (?, ?, '', ?, ?)",
+            [$immatriculation, $nomSociete, $adresseSociete, $telephoneSociete]
         );
     }
 }

@@ -24,28 +24,6 @@
                 <input type="text" id="telephone-pt-transport" name="telephone-pt-transport" class="form-control">
                 <label for="telephone-pt-transport">Contact téléphonique</label>
             </div>
-            <div class="form-floating mb-3">
-                <input type="text" id="chauffeur-pt-transport" name="chauffeur-pt-transport" required class="form-control">
-                <label for="chauffeur-pt-transport">Nom du chauffeur</label>
-            </div>
-            <div class="form-floating mb-3">
-                <input type="text" class="form-control" id="copilote-pt-transport" name="copilote-pt-transport">
-                <label for="copilote-pt-transport">Nom du copilote (facultatif)</label>
-            </div>
-            <div class="row">
-                <div class="col-7">
-                    <div class="form-floating mb-3">
-                        <input type="number" class="form-control" id="capacite-pt-transport" name="capacite-pt-transport" min="0" step="0.01" value="0">
-                        <label for="capacite-pt-transport">Capacité de chargement</label>
-                    </div>
-                </div>
-                <div class="col-5">
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="unite-pt-transport" name="unite-pt-transport" placeholder="tonnes, cartons…">
-                        <label for="unite-pt-transport">Unité</label>
-                    </div>
-                </div>
-            </div>
         </form>
       </div>
       <div class="modal-footer">
@@ -79,8 +57,6 @@
         }).done((e)=>{
             if(e.success){
                 $('#id-prestataire-vg').append(new Option(e.label, e.id, true, true))
-                if (e.chauffeur) $('#id-prestataire-vg').find('option[value="' + e.id + '"]').attr('data-chauffeur', e.chauffeur)
-                $('#id-prestataire-vg').trigger('change')
                 $('#form-new-pt-transport *').val('')
                 $('#modal-new-prestataire-transport').modal('hide')
                 showSuccess('Prestataire enregistré')

@@ -154,7 +154,7 @@
         }).done((e) => {
             if (e.success) {
                 $('#date-upd-vge').val(e.date_voyage)
-                $('#prestataire-upd-vge').val((e.nom_societe || '') + ' — ' + e.immatriculation + ' (' + e.nom_chauffeur + ')')
+                $('#prestataire-upd-vge').val((e.nom_societe || '') + ' — ' + e.immatriculation)
                 $('#chauffeur-upd-vge').val(e.nom_chauffeur || '')
                 $('#id-entite-upd-vge').val(e.id_entite)
                 $('#id-region-upd-vge').val(e.id_region)
