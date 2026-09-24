@@ -143,7 +143,33 @@ class VehiculeRepository extends BaseRepository
         return $this->select(
             "SELECT * FROM vehicule
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_vehicule = vehicule.id_vehicule
-             WHERE affectation_vehicule.is_ferme = 0 AND affectation_vehicule.is_deleted = 0 AND $where",
+             WHERE affectation_vehicule.is_ferme = 0 AND affectation_vehicule.is_deleted = 0 AND $where
+               AND NOT EXISTS (
+                   SELECT 1 FROM affectation_vehicule av2
+                   WHERE av2.id_vehicule = affectation_vehicule.id_vehicule
+                     AND av2.is_ferme = 0 AND av2.is_deleted = 0
+                     AND (av2.date_affectation > affectation_vehicule.date_affectation
+                          OR (av2.date_affectation = affectation_vehicule.date_affectation
+                              AND av2.id_affectation > affectation_vehicule.id_affectation)))
+             ORDER BY affectation_vehicule.date_affectation DESC",
+            $params
+        );
+    }
+
+    /** Vehicles with marque/modele details, active in the session region + entity context (one row per vehicle). */
+    public function findActiveWithDetailsByContext(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        return $this->select(
+            "SELECT * FROM vehicule
+             LEFT JOIN marque_vehicule ON vehicule.id_marque = marque_vehicule.id_marque
+             LEFT JOIN modele_vehicule ON vehicule.id_modele_vehicule = modele_vehicule.id_modele_vehicule
+             WHERE EXISTS (
+                 SELECT 1 FROM affectation_vehicule
+                 WHERE affectation_vehicule.id_vehicule = vehicule.id_vehicule
+                   AND affectation_vehicule.is_ferme = 0 AND affectation_vehicule.is_deleted = 0
+                   AND $where)
+             ORDER BY vehicule.immatriculation_vehicule",
             $params
         );
     }

@@ -3,7 +3,7 @@
     global $con;
     global $rights_vehicule;
     $repo = new VehiculeRepository($con);
-    $rows = $repo->findAllWithDetails();
+    $rows = $repo->findActiveWithDetailsByContext(getContextRegions(), getContextEntities());
     $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Immatriculation</th><th>Marque</th><th>Modèle</th><th>Chassis</th><th>1ère utilisation</th><th>Expir. carte grise</th><th>Nb. places</th><th>Carburant</th><th>Puissance</th><th>Capacité</th><th></th></tr></thead><tbody>";
     $i = 1;
     foreach ($rows as $r):

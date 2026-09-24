@@ -94,7 +94,15 @@ class AffectationRepository extends BaseRepository
              LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
              LEFT JOIN region ON affectation_vehicule.id_region = region.id_region
              LEFT JOIN entite ON affectation_vehicule.id_entite = entite.id_entite
-             WHERE is_ferme = 0 AND is_deleted = 0 AND $where",
+             WHERE is_ferme = 0 AND is_deleted = 0 AND $where
+               AND NOT EXISTS (
+                   SELECT 1 FROM affectation_vehicule av2
+                   WHERE av2.id_vehicule = affectation_vehicule.id_vehicule
+                     AND av2.is_ferme = 0 AND av2.is_deleted = 0
+                     AND (av2.date_affectation > affectation_vehicule.date_affectation
+                          OR (av2.date_affectation = affectation_vehicule.date_affectation
+                              AND av2.id_affectation > affectation_vehicule.id_affectation)))
+             ORDER BY affectation_vehicule.date_affectation DESC",
             $params
         );
     }
