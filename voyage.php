@@ -99,7 +99,47 @@
     $fDateFrom = isset($_POST['date-f']) ? h($_POST['date-f']) : date('Y-m-01');
     $fDateTo   = isset($_POST['date-t']) ? h($_POST['date-t']) : date('Y-m-t');
     $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='$fDateFrom'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='$fDateTo'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
-    return $form . "<hr>" . $tableau;
+    return $form . "<hr>" . $tableau . getTableauVoyagesPrestataires();
+}
+function getTableauVoyagesPrestataires()
+{
+    global $con;
+    global $rights_voyage;
+    $hasUpd = in_array('upd', $rights_voyage);
+    $hasDel = in_array('del', $rights_voyage);
+
+    $dateFrom = isset($_POST['date-f']) ? date('Y-m-d', strtotime($_POST['date-f'])) : date('Y-m-01');
+    $dateTo   = isset($_POST['date-t']) ? date('Y-m-d', strtotime($_POST['date-t'])) : date('Y-m-t');
+
+    $vpRepo = new VoyagePrestataireRepository($con);
+    $rows = $vpRepo->findBetween($dateFrom, $dateTo, getContextRegions(), getContextEntities());
+
+    $tableau = "<h3 class='h5 mt-4'>Voyages prestataires externes</h3>";
+    $tableau .= "<table class='table table-striped'><thead><tr><th>Date</th><th>Société</th><th>Immatriculation</th><th>Chauffeur</th><th>Entité</th><th>Région</th><th>Trajets</th><th>Type chargement</th><th>Qté</th><th>Convoyeur</th><th>N° scellé</th>";
+    if ($hasUpd || $hasDel) $tableau .= "<th>Actions</th>";
+    $tableau .= "</tr></thead><tbody>";
+
+    foreach ($rows as $r):
+        $chauffeur = $r['nom_chauffeur'];
+        if (!empty($r['nom_copilote'])) $chauffeur .= ' / ' . $r['nom_copilote'];
+        $qte = h($r['qte_chargement']);
+        if (!empty($r['unite_mesure'])) $qte .= ' ' . h($r['unite_mesure']);
+        $societeTitle = trim(($r['adresse_societe'] ?? '') . ' ' . ($r['telephone_societe'] ?? ''));
+        $tableau .= "<tr><td>" . h($r['date_voyage']) . "</td><td" . ($societeTitle !== '' ? " title='" . h($societeTitle) . "'" : '') . ">" . h($r['nom_societe'] ?? '') . "</td><td>" . h($r['immatriculation']) . "</td><td>" . h($chauffeur) . "</td><td>" . h($r['nom_entite']) . "</td><td>" . h($r['nom_region']) . "</td><td>" . h($r['trajets_display'] ?? '') . "</td><td>" . h($r['lib_type_chargement']) . "</td><td>" . $qte . "</td><td>" . h($r['convoyeur'] ?? '') . "</td><td>" . h($r['numero_scelle'] ?? '') . "</td>";
+        if ($hasUpd || $hasDel) {
+            $tableau .= "<td><div class='btn-group'>";
+            if ($hasUpd) $tableau .= "<button class='btn btn-light btn-sm' title='Modifier' onclick='updVoyagePresta(" . (int)$r['id_voyage_prestataire'] . ")'><i class='fa fa-pencil-alt'></i></button>";
+            if ($hasDel) $tableau .= "<button class='btn btn-danger btn-sm' title='Supprimer' onclick='delVoyagePresta(" . (int)$r['id_voyage_prestataire'] . ")'><i class='fa fa-times'></i></button>";
+            $tableau .= "</div></td>";
+        }
+        $tableau .= "</tr>";
+    endforeach;
+
+    if (empty($rows)) {
+        $tableau .= "<tr><td colspan='" . (($hasUpd || $hasDel) ? 12 : 11) . "' class='text-center'>Aucun voyage prestataire sur la période</td></tr>";
+    }
+    $tableau .= "</tbody></table>";
+    return $tableau;
 }
 function getTableauVoyagesVehicules()
 {
@@ -460,6 +500,8 @@ function getTableauEvaluationVoyages()
 }
 ?>
 <?php include('modalNewVoyage.php'); ?>
+<?php include('modalNewPrestataireTransport.php'); ?>
+<?php if (in_array('upd', $rights_voyage) || in_array('del', $rights_voyage)) include('modalUpdVoyagePrestataire.php'); ?>
 <?php /* POST handled by VoyageController — see controllers/router.php */ ?>
 <?php if (isset($_GET['action']) && $_GET['action'] == 'new' && !isset($_GET['subpage'])): ?>
     <script>
@@ -650,99 +692,206 @@ function getTableauEvaluationVoyages()
 <?php endif; ?>
 
 <?php
+/**
+ * Scope courant des statistiques voyages (paramètre GET ?scope=).
+ * tout | flotte | externe | comparaison — comparaison affiche flotte et externes côte à côte.
+ */
+function getVoyagesScope()
+{
+    $scope = $_GET['scope'] ?? 'tout';
+    return in_array($scope, ['tout', 'flotte', 'externe', 'comparaison'], true) ? $scope : 'tout';
+}
+
+/** Filtre de portée des statistiques voyages (recharge la page avec ?scope=). */
+function getVoyagesScopeFilter(string $scope)
+{
+    $options = [
+        'tout' => 'Tous les voyages',
+        'flotte' => 'Voyages flotte',
+        'externe' => 'Voyages externes',
+        'comparaison' => 'Comparaison flotte / externes',
+    ];
+    $html = '<div class="d-flex justify-content-end mb-3"><div class="input-group" style="max-width: 320px;">'
+        . '<span class="input-group-text"><i class="fa fa-filter"></i></span>'
+        . '<select id="scope-stat-voyages" class="form-select" aria-label="Filtre des statistiques"'
+        . ' onchange="var u = new URL(location.href); u.searchParams.set(\'scope\', this.value); location = u.toString();">';
+    foreach ($options as $value => $label) {
+        $sel = $value === $scope ? ' selected' : '';
+        $html .= '<option value="' . $value . '"' . $sel . '>' . h($label) . '</option>';
+    }
+    $html .= '</select></div></div>';
+    return $html;
+}
+
 function getDashboardCardsVoyages()
 {
     global $con;
     $repo = new VoyageRepository($con);
     $regionIds = getContextRegions();
     $entiteIds = getContextEntities();
+    $scope = getVoyagesScope();
 
-    $voyagesMois = $repo->countVoyagesThisMonth($regionIds, $entiteIds);
-    $taux = $repo->tauxRealisation($regionIds, $entiteIds);
-    $kmMois = $repo->sumKmThisMonth($regionIds, $entiteIds);
+    $html = getVoyagesScopeFilter($scope);
+
+    if ($scope === 'comparaison') {
+        $voyagesF = $repo->countVoyagesThisMonth($regionIds, $entiteIds, 'flotte');
+        $voyagesE = $repo->countVoyagesThisMonth($regionIds, $entiteIds, 'externe');
+        $tauxF = $repo->tauxRealisation($regionIds, $entiteIds, 'flotte');
+        $tauxE = $repo->tauxRealisation($regionIds, $entiteIds, 'externe');
+        $kmF = $repo->sumKmThisMonth($regionIds, $entiteIds, 'flotte');
+        $kmE = $repo->sumKmThisMonth($regionIds, $entiteIds, 'externe');
+        $voyagesMois = $voyagesF + $voyagesE;
+        $taux = $repo->tauxRealisation($regionIds, $entiteIds, 'tout');
+        $kmMois = $kmF + $kmE;
+    } else {
+        $voyagesMois = $repo->countVoyagesThisMonth($regionIds, $entiteIds, $scope);
+        $taux = $repo->tauxRealisation($regionIds, $entiteIds, $scope);
+        $kmMois = $repo->sumKmThisMonth($regionIds, $entiteIds, $scope);
+    }
     $vehicules = $repo->countActiveVehicles($regionIds, $entiteIds);
     $conso = $repo->avgConsumption($regionIds, $entiteIds);
 
     $tauxClass = $taux >= 100 ? 'lt-stat-success' : ($taux >= 80 ? 'lt-stat-warning' : 'lt-stat-danger');
     $consoClass = $conso === null ? '' : ($conso <= 15 ? 'lt-stat-success' : ($conso <= 25 ? 'lt-stat-warning' : 'lt-stat-danger'));
 
-    $html = '<div class="row g-3 mb-3">';
+    if ($scope === 'comparaison') {
+        $voyagesDisplay = number_format($voyagesF, 0, ',', ' ') . ' / ' . number_format($voyagesE, 0, ',', ' ');
+        $voyagesLabel = 'Voyages du mois (flotte / externes)';
+        $tauxDisplay = $tauxF . ' % / ' . $tauxE . ' %';
+        $tauxLabel = 'Taux réalisation (flotte / externes)';
+        $kmDisplay = number_format($kmF, 0, ',', ' ') . ' / ' . number_format($kmE, 0, ',', ' ') . ' km';
+        $kmLabel = 'Km du mois (flotte / externes)';
+    } elseif ($scope === 'externe') {
+        $voyagesDisplay = number_format($voyagesMois, 0, ',', ' ');
+        $voyagesLabel = 'Voyages externes du mois';
+        $tauxDisplay = $taux . ' %';
+        $tauxLabel = 'Taux réalisation externes';
+        $kmDisplay = number_format($kmMois, 0, ',', ' ') . ' km';
+        $kmLabel = 'Km externes du mois';
+    } elseif ($scope === 'flotte') {
+        $voyagesDisplay = number_format($voyagesMois, 0, ',', ' ');
+        $voyagesLabel = 'Voyages flotte du mois';
+        $tauxDisplay = $taux . ' %';
+        $tauxLabel = 'Taux réalisation flotte';
+        $kmDisplay = number_format($kmMois, 0, ',', ' ') . ' km';
+        $kmLabel = 'Km flotte du mois';
+    } else {
+        $voyagesDisplay = number_format($voyagesMois, 0, ',', ' ');
+        $voyagesLabel = 'Voyages du mois';
+        $tauxDisplay = $taux . ' %';
+        $tauxLabel = 'Taux réalisation objectifs';
+        $kmDisplay = number_format($kmMois, 0, ',', ' ') . ' km';
+        $kmLabel = 'Km parcourus du mois';
+    }
+
+    $html .= '<div class="row g-3 mb-3">';
 
     $html .= '<div class="col-md"><div class="lt-card lt-stat-card">';
     $html .= '<div class="lt-stat-icon"><i class="fa fa-road"></i></div>';
-    $html .= '<div class="lt-stat-value">' . number_format($voyagesMois, 0, ',', ' ') . '</div>';
-    $html .= '<div class="lt-stat-label">Voyages du mois</div>';
+    $html .= '<div class="lt-stat-value">' . $voyagesDisplay . '</div>';
+    $html .= '<div class="lt-stat-label">' . $voyagesLabel . '</div>';
     $html .= '</div></div>';
 
     $html .= '<div class="col-md"><div class="lt-card lt-stat-card ' . $tauxClass . '">';
     $html .= '<div class="lt-stat-icon"><i class="fa fa-bullseye"></i></div>';
-    $html .= '<div class="lt-stat-value">' . $taux . ' %</div>';
-    $html .= '<div class="lt-stat-label">Taux réalisation objectifs</div>';
+    $html .= '<div class="lt-stat-value">' . $tauxDisplay . '</div>';
+    $html .= '<div class="lt-stat-label">' . $tauxLabel . '</div>';
     $html .= '</div></div>';
 
     $html .= '<div class="col-md"><div class="lt-card lt-stat-card">';
     $html .= '<div class="lt-stat-icon"><i class="fa fa-tachometer-alt"></i></div>';
-    $html .= '<div class="lt-stat-value">' . number_format($kmMois, 0, ',', ' ') . ' km</div>';
-    $html .= '<div class="lt-stat-label">Km parcourus du mois</div>';
+    $html .= '<div class="lt-stat-value">' . $kmDisplay . '</div>';
+    $html .= '<div class="lt-stat-label">' . $kmLabel . '</div>';
     $html .= '</div></div>';
 
+    $vehiculesDisplay = $scope === 'externe' ? '—' : $vehicules['actifs'] . ' / ' . $vehicules['total'];
     $html .= '<div class="col-md"><div class="lt-card lt-stat-card">';
     $html .= '<div class="lt-stat-icon"><i class="fa fa-truck"></i></div>';
-    $html .= '<div class="lt-stat-value">' . $vehicules['actifs'] . ' / ' . $vehicules['total'] . '</div>';
-    $html .= '<div class="lt-stat-label">Véhicules actifs</div>';
+    $html .= '<div class="lt-stat-value">' . $vehiculesDisplay . '</div>';
+    $html .= '<div class="lt-stat-label">' . ($scope === 'comparaison' ? 'Véhicules actifs (flotte)' : 'Véhicules actifs') . '</div>';
     $html .= '</div></div>';
 
-    $consoDisplay = $conso !== null ? number_format($conso, 1, ',', '') . ' L/100km' : '—';
+    $consoDisplay = $scope === 'externe' ? '—' : ($conso !== null ? number_format($conso, 1, ',', '') . ' L/100km' : '—');
     $html .= '<div class="col-md"><div class="lt-card lt-stat-card ' . $consoClass . '">';
     $html .= '<div class="lt-stat-icon"><i class="fa fa-gas-pump"></i></div>';
     $html .= '<div class="lt-stat-value">' . $consoDisplay . '</div>';
-    $html .= '<div class="lt-stat-label">Conso moyenne (mois)</div>';
+    $html .= '<div class="lt-stat-label">' . ($scope === 'comparaison' ? 'Conso moyenne flotte (mois)' : 'Conso moyenne (mois)') . '</div>';
     $html .= '</div></div>';
 
     $html .= '</div>';
+    if ($scope !== 'flotte') {
+        ob_start();
+        include('statCardsPrestataires.php');
+        $html .= ob_get_clean();
+    }
     return $html;
 }
 
 function getDashboardChartsVoyages()
 {
+    $scope = getVoyagesScope();
     $html = '<div class="row g-3 mb-3">';
-    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Voyages vs Objectifs (30 jours)</h2></div>';
+    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">'
+        . ($scope === 'comparaison' ? 'Voyages flotte vs externes vs Objectifs (30 jours)' : 'Voyages vs Objectifs (30 jours)') . '</h2></div>';
     $html .= '<div id="chart-voyages-vs-obj" style="height: 350px;"></div></div></div>';
-    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Top destinations</h2></div>';
+    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">'
+        . ($scope === 'comparaison' ? 'Top destinations (flotte vs externes)' : 'Top destinations') . '</h2></div>';
     $html .= '<div id="chart-top-dest" style="height: 350px;"></div></div></div>';
-    $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Consommation par véhicule (mois en cours)</h2></div>';
-    $html .= '<div id="chart-conso" style="height: 400px;"></div></div></div>';
+    if ($scope !== 'externe') {
+        $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Consommation par véhicule (mois en cours)</h2></div>';
+        $html .= '<div id="chart-conso" style="height: 400px;"></div></div></div>';
+    }
     $html .= '</div>';
 
-    $html .= '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title">Véhicules inactifs (7+ jours)</h2></div>';
-    $html .= '<table id="table-inactifs" class="table table-striped no-datatable"><thead><tr>
+    if ($scope !== 'externe') {
+        $html .= '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title">Véhicules inactifs (7+ jours)</h2></div>';
+        $html .= '<table id="table-inactifs" class="table table-striped no-datatable"><thead><tr>
         <th>Véhicule</th><th>Chauffeur</th><th>Dernier voyage</th></tr></thead><tbody></tbody></table></div>';
+    }
 
     $html .= '<script>
+    var scopeStatsVoyages = ' . json_encode($scope) . ';
     google.charts.load("current", {packages: ["corechart", "table"]});
     google.charts.setOnLoadCallback(function() {
-        $.ajax({type:"post", data:"load-voyages-vs-obj=1&days=30", dataType:"json"})
+        $.ajax({type:"post", data:"load-voyages-vs-obj=1&days=30&scope=" + scopeStatsVoyages, dataType:"json"})
         .done(function(e) {
             if (!e.data || !e.data.length) return;
             var dt = new google.visualization.DataTable();
             dt.addColumn("string", "Date");
-            dt.addColumn("number", "Voyages");
-            dt.addColumn("number", "Objectif");
-            e.data.forEach(function(r) { dt.addRow([r.date, r.voyages, r.objectif]); });
             var c = new google.visualization.LineChart(document.getElementById("chart-voyages-vs-obj"));
-            c.draw(dt, {title:"Voyages vs Objectifs journaliers", curveType:"function", legend:{position:"bottom"}, colors:["#5D54A4","#E74C3C"], chartArea:{width:"85%", height:"75%"}});
+            if (scopeStatsVoyages === "comparaison") {
+                dt.addColumn("number", "Voyages flotte");
+                dt.addColumn("number", "Voyages externes");
+                dt.addColumn("number", "Objectif");
+                e.data.forEach(function(r) { dt.addRow([r.date, r.voyages_flotte, r.voyages_externe, r.objectif]); });
+                c.draw(dt, {title:"Voyages vs Objectifs journaliers", curveType:"function", legend:{position:"bottom"}, colors:["#5D54A4","#E67E22","#E74C3C"], chartArea:{width:"85%", height:"75%"}});
+            } else {
+                dt.addColumn("number", "Voyages");
+                dt.addColumn("number", "Objectif");
+                e.data.forEach(function(r) { dt.addRow([r.date, r.voyages, r.objectif]); });
+                c.draw(dt, {title:"Voyages vs Objectifs journaliers", curveType:"function", legend:{position:"bottom"}, colors:["#5D54A4","#E74C3C"], chartArea:{width:"85%", height:"75%"}});
+            }
         });
-        $.ajax({type:"post", data:"load-top-destinations=1&limit=10", dataType:"json"})
+        $.ajax({type:"post", data:"load-top-destinations=1&limit=10&scope=" + scopeStatsVoyages, dataType:"json"})
         .done(function(e) {
             if (!e.data || !e.data.length) return;
             var dt = new google.visualization.DataTable();
             dt.addColumn("string", "Destination");
-            dt.addColumn("number", "Nb voyages");
-            dt.addColumn("number", "Km total");
-            e.data.forEach(function(r) { dt.addRow([r.lib_destination, parseInt(r.nb_voyages), parseFloat(r.total_km)]); });
             var c = new google.visualization.ColumnChart(document.getElementById("chart-top-dest"));
-            c.draw(dt, {title:"Top destinations", colors:["#5D54A4","#7C78B8"], chartArea:{width:"80%", height:"70%"}});
-        });
+            if (scopeStatsVoyages === "comparaison") {
+                dt.addColumn("number", "Flotte");
+                dt.addColumn("number", "Externes");
+                e.data.forEach(function(r) { dt.addRow([r.lib_destination, parseInt(r.nb_voyages_flotte), parseInt(r.nb_voyages_externe)]); });
+                c.draw(dt, {title:"Top destinations (flotte vs externes)", colors:["#5D54A4","#E67E22"], chartArea:{width:"80%", height:"70%"}});
+            } else {
+                dt.addColumn("number", "Nb voyages");
+                dt.addColumn("number", "Km total");
+                e.data.forEach(function(r) { dt.addRow([r.lib_destination, parseInt(r.nb_voyages), parseFloat(r.total_km)]); });
+                c.draw(dt, {title:"Top destinations", colors:["#5D54A4","#7C78B8"], chartArea:{width:"80%", height:"70%"}});
+            }
+        });';
+    if ($scope !== 'externe') {
+        $html .= '
         $.ajax({type:"post", data:"load-conso-per-vehicle=1", dataType:"json"})
         .done(function(e) {
             if (!e.data || !e.data.length) return;
@@ -767,7 +916,9 @@ function getDashboardChartsVoyages()
                 tbody.append("<tr><td>" + r.immatriculation_vehicule + "</td><td>" + r.nom_chauffeur + "</td><td>" + (r.derniere_date_voyage || "—") + "</td></tr>");
             });
             $("#table-inactifs").DataTable({order:[[2,"asc"]], pageLength:25, destroy:true});
-        });
+        });';
+    }
+    $html .= '
     });
     </script>';
 

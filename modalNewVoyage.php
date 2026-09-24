@@ -1,5 +1,4 @@
 <?php /* All POST handlers migrated to controllers/router.php — dateV, trajets, chrelevekms */ ?>
-?>
 <div class="modal fade" id="modal-new-voyage" tabindex="-1" aria-labelledby="modal-new-voyageLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -9,6 +8,17 @@
             </div>
             <div class="modal-body">
                 <form method="post" action="#" id="form-new-voyage">
+                    <div class="col-12 mb-3">
+                        <label>Mode de transport</label><br>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="mode-vg" id="mode-vg-flotte" value="flotte" checked>
+                            <label class="form-check-label" for="mode-vg-flotte">Véhicule flotte</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="mode-vg" id="mode-vg-externe" value="externe">
+                            <label class="form-check-label" for="mode-vg-externe">Prestataire externe</label>
+                        </div>
+                    </div>
                     <div class="form-floating mb-3">
                         <input type="text" id="titre-vg" name="titre-vg" required class="form-control" readonly>
                         <label for="titre-vg">Titre du voyage</label>
@@ -21,7 +31,7 @@
                                 <label for="date-vg">Date du voyage</label>
                             </div>
                         </div>
-                        <div class="col-6">
+                        <div class="col-6 vg-flotte-only">
                             <div class="mb-3">
 
                                 <label for="id-vehicule-vg">Véhicule</label>
@@ -52,7 +62,50 @@
                                 <label for="numero-scelle-vg">N° de scellé</label>
                             </div>
                         </div>
-                        <div class="col-6">
+                        <div class="col-6 vg-ext-only" style="display:none">
+                            <div class="mb-3">
+                                <label for="id-prestataire-vg">Prestataire externe</label>
+                                <div class="input-group">
+                                    <select id="id-prestataire-vg" name="id-prestataire-vg">
+                                        <?php $ptRepo = new PrestataireTransportRepository($con);
+                                        foreach ($ptRepo->findAll() as $r):
+                                            echo "<option value='" . $r['id_prestataire_transport'] . "'>" . h($r['nom_societe']) . " — " . h($r['immatriculation']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                                        endforeach;
+                                        ?>
+                                    </select>
+                                    <button class="btn btn-primary" onclick="openModalPrestataireTransport()" type="button" title="Ajouter un prestataire"><i class="fa fa-plus"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 vg-ext-only" style="display:none">
+                            <div class="mb-3">
+                                <label for="id-entite-vg">Entité</label>
+                                <select id="id-entite-vg" name="id-entite-vg">
+                                    <?php $entiteRepo = new EntiteRepository($con);
+                                    $ctxEntites = array_map('intval', getContextEntities());
+                                    foreach ($entiteRepo->findAll() as $r):
+                                        if (!in_array((int)$r['id_entite'], $ctxEntites)) continue;
+                                        echo "<option value='" . $r['id_entite'] . "'>" . h($r['nom_entite']) . "</option>";
+                                    endforeach;
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-6 vg-ext-only" style="display:none">
+                            <div class="mb-3">
+                                <label for="id-region-vg">Région</label>
+                                <select id="id-region-vg" name="id-region-vg">
+                                    <?php $regionRepo = new RegionRepository($con);
+                                    $ctxRegions = array_map('intval', getContextRegions());
+                                    foreach ($regionRepo->findAll() as $r):
+                                        if (!in_array((int)$r['id_region'], $ctxRegions)) continue;
+                                        echo "<option value='" . $r['id_region'] . "'>" . h($r['nom_region']) . "</option>";
+                                    endforeach;
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-6 vg-flotte-only">
                             <div class="form-floating mb-3">
                                 <input type="number" class="form-control" id="qtecarburant-vg" value="0" name="qtecarburant-vg" required min="0">
                                 <label for="qtecarburant-vg">Carburant consommé (en Litres)</label>
@@ -175,6 +228,17 @@
         $('#modal-new-voyage').modal('show')
         $('#titre-vg').val('Voyage-<?php echo date('ym'); ?>' + Str_Random(5).toUpperCase())
         $('#date-check').val(0)
+        $('input[name="mode-vg"][value="flotte"]').prop('checked', true)
+        toggleModeVg()
+    }
+
+    function toggleModeVg() {
+        const externe = $('input[name="mode-vg"]:checked').val() === 'externe'
+        $('.vg-flotte-only').toggle(!externe)
+        $('.vg-ext-only').toggle(externe)
+        $('#id-vehicule-vg').prop('disabled', externe)
+        $('#qtecarburant-vg').prop('disabled', externe)
+        $('#id-prestataire-vg, #id-entite-vg, #id-region-vg').prop('disabled', !externe)
     }
 
     async function checkReleveKms(id,dvg,fvg){
@@ -187,6 +251,10 @@
     }
 
    async function saveVoyage() {
+        if ($('input[name="mode-vg"]:checked').val() === 'externe') {
+            saveVoyagePrestataire()
+            return
+        }
         var valid = true
         $('#form-new-voyage *[required]').each((e, el) => {
             $(el).removeClass('is-invalid')
@@ -244,6 +312,53 @@
                 showSuccess("Nouveau voyage créee!!")
                 $('#modal-new-voyage').modal('hide')
                 $('#form-new-voyage *').val('')
+                trajets = []
+                location.reload()
+            } else {
+                showError(e.error || "Erreur lors de l'enregistrement")
+            }
+        }).fail((jqXHR) => {
+            showError(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement")
+        })
+    }
+
+    function saveVoyagePrestataire() {
+        var valid = true
+        ;['#date-vg', '#id-prestataire-vg', '#id-entite-vg', '#id-region-vg', '#typechargement-vg', '#qtechargement-vg'].forEach((sel) => {
+            $(sel).removeClass('is-invalid')
+            if ($(sel).val() === '' || $(sel).val() === null) {
+                valid = false
+                $(sel).addClass('is-invalid')
+            }
+        })
+        if (!valid) {
+            $('#form-new-voyage').notify("Tous les champs en rouge sont obligatoire!!!", {
+                position: 'top'
+            })
+            return false
+        }
+        if (trajets.length == 0) {
+            $('#trajet-list-vg').parent().parent().parent().notify("Vous n'avez ajouté aucun trajet à ce voyage", {
+                position: 'top'
+            })
+            return false
+        }
+        $.ajax({
+            type: 'post',
+            data: 'date-vge=' + $('#date-vg').val()
+                + '&id-prestataire-vge=' + $('#id-prestataire-vg').val()
+                + '&id-entite-vge=' + $('#id-entite-vg').val()
+                + '&id-region-vg=' + $('#id-region-vg').val()
+                + '&typechargement-vge=' + $('#typechargement-vg').val()
+                + '&qtechargement-vge=' + $('#qtechargement-vg').val()
+                + '&convoyeur-vge=' + encodeURIComponent($('#id-convoyeur-vg').val() || '')
+                + '&numero-scelle-vge=' + encodeURIComponent($('#numero-scelle-vg').val() || '')
+                + '&trajets-voyage=' + JSON.stringify(trajets),
+            dataType: 'json'
+        }).done((e) => {
+            if (e.success) {
+                showSuccess("Nouveau voyage prestataire créé!!")
+                $('#modal-new-voyage').modal('hide')
                 trajets = []
                 location.reload()
             } else {

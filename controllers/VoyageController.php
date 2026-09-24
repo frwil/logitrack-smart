@@ -92,18 +92,22 @@ class VoyageController extends BaseController
     public function voyagesVsObjectives(): never
     {
         $days = (int)($this->post('days') ?: 30);
+        $scope = $this->post('scope') ?: 'tout';
+        if (!in_array($scope, ['tout', 'flotte', 'externe', 'comparaison'], true)) $scope = 'tout';
         $regionIds = getContextRegions();
         $entiteIds = getContextEntities();
-        $data = $this->voyageRepo->dailyVoyagesVsObjectives($days, $regionIds, $entiteIds);
+        $data = $this->voyageRepo->dailyVoyagesVsObjectives($days, $regionIds, $entiteIds, $scope);
         $this->json(['data' => $data]);
     }
 
     public function topDestinations(): never
     {
         $limit = (int)($this->post('limit') ?: 10);
+        $scope = $this->post('scope') ?: 'tout';
+        if (!in_array($scope, ['tout', 'flotte', 'externe', 'comparaison'], true)) $scope = 'tout';
         $regionIds = getContextRegions();
         $entiteIds = getContextEntities();
-        $data = $this->voyageRepo->topDestinations($limit, $regionIds, $entiteIds);
+        $data = $this->voyageRepo->topDestinations($limit, $regionIds, $entiteIds, $scope);
         $this->json(['data' => $data]);
     }
 

@@ -26,6 +26,8 @@ $maintenanceRepo = new MaintenanceRepository($con);
 $configRepo = new ConfigRepository($con);
 $trajetRepo = new TrajetRepository($con);
 $objectifRepo = new ObjectifRepository($con);
+$prestataireTransportRepo = new PrestataireTransportRepository($con);
+$voyagePrestataireRepo = new VoyagePrestataireRepository($con);
 
 $authCtrl = new AuthController($userRepo, $regionRepo, $entiteRepo);
 $vehiculeCtrl = new VehiculeController($vehiculeRepo);
@@ -42,6 +44,7 @@ $trajetCtrl = new TrajetController($trajetRepo);
 $objectifCtrl = new ObjectifController($objectifRepo);
 $typeChargementCtrl = new TypeChargementController();
 $userCtrl = new UserController($userRepo, $regionRepo, $entiteRepo);
+$prestataireTransportCtrl = new PrestataireTransportController($prestataireTransportRepo, $voyagePrestataireRepo);
 
 $routes = [
     // Auth
@@ -80,6 +83,14 @@ $routes = [
     'id-voyage'           => [$voyageCtrl, 'update'],
     'id-voyage-forDel'    => [$voyageCtrl, 'delete'],
     'titre-vg'            => [$voyageCtrl, 'create'],
+
+    // Prestataires de transport externes
+    'immat-pt-transport'          => [$prestataireTransportCtrl, 'createPrestataire'],
+    'date-vge'                    => [$prestataireTransportCtrl, 'createVoyage'],
+    'id-voyage-prestataire-upd'   => [$prestataireTransportCtrl, 'updateVoyage'],
+    'id-voyage-prestataire-forModal' => [$prestataireTransportCtrl, 'fetchVoyage'],
+    'id-voyage-prestataire-del'   => [$prestataireTransportCtrl, 'deleteVoyage'],
+    'load-stats-prestataires'     => [$prestataireTransportCtrl, 'stats'],
 
     // Voyage — Dashboard
     'load-voyages-vs-obj'     => [$voyageCtrl, 'voyagesVsObjectives'],

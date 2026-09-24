@@ -419,6 +419,7 @@ function getTableauFolder()
                 </div>
             </div>
         </div>
+        <?php if (in_array('view', $rights_voyage)) include('statCardsPrestataires.php'); ?>
         <hr>
         <div class="alert alert-light border small py-2 mb-2">
             <strong><i class="fa fa-info-circle"></i> Légende :</strong>

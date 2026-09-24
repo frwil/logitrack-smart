@@ -280,9 +280,11 @@ if (!$renderPartial):
                     <div class="lt-page-title">Tableau de bord voyages</div>
                     <hr>
                     <?php echo getDashboardChartsVoyages(); ?>
-                    <?php echo getAnomaliesVoyages(); ?>
-                    <?php echo getScoreActivite(); ?>
-                    <?php echo getProjectionMois(); ?>
+                    <?php if (getVoyagesScope() !== 'externe'): ?>
+                        <?php echo getAnomaliesVoyages(); ?>
+                        <?php echo getScoreActivite(); ?>
+                        <?php echo getProjectionMois(); ?>
+                    <?php endif; ?>
                 <?php elseif (!isset($_GET['subpage']) || $_GET['subpage'] == 'listeVoyages'): ?>
                     <div class="lt-page-title">Historique des voyages</div>
                     <hr>

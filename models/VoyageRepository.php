@@ -91,7 +91,7 @@ class VoyageRepository extends BaseRepository
         [$phR, $pR] = db_in($regionIds);
         [$phE, $pE] = db_in($entiteIds);
         $params = array_merge($pR, $pE, [$dateFrom, $dateTo]);
-        return $this->select(
+        $rows = $this->select(
             "SELECT v.date_voyage, affectation_vehicule.id_region, affectation_vehicule.id_entite,
                     COUNT(DISTINCT v.id_voyage) AS nb_voyages,
                     COALESCE(SUM(dv.distance_destination), 0) AS total_dist
@@ -106,6 +106,23 @@ class VoyageRepository extends BaseRepository
              GROUP BY v.date_voyage, affectation_vehicule.id_region, affectation_vehicule.id_entite",
             $params
         );
+
+        // Merge external-carrier voyages (linked directly to entite/region).
+        $vpRepo = new VoyagePrestataireRepository($this->con);
+        $map = [];
+        foreach ($rows as $r) {
+            $map[$r['date_voyage'] . '|' . $r['id_region'] . '|' . $r['id_entite']] = $r;
+        }
+        foreach ($vpRepo->countByDateAndRegion($dateFrom, $dateTo, $regionIds, $entiteIds) as $r) {
+            $k = $r['date_voyage'] . '|' . $r['id_region'] . '|' . $r['id_entite'];
+            if (isset($map[$k])) {
+                $map[$k]['nb_voyages'] += (int)$r['nb_voyages'];
+                $map[$k]['total_dist'] += (float)$r['total_dist'];
+            } else {
+                $map[$k] = $r;
+            }
+        }
+        return array_values($map);
     }
 
     /** Voyage vehicles by destination with optional date range. */
@@ -325,7 +342,8 @@ class VoyageRepository extends BaseRepository
 
     // ---- Dashboard KPI ----
 
-    public function countVoyagesThisMonth(array $regionIds, array $entiteIds): int
+    /** Fleet voyages of the current month (context-filtered). */
+    private function countFleetVoyagesThisMonth(array $regionIds, array $entiteIds): int
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
         return count($this->select(
@@ -337,16 +355,21 @@ class VoyageRepository extends BaseRepository
         ));
     }
 
-    public function tauxRealisation(array $regionIds, array $entiteIds): float
+    /** Voyages of the current month (fleet + external), scoped: tout | flotte | externe. */
+    public function countVoyagesThisMonth(array $regionIds, array $entiteIds, string $scope = 'tout'): int
     {
-        [$where, $params] = db_context_filter($regionIds, $entiteIds);
-        $voyages = count($this->select(
-            "SELECT voyage.id_voyage FROM voyage
-             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
-             WHERE affectation_vehicule.is_deleted = 0 AND $where
-             AND MONTH(date_voyage) = MONTH(CURDATE()) AND YEAR(date_voyage) = YEAR(CURDATE())",
-            $params
-        ));
+        $fleet = $this->countFleetVoyagesThisMonth($regionIds, $entiteIds);
+        $vpRepo = new VoyagePrestataireRepository($this->con);
+        $ext = $vpRepo->statsExternes($regionIds, $entiteIds, null)['nb_voyages'];
+        if ($scope === 'flotte') return $fleet;
+        if ($scope === 'externe') return $ext;
+        return $fleet + $ext;
+    }
+
+    /** Objectives realisation rate of the current month, scoped: tout | flotte | externe. */
+    public function tauxRealisation(array $regionIds, array $entiteIds, string $scope = 'tout'): float
+    {
+        $voyages = $this->countVoyagesThisMonth($regionIds, $entiteIds, $scope);
 
         $objWhere = '';
         $objParams = [];
@@ -371,7 +394,8 @@ class VoyageRepository extends BaseRepository
         return round($voyages / $objectif * 100, 1);
     }
 
-    public function sumKmThisMonth(array $regionIds, array $entiteIds): float
+    /** Fleet km of the current month (context-filtered). */
+    private function sumKmFleetThisMonth(array $regionIds, array $entiteIds): float
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
         $row = $this->selectOne(
@@ -384,6 +408,16 @@ class VoyageRepository extends BaseRepository
             $params
         );
         return (float)($row['total'] ?? 0);
+    }
+
+    /** Km of the current month (fleet + external), scoped: tout | flotte | externe. */
+    public function sumKmThisMonth(array $regionIds, array $entiteIds, string $scope = 'tout'): float
+    {
+        $fleet = $this->sumKmFleetThisMonth($regionIds, $entiteIds);
+        $ext = (new VoyagePrestataireRepository($this->con))->sumKmThisMonth($regionIds, $entiteIds);
+        if ($scope === 'flotte') return $fleet;
+        if ($scope === 'externe') return $ext;
+        return $fleet + $ext;
     }
 
     public function countActiveVehicles(array $regionIds, array $entiteIds): array
@@ -431,7 +465,7 @@ class VoyageRepository extends BaseRepository
 
     // ---- N2: Dashboard charts ----
 
-    public function dailyVoyagesVsObjectives(int $days, array $regionIds, array $entiteIds): array
+    public function dailyVoyagesVsObjectives(int $days, array $regionIds, array $entiteIds, string $scope = 'tout'): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
         $dateFrom = date('Y-m-d', strtotime("-{$days} days"));
@@ -445,6 +479,9 @@ class VoyageRepository extends BaseRepository
              GROUP BY date_voyage",
             array_merge($params, [$dateFrom, $dateTo])
         );
+
+        $vpRepo = new VoyagePrestataireRepository($this->con);
+        $externes = $vpRepo->countByDate($dateFrom, $dateTo, $regionIds, $entiteIds);
 
         $objWhere = '';
         $objParams = [];
@@ -467,23 +504,40 @@ class VoyageRepository extends BaseRepository
 
         $byDate = [];
         foreach ($voyages as $r) {
-            $byDate[$r['date']] = ['date' => $r['date'], 'voyages' => (int)$r['nb'], 'objectif' => 0];
+            $byDate[$r['date']] = ['date' => $r['date'], 'voyages_flotte' => (int)$r['nb']];
+        }
+        foreach ($externes as $r) {
+            $d = $r['date'];
+            if (!isset($byDate[$d])) $byDate[$d] = ['date' => $d, 'voyages_flotte' => 0];
+            $byDate[$d]['voyages_externe'] = (int)$r['nb'];
         }
         foreach ($objectifs as $r) {
             $d = $r['date'];
-            if (isset($byDate[$d])) $byDate[$d]['objectif'] = (int)$r['total'];
-            else $byDate[$d] = ['date' => $d, 'voyages' => 0, 'objectif' => (int)$r['total']];
+            if (!isset($byDate[$d])) $byDate[$d] = ['date' => $d, 'voyages_flotte' => 0, 'voyages_externe' => 0];
+            $byDate[$d]['objectif'] = (int)$r['total'];
         }
 
         $result = [];
         for ($i = $days; $i >= 0; $i--) {
             $d = date('Y-m-d', strtotime("-{$i} days"));
-            $result[] = $byDate[$d] ?? ['date' => $d, 'voyages' => 0, 'objectif' => 0];
+            $row = $byDate[$d] ?? ['date' => $d, 'voyages_flotte' => 0, 'voyages_externe' => 0, 'objectif' => 0];
+            $f = (int)($row['voyages_flotte'] ?? 0);
+            $e = (int)($row['voyages_externe'] ?? 0);
+            if ($scope === 'comparaison') {
+                $row['voyages_flotte'] = $f;
+                $row['voyages_externe'] = $e;
+                $row['voyages'] = $f + $e;
+            } else {
+                $row['voyages'] = $scope === 'flotte' ? $f : ($scope === 'externe' ? $e : $f + $e);
+                unset($row['voyages_flotte'], $row['voyages_externe']);
+            }
+            $result[] = $row;
         }
         return $result;
     }
 
-    public function topDestinations(int $limit, array $regionIds, array $entiteIds): array
+    /** Fleet-only top destinations (context-filtered). */
+    private function topDestinationsFlotte(int $limit, array $regionIds, array $entiteIds): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
         return $this->select(
@@ -498,6 +552,56 @@ class VoyageRepository extends BaseRepository
              LIMIT ?",
             array_merge($params, [$limit])
         );
+    }
+
+    /**
+     * Top destinations, scoped: tout | flotte | externe | comparaison.
+     * In comparaison mode each row carries nb_voyages_flotte/nb_voyages_externe instead of the merged totals.
+     */
+    public function topDestinations(int $limit, array $regionIds, array $entiteIds, string $scope = 'tout'): array
+    {
+        $vpRepo = new VoyagePrestataireRepository($this->con);
+        if ($scope === 'flotte') return $this->topDestinationsFlotte($limit, $regionIds, $entiteIds);
+        if ($scope === 'externe') return $vpRepo->topDestinationsExt($limit, $regionIds, $entiteIds);
+
+        // tout or comparaison: merge both sources on the destination label.
+        $flotte = $this->topDestinationsFlotte($limit * 2, $regionIds, $entiteIds);
+        $externes = $vpRepo->topDestinationsExt($limit * 2, $regionIds, $entiteIds);
+        $map = [];
+        foreach ($flotte as $r) {
+            $map[$r['lib_destination']] = [
+                'lib_destination' => $r['lib_destination'],
+                'f_nb' => (int)$r['nb_voyages'], 'f_km' => (float)$r['total_km'],
+                'e_nb' => 0, 'e_km' => 0.0,
+            ];
+        }
+        foreach ($externes as $r) {
+            $k = $r['lib_destination'];
+            if (!isset($map[$k])) $map[$k] = ['lib_destination' => $k, 'f_nb' => 0, 'f_km' => 0.0, 'e_nb' => 0, 'e_km' => 0.0];
+            $map[$k]['e_nb'] = (int)$r['nb_voyages'];
+            $map[$k]['e_km'] = (float)$r['total_km'];
+        }
+        usort($map, function ($a, $b) {
+            return ($b['f_nb'] + $b['e_nb']) <=> ($a['f_nb'] + $a['e_nb']);
+        });
+        $result = [];
+        foreach ($map as $k => $m) {
+            if (count($result) >= $limit) break;
+            if ($scope === 'comparaison') {
+                $result[] = [
+                    'lib_destination' => $k,
+                    'nb_voyages_flotte' => $m['f_nb'], 'total_km_flotte' => $m['f_km'],
+                    'nb_voyages_externe' => $m['e_nb'], 'total_km_externe' => $m['e_km'],
+                ];
+            } else {
+                $result[] = [
+                    'lib_destination' => $k,
+                    'nb_voyages' => $m['f_nb'] + $m['e_nb'],
+                    'total_km' => $m['f_km'] + $m['e_km'],
+                ];
+            }
+        }
+        return $result;
     }
 
     public function consoPerVehicle(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): array
