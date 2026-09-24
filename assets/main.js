@@ -18,6 +18,9 @@ import pdfMake from 'pdfmake/build/pdfmake'
 import pdfFonts from 'pdfmake/build/vfs_fonts'
 pdfMake.vfs = pdfFonts
 window.pdfMake = pdfMake
+// Excel export (excelHtml5 button) — buttons.html5 looks for window.JSZip
+import JSZip from 'jszip'
+window.JSZip = JSZip
 import 'datatables.net-fixedcolumns'
 import './css/fixedColumns.dataTables.css'
 import 'tom-select/dist/css/tom-select.css'
