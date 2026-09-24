@@ -56,7 +56,20 @@
             dataType:'json'
         }).done((e)=>{
             if(e.success){
-                $('#id-prestataire-vg').append(new Option(e.label, e.id, true, true))
+                // Nouveau prestataire sélectionné dans le select "Prestataire externe"
+                // du formulaire Nouveau voyage (resté ouvert sous cette modal), sans rechargement.
+                var prestaSel = document.getElementById('id-prestataire-vg')
+                if (prestaSel) {
+                    if (prestaSel.tomselect) {
+                        // Tom Select crée lui-même l'option native correspondante (updateOriginalInput).
+                        prestaSel.tomselect.addOption({ value: String(e.id), text: e.label })
+                        prestaSel.tomselect.addItem(String(e.id), true)
+                    } else {
+                        // Le select natif doit rester à jour : saveVoyagePrestataire lit .val(),
+                        // et Tom Select reprendra l'option cochée s'il est initialisé plus tard.
+                        $('#id-prestataire-vg').append(new Option(e.label, e.id, true, true))
+                    }
+                }
                 $('#form-new-pt-transport *').val('')
                 $('#modal-new-prestataire-transport').modal('hide')
                 showSuccess('Prestataire enregistré')
