@@ -79,6 +79,8 @@
         }).done((e)=>{
             if(e.success){
                 $('#id-prestataire-vg').append(new Option(e.label, e.id, true, true))
+                if (e.chauffeur) $('#id-prestataire-vg').find('option[value="' + e.id + '"]').attr('data-chauffeur', e.chauffeur)
+                $('#id-prestataire-vg').trigger('change')
                 $('#form-new-pt-transport *').val('')
                 $('#modal-new-prestataire-transport').modal('hide')
                 showSuccess('Prestataire enregistré')

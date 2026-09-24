@@ -43,7 +43,7 @@ class PrestataireTransportController extends BaseController
                 (float)($this->post('capacite-pt-transport') ?: 0),
                 $this->post('unite-pt-transport') ?: ''
             );
-            $this->json(['id' => (int)$id, 'label' => $societe . ' — ' . $immat . ' (' . $chauffeur . ')']);
+            $this->json(['id' => (int)$id, 'label' => $societe . ' — ' . $immat . ' (' . $chauffeur . ')', 'chauffeur' => $chauffeur]);
         } catch (\mysqli_sql_exception $e) {
             if ($e->getCode() == 1062) $this->jsonError('Ce prestataire existe déjà (immatriculation en doublon)');
             $this->jsonError("Erreur lors de l'enregistrement");
@@ -68,6 +68,7 @@ class PrestataireTransportController extends BaseController
     {
         $upd = $id !== null;
         $date = $this->post($upd ? 'date-upd-vge' : 'date-vge');
+        $chauffeur = trim((string)$this->post($upd ? 'chauffeur-upd-vge' : 'chauffeur-vge')) ?: null;
         if ($upd) {
             // Prestataire non modifiable : clés distinctes (date-upd-vge…) pour ne pas déclencher la route de création
             $prestataireId = 0;
@@ -100,11 +101,11 @@ class PrestataireTransportController extends BaseController
         if (empty($trajets)) $this->jsonError('Ajoutez au moins un trajet au voyage');
 
         try {
-            $this->voyagePrestataireRepo->transactional(function () use ($id, $date, $prestataireId, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $scelle, $trajets) {
+            $this->voyagePrestataireRepo->transactional(function () use ($id, $date, $chauffeur, $prestataireId, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $scelle, $trajets) {
                 if ($id === null) {
-                    $id = $this->voyagePrestataireRepo->insertVoyagePrestataire($date, $prestataireId, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $scelle);
+                    $id = $this->voyagePrestataireRepo->insertVoyagePrestataire($date, $prestataireId, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $scelle, $chauffeur);
                 } else {
-                    $this->voyagePrestataireRepo->updateById($id, $date, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $scelle);
+                    $this->voyagePrestataireRepo->updateById($id, $date, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $scelle, $chauffeur);
                     $this->voyagePrestataireRepo->deleteDestinations($id);
                 }
                 foreach ($trajets as $destinationId) {

@@ -69,12 +69,18 @@
                                     <select id="id-prestataire-vg" name="id-prestataire-vg">
                                         <?php $ptRepo = new PrestataireTransportRepository($con);
                                         foreach ($ptRepo->findAll() as $r):
-                                            echo "<option value='" . $r['id_prestataire_transport'] . "'>" . h($r['nom_societe']) . " — " . h($r['immatriculation']) . " (" . h($r['nom_chauffeur']) . ")</option>";
+                                            echo "<option value='" . $r['id_prestataire_transport'] . "' data-chauffeur='" . h($r['nom_chauffeur']) . "'>" . h($r['nom_societe']) . " — " . h($r['immatriculation']) . " (" . h($r['nom_chauffeur']) . ")</option>";
                                         endforeach;
                                         ?>
                                     </select>
                                     <button class="btn btn-primary" onclick="openModalPrestataireTransport()" type="button" title="Ajouter un prestataire"><i class="fa fa-plus"></i></button>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="col-6 vg-ext-only" style="display:none">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="chauffeur-vg" name="chauffeur-vg">
+                                <label for="chauffeur-vg">Chauffeur</label>
                             </div>
                         </div>
                         <div class="col-6 vg-ext-only" style="display:none">
@@ -230,7 +236,16 @@
         $('#date-check').val(0)
         $('input[name="mode-vg"][value="flotte"]').prop('checked', true)
         toggleModeVg()
+        $('#id-prestataire-vg').trigger('change')
     }
+
+    // Bascule flotte / prestataire externe
+    $('input[name="mode-vg"]').change(toggleModeVg)
+
+    // Pré-remplit le chauffeur avec celui du prestataire choisi
+    $('#id-prestataire-vg').change(function () {
+        $('#chauffeur-vg').val($(this).find('option:selected').attr('data-chauffeur') || '')
+    })
 
     function toggleModeVg() {
         const externe = $('input[name="mode-vg"]:checked').val() === 'externe'
@@ -238,7 +253,7 @@
         $('.vg-ext-only').toggle(externe)
         $('#id-vehicule-vg').prop('disabled', externe)
         $('#qtecarburant-vg').prop('disabled', externe)
-        $('#id-prestataire-vg, #id-entite-vg, #id-region-vg').prop('disabled', !externe)
+        $('#id-prestataire-vg, #id-entite-vg, #id-region-vg, #chauffeur-vg').prop('disabled', !externe)
     }
 
     async function checkReleveKms(id,dvg,fvg){
@@ -351,6 +366,7 @@
                 + '&id-region-vg=' + $('#id-region-vg').val()
                 + '&typechargement-vge=' + $('#typechargement-vg').val()
                 + '&qtechargement-vge=' + $('#qtechargement-vg').val()
+                + '&chauffeur-vge=' + encodeURIComponent($('#chauffeur-vg').val() || '')
                 + '&convoyeur-vge=' + encodeURIComponent($('#id-convoyeur-vg').val() || '')
                 + '&numero-scelle-vge=' + encodeURIComponent($('#numero-scelle-vg').val() || '')
                 + '&trajets-voyage=' + JSON.stringify(trajets),
