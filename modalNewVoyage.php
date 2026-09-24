@@ -66,7 +66,7 @@
                             <div class="mb-3">
                                 <label for="id-prestataire-vg">Prestataire externe</label>
                                 <div class="input-group">
-                                    <select id="id-prestataire-vg" name="id-prestataire-vg">
+                                    <select id="id-prestataire-vg" name="id-prestataire-vg" class="no-tom-select">
                                         <?php $ptRepo = new PrestataireTransportRepository($con);
                                         foreach ($ptRepo->findAll() as $r):
                                             echo "<option value='" . $r['id_prestataire_transport'] . "'>" . h($r['nom_societe']) . " — " . h($r['immatriculation']) . "</option>";
@@ -86,7 +86,7 @@
                         <div class="col-6 vg-ext-only" style="display:none">
                             <div class="mb-3">
                                 <label for="id-entite-vg">Entité</label>
-                                <select id="id-entite-vg" name="id-entite-vg">
+                                <select id="id-entite-vg" name="id-entite-vg" class="no-tom-select">
                                     <?php $entiteRepo = new EntiteRepository($con);
                                     $ctxEntites = array_map('intval', getContextEntities());
                                     foreach ($entiteRepo->findAll() as $r):
@@ -100,7 +100,7 @@
                         <div class="col-6 vg-ext-only" style="display:none">
                             <div class="mb-3">
                                 <label for="id-region-vg">Région</label>
-                                <select id="id-region-vg" name="id-region-vg">
+                                <select id="id-region-vg" name="id-region-vg" class="no-tom-select">
                                     <?php $regionRepo = new RegionRepository($con);
                                     $ctxRegions = array_map('intval', getContextRegions());
                                     foreach ($regionRepo->findAll() as $r):
@@ -247,7 +247,15 @@
         $('.vg-ext-only').toggle(externe)
         $('#id-vehicule-vg').prop('disabled', externe)
         $('#qtecarburant-vg').prop('disabled', externe)
-        $('#id-prestataire-vg, #id-entite-vg, #id-region-vg, #chauffeur-vg').prop('disabled', !externe)
+        $('#id-prestataire-vg, #chauffeur-vg').prop('disabled', !externe)
+        // Entité / région : figés uniquement si un seul élément dans le contexte
+        // (il est alors le seul choix possible), sinon choix libre
+        var uneEntite = $('#id-entite-vg option').length === 1
+        var uneRegion = $('#id-region-vg option').length === 1
+        $('#id-entite-vg').prop('disabled', !externe || uneEntite)
+        $('#id-region-vg').prop('disabled', !externe || uneRegion)
+        if (uneEntite) $('#id-entite-vg option').prop('selected', true)
+        if (uneRegion) $('#id-region-vg option').prop('selected', true)
     }
 
     async function checkReleveKms(id,dvg,fvg){

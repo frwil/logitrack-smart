@@ -525,6 +525,14 @@ if (!$renderPartial):
     }";
         endif; ?>
         });
+        // Message d'état vide du tableau des voyages prestataires (le tbody
+        // reste vide, DataTables génère sa propre ligne "empty")
+        var $presta = $('#table-voyages-prestataires');
+        if ($presta.length && $.fn.dataTable.isDataTable($presta[0])) {
+            var prestaApi = $presta.DataTable();
+            prestaApi.settings()[0].oLanguage.sEmptyTable = 'Aucun voyage prestataire sur la période';
+            if (prestaApi.rows().count() === 0) prestaApi.draw();
+        }
     }
     initDataTable();
 

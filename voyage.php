@@ -115,7 +115,7 @@ function getTableauVoyagesPrestataires()
     $rows = $vpRepo->findBetween($dateFrom, $dateTo, getContextRegions(), getContextEntities());
 
     $tableau = "<h3 class='h5 mt-4'>Voyages prestataires externes</h3>";
-    $tableau .= "<table class='table table-striped'><thead><tr><th>Date</th><th>Société</th><th>Immatriculation</th><th>Chauffeur</th><th>Entité</th><th>Région</th><th>Trajets</th><th>Type chargement</th><th>Qté</th><th>Convoyeur</th><th>N° scellé</th>";
+    $tableau .= "<table id='table-voyages-prestataires' class='table table-striped'><thead><tr><th>Date</th><th>Société</th><th>Immatriculation</th><th>Chauffeur</th><th>Entité</th><th>Région</th><th>Trajets</th><th>Type chargement</th><th>Qté</th><th>Convoyeur</th><th>N° scellé</th>";
     if ($hasUpd || $hasDel) $tableau .= "<th>Actions</th>";
     $tableau .= "</tr></thead><tbody>";
 
@@ -134,13 +134,8 @@ function getTableauVoyagesPrestataires()
         $tableau .= "</tr>";
     endforeach;
 
-    if (empty($rows)) {
-        // Ligne complète (pas de colspan — incompatible DataTables)
-        $tableau .= "<tr><td>Aucun voyage prestataire sur la période</td>";
-        $cols = ($hasUpd || $hasDel) ? 12 : 11;
-        for ($i = 1; $i < $cols; $i++) $tableau .= "<td></td>";
-        $tableau .= "</tr>";
-    }
+    // Pas de ligne factice quand la liste est vide : DataTables affiche son
+    // propre message d'état vide (sinon la ligne est comptée comme une entrée).
     $tableau .= "</tbody></table>";
     return $tableau;
 }
