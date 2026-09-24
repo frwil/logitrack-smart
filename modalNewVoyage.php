@@ -241,21 +241,51 @@
     // Bascule flotte / prestataire externe
     $('input[name="mode-vg"]').change(toggleModeVg)
 
+    // Tom Select des selects du mode externe : initialisé seulement une fois
+    // le mode externe actif (en mode flotte ils sont disabled et Tom Select
+    // en hériterait). Le handler générique shown.bs.modal les ignore
+    // grâce à la classe no-tom-select.
+    var vgTomSelectReady = false
+    function initVgTomSelect() {
+        if (vgTomSelectReady) return
+        vgTomSelectReady = true
+        ;['#id-prestataire-vg', '#id-entite-vg', '#id-region-vg'].forEach((sel) => {
+            const el = $(sel)[0]
+            if (el && !el.tomselect) {
+                new TomSelect(el, {
+                    plugins: ['remove_button'],
+                    maxOptions: null,
+                    render: { no_results: function() { return '<div class="no-results">Aucun résultat</div>'; } }
+                })
+            }
+        })
+    }
+
     function toggleModeVg() {
         const externe = $('input[name="mode-vg"]:checked').val() === 'externe'
         $('.vg-flotte-only').toggle(!externe)
         $('.vg-ext-only').toggle(externe)
         $('#id-vehicule-vg').prop('disabled', externe)
         $('#qtecarburant-vg').prop('disabled', externe)
-        $('#id-prestataire-vg, #chauffeur-vg').prop('disabled', !externe)
+        $('#chauffeur-vg').prop('disabled', !externe)
         // Entité / région : figés uniquement si un seul élément dans le contexte
         // (il est alors le seul choix possible), sinon choix libre
         var uneEntite = $('#id-entite-vg option').length === 1
         var uneRegion = $('#id-region-vg option').length === 1
-        $('#id-entite-vg').prop('disabled', !externe || uneEntite)
-        $('#id-region-vg').prop('disabled', !externe || uneRegion)
         if (uneEntite) $('#id-entite-vg option').prop('selected', true)
         if (uneRegion) $('#id-region-vg option').prop('selected', true)
+        if (externe) initVgTomSelect()
+        ;['#id-prestataire-vg', '#id-entite-vg', '#id-region-vg'].forEach((sel) => {
+            const el = $(sel)[0]
+            if (!el) return
+            const freeze = (sel === '#id-entite-vg' && uneEntite) || (sel === '#id-region-vg' && uneRegion)
+            const enabled = externe && !freeze
+            if (el.tomselect) {
+                if (enabled) el.tomselect.enable(); else el.tomselect.disable()
+            } else {
+                el.disabled = !enabled
+            }
+        })
     }
 
     async function checkReleveKms(id,dvg,fvg){
