@@ -195,6 +195,7 @@ if (!$renderPartial):
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeTrajets') echo 'active'; ?>" href="?page=voyages&subpage=listeTrajets"><i class="fa fa-map-marker-alt"></i> Trajets</a>
             <?php endif; ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeTypesChargement') echo 'active'; ?>" href="?page=voyages&subpage=listeTypesChargement"><i class="fa fa-boxes"></i> Types de chargement</a>
+            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listePrestatairesTransport') echo 'active'; ?>" href="?page=voyages&subpage=listePrestatairesTransport"><i class="fa fa-handshake"></i> Prestataires de transport</a>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeObjectifsVoyages') echo 'active'; ?>" href="?page=voyages&subpage=listeObjectifsVoyages"><i class="fa fa-bullseye"></i> Objectifs</a>
             <?php if (in_array('save', $rights_voyage)): ?>
                 <?php if (in_array('savetrajet', $rights_voyage)): ?>
@@ -299,6 +300,10 @@ if (!$renderPartial):
                     <hr>
                     <?php include("type_chargement.php");
                     echo getTableauTypesChargement(); ?>
+                <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listePrestatairesTransport'): ?>
+                    <div class="lt-page-title">Prestataires de transport externes</div>
+                    <hr>
+                    <?php echo getTableauPrestatairesTransport(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listeObjectifsVoyages'): ?>
                     <div class="lt-page-title">Liste des Objectifs de voyage</div>
                     <hr>

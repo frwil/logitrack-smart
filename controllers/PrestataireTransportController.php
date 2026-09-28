@@ -47,6 +47,57 @@ class PrestataireTransportController extends BaseController
         }
     }
 
+    /** Charge un prestataire existant dans le modal de modification. */
+    public function fetchPrestataire(): never
+    {
+        $this->requireVoyageRight('view');
+        $row = $this->prestataireRepo->findById((int)$this->post('id-prestataire-transport-forModal'));
+        if (!$row || (int)($row['is_deleted'] ?? 0) === 1) $this->jsonError('Prestataire introuvable');
+        $this->json($row);
+    }
+
+    public function updatePrestataire(): never
+    {
+        $this->requireVoyageRight('upd');
+        $id = (int)$this->post('id-prestataire-transport-upd');
+        $row = $this->prestataireRepo->findById($id);
+        if (!$row || (int)($row['is_deleted'] ?? 0) === 1) $this->jsonError('Prestataire introuvable');
+
+        $societe = trim(preg_replace('/\s+/', ' ', (string)$this->post('societe-pt-transport-upd')));
+        if ($societe === '') $this->jsonError('Le nom de la société est obligatoire');
+        // Même contrôle de doublon qu'à la création, en s'excluant soi-même.
+        $similar = $this->prestataireRepo->findBySocieteSimilar($societe);
+        if ($similar && (int)$similar['id_prestataire_transport'] !== $id) {
+            $this->jsonError('Ce prestataire existe déjà (nom de société identique ou similaire)');
+        }
+        try {
+            $this->prestataireRepo->update(
+                $id,
+                $societe,
+                trim((string)$this->post('adresse-pt-transport-upd')) ?: null,
+                trim((string)$this->post('telephone-pt-transport-upd')) ?: null
+            );
+            // Libellé renvoyé pour rafraîchir le select du formulaire Nouveau voyage
+            // sans recharger la page (immatriculation historique conservée à titre indicatif).
+            $fresh = $this->prestataireRepo->findById($id);
+            if (!$fresh) $this->jsonError('Prestataire introuvable');
+            $label = $fresh['nom_societe'] . (!empty($fresh['immatriculation']) ? ' — ' . $fresh['immatriculation'] : '');
+            $this->json(['id' => $id, 'label' => $label, 'immat' => $fresh['immatriculation'] ?? null]);
+        } catch (\mysqli_sql_exception $e) {
+            if ($e->getCode() == 1062) $this->jsonError('Ce prestataire existe déjà (nom de société en doublon)');
+            $this->jsonError("Erreur lors de l'enregistrement");
+        }
+    }
+
+    /** Suppression logique : les voyages déjà enregistrés restent rattachés au prestataire. */
+    public function deletePrestataire(): never
+    {
+        $this->requireVoyageRight('del');
+        $ok = $this->prestataireRepo->softDelete((int)$this->post('id-prestataire-transport-del'));
+        if ($ok) $this->json();
+        $this->jsonError('Échec de la suppression');
+    }
+
     // ---- Voyages prestataires externes ----
 
     public function createVoyage(): never

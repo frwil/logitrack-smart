@@ -75,7 +75,12 @@
                                         endforeach;
                                         ?>
                                     </select>
+                                    <?php if (in_array('save', $rights_voyage)): ?>
                                     <button class="btn btn-primary" onclick="openModalPrestataireTransport()" type="button" title="Ajouter un prestataire"><i class="fa fa-plus"></i></button>
+                                    <?php endif; ?>
+                                    <?php if (in_array('upd', $rights_voyage)): ?>
+                                    <button class="btn btn-light" id="btn-edit-prestataire-vg" onclick="openModalUpdPrestataireTransport()" type="button" title="Modifier le prestataire sélectionné" style="display:none"><i class="fa fa-pencil-alt"></i></button>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -249,12 +254,46 @@
     // Bascule flotte / prestataire externe
     $('input[name="mode-vg"]').change(toggleModeVg)
 
+    // Bouton "Modifier le prestataire" : visible seulement si un prestataire est sélectionné
+    function refreshBtnEditPrestataire() {
+        var val = $('#id-prestataire-vg').val()
+        $('#btn-edit-prestataire-vg').toggle(!!val && val !== '')
+    }
+
+    // Ouvre le modal de modification pour le prestataire actuellement sélectionné
+    function openModalUpdPrestataireTransport() {
+        var id = $('#id-prestataire-vg').val()
+        if (!id) return
+        updPrestataireTransport(id)
+    }
+
+    // Met à jour l'option du select après modification du prestataire (sans rechargement)
+    function refreshPrestataireOption(id, label, immat) {
+        var sel = document.getElementById('id-prestataire-vg')
+        if (!sel) return
+        if (sel.tomselect) {
+            sel.tomselect.addOption({ value: String(id), text: label })
+            if (sel.tomselect.getValue() === String(id)) {
+                // Ré-affiche le libellé mis à jour sur l'item sélectionné
+                sel.tomselect.setValue(null, true)
+                sel.tomselect.addItem(String(id), true)
+            }
+        } else {
+            var opt = $('#id-prestataire-vg option[value="' + id + '"]')
+            if (!opt.length) return
+            opt.text(label)
+            if (immat) opt.attr('data-immat', immat)
+            else opt.removeAttr('data-immat')
+        }
+    }
+
     // Pré-remplit l'immatriculation avec celle connue du prestataire sélectionné
     // (historique) sans écraser une saisie manuelle. Tom Select émet aussi
     // l'événement change sur le select natif sous-jacent.
     $('#id-prestataire-vg').change(function () {
         var immat = $(this).find(':selected').attr('data-immat') || ''
         if (immat && !$('#immatriculation-vg').val()) $('#immatriculation-vg').val(immat)
+        refreshBtnEditPrestataire()
     })
 
     // Tom Select des selects du mode externe : initialisé seulement une fois
@@ -303,6 +342,7 @@
                 el.disabled = !enabled
             }
         })
+        refreshBtnEditPrestataire()
     }
 
     async function checkReleveKms(id,dvg,fvg){

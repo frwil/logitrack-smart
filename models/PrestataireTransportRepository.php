@@ -32,6 +32,24 @@ class PrestataireTransportRepository extends BaseRepository
     }
 
     /**
+     * Update a carrier's editable fields (name, address, phone).
+     * Returns false if the carrier does not exist or was soft-deleted.
+     */
+    public function update(int $id, string $nomSociete, ?string $adresseSociete, ?string $telephoneSociete): bool
+    {
+        return $this->exec(
+            "UPDATE prestataire_transport SET nom_societe = ?, adresse_societe = ?, telephone_societe = ? WHERE id_prestataire_transport = ? AND is_deleted = 0",
+            [$nomSociete, $adresseSociete, $telephoneSociete, $id]
+        );
+    }
+
+    /** Soft-delete a carrier — historical voyages keep their reference to it. */
+    public function softDelete(int $id): bool
+    {
+        return $this->exec("UPDATE prestataire_transport SET is_deleted = 1 WHERE id_prestataire_transport = ?", [$id]);
+    }
+
+    /**
      * Carrier whose company name matches the given one, ignoring case, accents
      * and multiple spaces — used to reject near-duplicates before insert.
      */

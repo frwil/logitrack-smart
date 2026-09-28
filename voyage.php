@@ -139,6 +139,34 @@ function getTableauVoyagesPrestataires()
     $tableau .= "</tbody></table>";
     return $tableau;
 }
+function getTableauPrestatairesTransport()
+{
+    global $con;
+    global $rights_voyage;
+    $hasUpd = in_array('upd', $rights_voyage);
+    $hasDel = in_array('del', $rights_voyage);
+
+    $ptRepo = new PrestataireTransportRepository($con);
+    $rows = $ptRepo->findAll();
+
+    $tableau = "<table id='table-prestataires-transport' class='table table-striped'><thead><tr><th>Société</th><th>Adresse</th><th>Téléphone</th>";
+    if ($hasUpd || $hasDel) $tableau .= "<th>Actions</th>";
+    $tableau .= "</tr></thead><tbody>";
+
+    foreach ($rows as $r):
+        $tableau .= "<tr><td>" . h($r['nom_societe']) . "</td><td>" . h($r['adresse_societe'] ?? '') . "</td><td>" . h($r['telephone_societe'] ?? '') . "</td>";
+        if ($hasUpd || $hasDel) {
+            $tableau .= "<td><div class='btn-group'>";
+            if ($hasUpd) $tableau .= "<button class='btn btn-light btn-sm' title='Modifier' onclick='updPrestataireTransport(" . (int)$r['id_prestataire_transport'] . ")'><i class='fa fa-pencil-alt'></i></button>";
+            if ($hasDel) $tableau .= "<button class='btn btn-danger btn-sm' title='Supprimer' onclick='delPrestataireTransport(" . (int)$r['id_prestataire_transport'] . ")'><i class='fa fa-times'></i></button>";
+            $tableau .= "</div></td>";
+        }
+        $tableau .= "</tr>";
+    endforeach;
+
+    $tableau .= "</tbody></table>";
+    return $tableau;
+}
 function getTableauVoyagesVehicules()
 {
     set_time_limit(120);
@@ -499,6 +527,7 @@ function getTableauEvaluationVoyages()
 ?>
 <?php include('modalNewVoyage.php'); ?>
 <?php include('modalNewPrestataireTransport.php'); ?>
+<?php if (in_array('upd', $rights_voyage) || in_array('del', $rights_voyage)) include('modalUpdPrestataireTransport.php'); ?>
 <?php if (in_array('upd', $rights_voyage) || in_array('del', $rights_voyage)) include('modalUpdVoyagePrestataire.php'); ?>
 <?php /* POST handled by VoyageController — see controllers/router.php */ ?>
 <?php if (isset($_GET['action']) && $_GET['action'] == 'new' && !isset($_GET['subpage'])): ?>
