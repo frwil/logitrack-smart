@@ -743,7 +743,7 @@ function getVoyagesScopeFilter(string $scope)
     $html = '<div class="d-flex justify-content-end mb-3"><div class="input-group" style="max-width: 320px;">'
         . '<span class="input-group-text"><i class="fa fa-filter"></i></span>'
         . '<select id="scope-stat-voyages" class="form-select" aria-label="Filtre des statistiques"'
-        . ' onchange="var u = new URL(location.href); u.searchParams.set(\'scope\', this.value); location = u.toString();">';
+        . ' onchange="var u = new window.URL(location.href); u.searchParams.set(\'scope\', this.value); location = u.toString();">';
     foreach ($options as $value => $label) {
         $sel = $value === $scope ? ' selected' : '';
         $html .= '<option value="' . $value . '"' . $sel . '>' . h($label) . '</option>';
