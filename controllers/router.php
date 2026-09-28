@@ -44,7 +44,7 @@ $trajetCtrl = new TrajetController($trajetRepo);
 $objectifCtrl = new ObjectifController($objectifRepo);
 $typeChargementCtrl = new TypeChargementController();
 $userCtrl = new UserController($userRepo, $regionRepo, $entiteRepo);
-$prestataireTransportCtrl = new PrestataireTransportController($prestataireTransportRepo, $voyagePrestataireRepo);
+$prestataireTransportCtrl = new PrestataireTransportController($prestataireTransportRepo, $voyagePrestataireRepo, $voyageRepo);
 
 $routes = [
     // Auth

@@ -366,6 +366,33 @@ class VoyageRepository extends BaseRepository
         return $fleet + $ext;
     }
 
+    /** Quantités transportées par la flotte du mois courant (contexte filtré) — même forme que statsExternes. */
+    public function statsQteFlotte(array $regionIds, array $entiteIds, ?int $typeChargementId = null): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $sql = "SELECT COUNT(*) AS nb_voyages, COALESCE(SUM(qte_chargement), 0) AS total_qte
+                FROM voyage
+                LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
+                WHERE affectation_vehicule.is_deleted = 0 AND $where
+                  AND MONTH(date_voyage) = MONTH(CURDATE()) AND YEAR(date_voyage) = YEAR(CURDATE())";
+        if ($typeChargementId) {
+            $sql .= " AND voyage.id_type_chargement = ?";
+            $params[] = $typeChargementId;
+        }
+        $row = $this->selectOne($sql, $params);
+        $unite = '';
+        if ($typeChargementId) {
+            $t = $this->selectOne("SELECT unite_mesure FROM type_chargement_voyage WHERE id_type_chargement = ?", [$typeChargementId]);
+            $unite = $t['unite_mesure'] ?? '';
+        }
+        return [
+            'nb_voyages' => (int)($row['nb_voyages'] ?? 0),
+            'total_qte' => (float)($row['total_qte'] ?? 0),
+            'total_qte_fmt' => number_format((float)($row['total_qte'] ?? 0), 0, ',', ' '),
+            'unite' => $unite,
+        ];
+    }
+
     /** Objectives realisation rate of the current month, scoped: tout | flotte | externe. */
     public function tauxRealisation(array $regionIds, array $entiteIds, string $scope = 'tout'): float
     {

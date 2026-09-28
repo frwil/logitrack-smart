@@ -6,11 +6,13 @@ class PrestataireTransportController extends BaseController
 {
     private PrestataireTransportRepository $prestataireRepo;
     private VoyagePrestataireRepository $voyagePrestataireRepo;
+    private VoyageRepository $voyageRepo;
 
-    public function __construct(PrestataireTransportRepository $prestataireRepo, VoyagePrestataireRepository $voyagePrestataireRepo)
+    public function __construct(PrestataireTransportRepository $prestataireRepo, VoyagePrestataireRepository $voyagePrestataireRepo, VoyageRepository $voyageRepo)
     {
         $this->prestataireRepo = $prestataireRepo;
         $this->voyagePrestataireRepo = $voyagePrestataireRepo;
+        $this->voyageRepo = $voyageRepo;
     }
 
     // ---- Droits (objet 'voyages') ----
@@ -213,11 +215,30 @@ class PrestataireTransportController extends BaseController
 
     // ---- Stats (AJAX) ----
 
+    /**
+     * Qtés transportées du mois, portée : externe | flotte | tout
+     * (le bouton radio du bloc Qtés transportées choisit la portée).
+     */
     public function stats(): never
     {
         $this->requireVoyageRight('view');
         $typeId = (int)$this->post('type-chargement-stat');
+        $scope = (string)$this->post('scope-stat-prestataires', 'externe');
+        if (!in_array($scope, ['externe', 'flotte', 'tout'], true)) $scope = 'externe';
+
         $stats = $this->voyagePrestataireRepo->statsExternes(getContextRegions(), getContextEntities(), $typeId ?: null);
+        if ($scope !== 'externe') {
+            $fleet = $this->voyageRepo->statsQteFlotte(getContextRegions(), getContextEntities(), $typeId ?: null);
+            if ($scope === 'flotte') {
+                $stats = $fleet;
+            } else {
+                // Les 2 : même table type_chargement_voyage des deux côtés, l'unité reste valable
+                $stats['nb_voyages'] += $fleet['nb_voyages'];
+                $stats['total_qte'] += $fleet['total_qte'];
+                $stats['total_qte_fmt'] = number_format($stats['total_qte'], 0, ',', ' ');
+            }
+        }
+        $stats['scope'] = $scope;
         $this->json($stats);
     }
 }
