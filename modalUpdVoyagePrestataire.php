@@ -28,6 +28,12 @@
                         </div>
                     </div>
                     <div class="col-6">
+                        <div class="form-floating mb-3">
+                            <input type="text" id="immatriculation-upd-vge" name="immatriculation-upd-vge" class="form-control" placeholder="Immatriculation">
+                            <label for="immatriculation-upd-vge">Immatriculation</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
                         <div class="mb-3">
                             <label for="id-entite-upd-vge">Entité</label>
                             <select id="id-entite-upd-vge" name="id-entite-upd-vge" required>
@@ -154,8 +160,9 @@
         }).done((e) => {
             if (e.success) {
                 $('#date-upd-vge').val(e.date_voyage)
-                $('#prestataire-upd-vge').val((e.nom_societe || '') + ' — ' + e.immatriculation)
+                $('#prestataire-upd-vge').val((e.nom_societe || '') + (e.immatriculation_prestataire ? ' — ' + e.immatriculation_prestataire : ''))
                 $('#chauffeur-upd-vge').val(e.nom_chauffeur || '')
+                $('#immatriculation-upd-vge').val(e.immatriculation || '')
                 $('#id-entite-upd-vge').val(e.id_entite)
                 $('#id-region-upd-vge').val(e.id_region)
                 $('#convoyeur-upd-vge').val(e.convoyeur || '')

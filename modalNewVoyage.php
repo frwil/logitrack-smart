@@ -69,7 +69,9 @@
                                     <select id="id-prestataire-vg" name="id-prestataire-vg" class="no-tom-select">
                                         <?php $ptRepo = new PrestataireTransportRepository($con);
                                         foreach ($ptRepo->findAll() as $r):
-                                            echo "<option value='" . $r['id_prestataire_transport'] . "'>" . h($r['nom_societe']) . " — " . h($r['immatriculation']) . "</option>";
+                                            // L'immatriculation n'est plus gérée au niveau du prestataire :
+                                            // conservée à titre indicatif (historique) pour pré-remplir le champ du voyage.
+                                            echo "<option value='" . $r['id_prestataire_transport'] . "'" . ($r['immatriculation'] ? " data-immat='" . h($r['immatriculation']) . "'" : '') . ">" . h($r['nom_societe']) . ($r['immatriculation'] ? ' — ' . h($r['immatriculation']) : '') . "</option>";
                                         endforeach;
                                         ?>
                                     </select>
@@ -81,6 +83,12 @@
                             <div class="form-floating mb-3">
                                 <input type="text" class="form-control" id="chauffeur-vg" name="chauffeur-vg">
                                 <label for="chauffeur-vg">Chauffeur</label>
+                            </div>
+                        </div>
+                        <div class="col-6 vg-ext-only" style="display:none">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="immatriculation-vg" name="immatriculation-vg" placeholder="Immatriculation">
+                                <label for="immatriculation-vg">Immatriculation</label>
                             </div>
                         </div>
                         <div class="col-6 vg-ext-only" style="display:none">
@@ -241,6 +249,14 @@
     // Bascule flotte / prestataire externe
     $('input[name="mode-vg"]').change(toggleModeVg)
 
+    // Pré-remplit l'immatriculation avec celle connue du prestataire sélectionné
+    // (historique) sans écraser une saisie manuelle. Tom Select émet aussi
+    // l'événement change sur le select natif sous-jacent.
+    $('#id-prestataire-vg').change(function () {
+        var immat = $(this).find(':selected').attr('data-immat') || ''
+        if (immat && !$('#immatriculation-vg').val()) $('#immatriculation-vg').val(immat)
+    })
+
     // Tom Select des selects du mode externe : initialisé seulement une fois
     // le mode externe actif (en mode flotte ils sont disabled et Tom Select
     // en hériterait). Le handler générique shown.bs.modal les ignore
@@ -268,6 +284,7 @@
         $('#id-vehicule-vg').prop('disabled', externe)
         $('#qtecarburant-vg').prop('disabled', externe)
         $('#chauffeur-vg').prop('disabled', !externe)
+        $('#immatriculation-vg').prop('disabled', !externe)
         // Entité / région : figés uniquement si un seul élément dans le contexte
         // (il est alors le seul choix possible), sinon choix libre
         var uneEntite = $('#id-entite-vg option').length === 1
@@ -399,6 +416,7 @@
                 + '&typechargement-vge=' + $('#typechargement-vg').val()
                 + '&qtechargement-vge=' + $('#qtechargement-vg').val()
                 + '&chauffeur-vge=' + encodeURIComponent($('#chauffeur-vg').val() || '')
+                + '&immatriculation-vge=' + encodeURIComponent($('#immatriculation-vg').val() || '')
                 + '&convoyeur-vge=' + encodeURIComponent($('#id-convoyeur-vg').val() || '')
                 + '&numero-scelle-vge=' + encodeURIComponent($('#numero-scelle-vg').val() || '')
                 + '&trajets-voyage=' + JSON.stringify(trajets),

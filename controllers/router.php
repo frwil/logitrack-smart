@@ -85,7 +85,7 @@ $routes = [
     'titre-vg'            => [$voyageCtrl, 'create'],
 
     // Prestataires de transport externes
-    'immat-pt-transport'          => [$prestataireTransportCtrl, 'createPrestataire'],
+    'societe-pt-transport'        => [$prestataireTransportCtrl, 'createPrestataire'],
     'date-vge'                    => [$prestataireTransportCtrl, 'createVoyage'],
     'id-voyage-prestataire-upd'   => [$prestataireTransportCtrl, 'updateVoyage'],
     'id-voyage-prestataire-forModal' => [$prestataireTransportCtrl, 'fetchVoyage'],

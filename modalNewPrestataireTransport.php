@@ -13,10 +13,6 @@
                 <label for="societe-pt-transport">Nom de la société</label>
             </div>
             <div class="form-floating mb-3">
-                <input type="text" id="immat-pt-transport" name="immat-pt-transport" required class="form-control">
-                <label for="immat-pt-transport">Immatriculation</label>
-            </div>
-            <div class="form-floating mb-3">
                 <input type="text" id="adresse-pt-transport" name="adresse-pt-transport" class="form-control">
                 <label for="adresse-pt-transport">Adresse</label>
             </div>

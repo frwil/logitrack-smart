@@ -28,19 +28,21 @@ class PrestataireTransportController extends BaseController
     public function createPrestataire(): never
     {
         $this->requireVoyageRight('save');
-        $immat = strtoupper(trim($this->post('immat-pt-transport')));
-        $societe = trim($this->post('societe-pt-transport'));
-        if ($immat === '' || $societe === '') $this->jsonError('Société et immatriculation obligatoires');
+        // Nom de société : seul champ obligatoire — nettoyé des espaces superflus.
+        $societe = trim(preg_replace('/\s+/', ' ', (string)$this->post('societe-pt-transport')));
+        if ($societe === '') $this->jsonError('Le nom de la société est obligatoire');
+        if ($this->prestataireRepo->findBySocieteSimilar($societe)) {
+            $this->jsonError('Ce prestataire existe déjà (nom de société identique ou similaire)');
+        }
         try {
             $id = $this->prestataireRepo->insert(
-                $immat,
                 $societe,
-                $this->post('adresse-pt-transport') ?: null,
-                $this->post('telephone-pt-transport') ?: null
+                trim((string)$this->post('adresse-pt-transport')) ?: null,
+                trim((string)$this->post('telephone-pt-transport')) ?: null
             );
-            $this->json(['id' => (int)$id, 'label' => $societe . ' — ' . $immat]);
+            $this->json(['id' => (int)$id, 'label' => $societe]);
         } catch (\mysqli_sql_exception $e) {
-            if ($e->getCode() == 1062) $this->jsonError('Ce prestataire existe déjà (immatriculation en doublon)');
+            if ($e->getCode() == 1062) $this->jsonError('Ce prestataire existe déjà (nom de société en doublon)');
             $this->jsonError("Erreur lors de l'enregistrement");
         }
     }
@@ -64,6 +66,8 @@ class PrestataireTransportController extends BaseController
         $upd = $id !== null;
         $date = $this->post($upd ? 'date-upd-vge' : 'date-vge');
         $chauffeur = trim((string)$this->post($upd ? 'chauffeur-upd-vge' : 'chauffeur-vge')) ?: null;
+        // L'immatriculation est saisie par voyage (le véhicule du prestataire n'est pas maîtrisé)
+        $immatriculation = trim((string)$this->post($upd ? 'immatriculation-upd-vge' : 'immatriculation-vge')) ?: null;
         if ($upd) {
             // Prestataire non modifiable : clés distinctes (date-upd-vge…) pour ne pas déclencher la route de création
             $prestataireId = 0;
@@ -96,11 +100,11 @@ class PrestataireTransportController extends BaseController
         if (empty($trajets)) $this->jsonError('Ajoutez au moins un trajet au voyage');
 
         try {
-            $this->voyagePrestataireRepo->transactional(function () use ($id, $date, $chauffeur, $prestataireId, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $scelle, $trajets) {
+            $this->voyagePrestataireRepo->transactional(function () use ($id, $date, $chauffeur, $immatriculation, $prestataireId, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $scelle, $trajets) {
                 if ($id === null) {
-                    $id = $this->voyagePrestataireRepo->insertVoyagePrestataire($date, $prestataireId, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $scelle, $chauffeur);
+                    $id = $this->voyagePrestataireRepo->insertVoyagePrestataire($date, $prestataireId, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $scelle, $chauffeur, $immatriculation);
                 } else {
-                    $this->voyagePrestataireRepo->updateById($id, $date, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $scelle, $chauffeur);
+                    $this->voyagePrestataireRepo->updateById($id, $date, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $scelle, $chauffeur, $immatriculation);
                     $this->voyagePrestataireRepo->deleteDestinations($id);
                 }
                 foreach ($trajets as $destinationId) {

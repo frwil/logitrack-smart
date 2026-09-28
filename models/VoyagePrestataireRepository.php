@@ -4,19 +4,19 @@
  */
 class VoyagePrestataireRepository extends BaseRepository
 {
-    public function insertVoyagePrestataire(string $date, int $prestataireId, int $entiteId, int $regionId, ?string $convoyeur, int $typeChargementId, float $qte, ?string $numeroScelle, ?string $nomChauffeur = null): int|string
+    public function insertVoyagePrestataire(string $date, int $prestataireId, int $entiteId, int $regionId, ?string $convoyeur, int $typeChargementId, float $qte, ?string $numeroScelle, ?string $nomChauffeur = null, ?string $immatriculation = null): int|string
     {
         return $this->insertGetId(
-            "INSERT INTO voyage_prestataire (date_voyage, id_prestataire_transport, nom_chauffeur, id_entite, id_region, convoyeur, id_type_chargement, qte_chargement, numero_scelle) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [$date, $prestataireId, $nomChauffeur, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $numeroScelle]
+            "INSERT INTO voyage_prestataire (date_voyage, id_prestataire_transport, nom_chauffeur, immatriculation, id_entite, id_region, convoyeur, id_type_chargement, qte_chargement, numero_scelle) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [$date, $prestataireId, $nomChauffeur, $immatriculation, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $numeroScelle]
         );
     }
 
-    public function updateById(int $id, string $date, int $entiteId, int $regionId, ?string $convoyeur, int $typeChargementId, float $qte, ?string $numeroScelle, ?string $nomChauffeur = null): bool
+    public function updateById(int $id, string $date, int $entiteId, int $regionId, ?string $convoyeur, int $typeChargementId, float $qte, ?string $numeroScelle, ?string $nomChauffeur = null, ?string $immatriculation = null): bool
     {
         return $this->exec(
-            "UPDATE voyage_prestataire SET date_voyage = ?, nom_chauffeur = ?, id_entite = ?, id_region = ?, convoyeur = ?, id_type_chargement = ?, qte_chargement = ?, numero_scelle = ? WHERE id_voyage_prestataire = ?",
-            [$date, $nomChauffeur, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $numeroScelle, $id]
+            "UPDATE voyage_prestataire SET date_voyage = ?, nom_chauffeur = ?, immatriculation = ?, id_entite = ?, id_region = ?, convoyeur = ?, id_type_chargement = ?, qte_chargement = ?, numero_scelle = ? WHERE id_voyage_prestataire = ?",
+            [$date, $nomChauffeur, $immatriculation, $entiteId, $regionId, $convoyeur, $typeChargementId, $qte, $numeroScelle, $id]
         );
     }
 
@@ -93,7 +93,8 @@ class VoyagePrestataireRepository extends BaseRepository
                     vp.id_entite, vp.id_region, vp.convoyeur, vp.id_type_chargement,
                     vp.qte_chargement, vp.numero_scelle,
                     COALESCE(NULLIF(vp.nom_chauffeur, ''), pt.nom_chauffeur) AS nom_chauffeur,
-                    pt.immatriculation,
+                    COALESCE(NULLIF(vp.immatriculation, ''), pt.immatriculation) AS immatriculation,
+                    pt.immatriculation AS immatriculation_prestataire,
                     pt.nom_societe, pt.adresse_societe, pt.telephone_societe,
                     e.nom_entite, r.nom_region, tcv.lib_type_chargement, tcv.unite_mesure
              FROM voyage_prestataire vp
@@ -116,7 +117,7 @@ class VoyagePrestataireRepository extends BaseRepository
                     vp.id_entite, vp.id_region, vp.convoyeur, vp.id_type_chargement,
                     vp.qte_chargement, vp.numero_scelle,
                     COALESCE(NULLIF(vp.nom_chauffeur, ''), pt.nom_chauffeur) AS nom_chauffeur,
-                    pt.immatriculation,
+                    COALESCE(NULLIF(vp.immatriculation, ''), pt.immatriculation) AS immatriculation,
                     pt.nom_societe, pt.adresse_societe, pt.telephone_societe,
                     e.nom_entite, r.nom_region, tcv.lib_type_chargement, tcv.unite_mesure,
                     GROUP_CONCAT(CONCAT(dv.lib_destination, ' (', dv.distance_destination, 'km)')
