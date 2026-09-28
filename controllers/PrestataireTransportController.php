@@ -216,21 +216,29 @@ class PrestataireTransportController extends BaseController
     // ---- Stats (AJAX) ----
 
     /**
-     * Qtés transportées du mois, portée : externe | flotte | tout
-     * (le bouton radio du bloc Qtés transportées choisit la portée).
+     * Qtés transportées du mois, portée : externe | flotte | tout | comparaison
+     * (le bouton radio du bloc Qtés transportées choisit la portée ;
+     * comparaison renvoie flotte / externes côte à côte).
      */
     public function stats(): never
     {
         $this->requireVoyageRight('view');
         $typeId = (int)$this->post('type-chargement-stat');
         $scope = (string)$this->post('scope-stat-prestataires', 'externe');
-        if (!in_array($scope, ['externe', 'flotte', 'tout'], true)) $scope = 'externe';
+        if (!in_array($scope, ['externe', 'flotte', 'tout', 'comparaison'], true)) $scope = 'externe';
 
         $stats = $this->voyagePrestataireRepo->statsExternes(getContextRegions(), getContextEntities(), $typeId ?: null);
         if ($scope !== 'externe') {
             $fleet = $this->voyageRepo->statsQteFlotte(getContextRegions(), getContextEntities(), $typeId ?: null);
             if ($scope === 'flotte') {
                 $stats = $fleet;
+            } elseif ($scope === 'comparaison') {
+                // Flotte / externes côte à côte, même convention d'affichage que le tableau de bord
+                $stats = [
+                    'nb_voyages' => $fleet['nb_voyages'] . ' / ' . $stats['nb_voyages'],
+                    'total_qte_fmt' => $fleet['total_qte_fmt'] . ' / ' . $stats['total_qte_fmt'],
+                    'unite' => $stats['unite'],
+                ];
             } else {
                 // Les 2 : même table type_chargement_voyage des deux côtés, l'unité reste valable
                 $stats['nb_voyages'] += $fleet['nb_voyages'];
