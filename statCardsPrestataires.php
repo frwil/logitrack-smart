@@ -7,9 +7,9 @@ $vpRepo = new VoyagePrestataireRepository($con);
 $vpStats = $vpRepo->statsExternes(getContextRegions(), getContextEntities(), null);
 $voyageRepo = new VoyageRepository($con);
 
-// En comparaison, la carte Voyages est masquée : la comparaison est déjà faite
-// par les cartes du tableau de bord (Voyages du mois flotte / externes).
-$vpShowVoyagesCard = $vpPageScope !== 'comparaison';
+// La carte Voyages est masquée en flotte et en comparaison : le nombre de voyages
+// est déjà affiché par les cartes du tableau de bord pour ces portées.
+$vpShowVoyagesCard = !in_array($vpPageScope, ['flotte', 'comparaison'], true);
 
 if ($vpPageScope === 'comparaison') {
     $vpFleet = $voyageRepo->statsQteFlotte(getContextRegions(), getContextEntities(), null);
@@ -18,10 +18,8 @@ if ($vpPageScope === 'comparaison') {
     $vpQteLabel = 'Qtés transportées (mois) flotte / externes';
 } elseif ($vpPageScope === 'flotte') {
     $vpFleet = $voyageRepo->statsQteFlotte(getContextRegions(), getContextEntities(), null);
-    $vpNbDisplay = number_format($vpFleet['nb_voyages'], 0, ',', ' ');
     $vpQteDisplay = $vpFleet['total_qte_fmt'];
     $vpUnite = $vpFleet['unite'];
-    $vpVoyagesLabel = 'Voyages flotte (mois)';
     $vpQteLabel = 'Qtés transportées (mois)';
 } else {
     $vpNbDisplay = number_format($vpStats['nb_voyages'], 0, ',', ' ');
@@ -31,7 +29,7 @@ if ($vpPageScope === 'comparaison') {
     $vpQteLabel = 'Qtés transportées (mois)';
 }
 // Le radio est libre uniquement en portée « tout » ; sinon figé sur la portée de la page
-// (externe → Prestataires, comparaison → Les 2).
+// (externe → Prestataires, flotte → Flotte, comparaison → Les 2).
 $vpRadioLocked = $vpPageScope !== 'tout';
 $vpRadioChecked = $vpPageScope === 'tout' ? 'externe' : ($vpPageScope === 'comparaison' ? 'tout' : $vpPageScope);
 ?>

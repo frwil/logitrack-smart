@@ -848,11 +848,9 @@ function getDashboardCardsVoyages()
     $html .= '</div></div>';
 
     $html .= '</div>';
-    if ($scope !== 'flotte') {
-        ob_start();
-        include('statCardsPrestataires.php');
-        $html .= ob_get_clean();
-    }
+    ob_start();
+    include('statCardsPrestataires.php');
+    $html .= ob_get_clean();
     return $html;
 }
 
