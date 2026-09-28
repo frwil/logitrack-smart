@@ -191,11 +191,14 @@ if (!$renderPartial):
         <?php elseif (isset($_GET['page']) && $_GET['page'] == 'voyages' && in_array('view', $rights_voyage)): ?>
             <div class="lt-sidebar-title">Listes</div>
             <?php $trajetSpecifics = ['viewtrajet','savetrajet','updtrajet','deltrajet']; ?>
+            <?php $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','updPrestataireTransport','delPrestataireTransport']; ?>
             <?php if (hasSubRight('viewtrajet', 'view', $rights_voyage, $trajetSpecifics)): ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeTrajets') echo 'active'; ?>" href="?page=voyages&subpage=listeTrajets"><i class="fa fa-map-marker-alt"></i> Trajets</a>
             <?php endif; ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeTypesChargement') echo 'active'; ?>" href="?page=voyages&subpage=listeTypesChargement"><i class="fa fa-boxes"></i> Types de chargement</a>
+            <?php if (hasSubRight('viewPrestataireTransport', 'view', $rights_voyage, $ptTransportSpecifics)): ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listePrestatairesTransport') echo 'active'; ?>" href="?page=voyages&subpage=listePrestatairesTransport"><i class="fa fa-handshake"></i> Prestataires de transport</a>
+            <?php endif; ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'listeObjectifsVoyages') echo 'active'; ?>" href="?page=voyages&subpage=listeObjectifsVoyages"><i class="fa fa-bullseye"></i> Objectifs</a>
             <?php if (in_array('save', $rights_voyage)): ?>
                 <?php if (in_array('savetrajet', $rights_voyage)): ?>
@@ -300,7 +303,7 @@ if (!$renderPartial):
                     <hr>
                     <?php include("type_chargement.php");
                     echo getTableauTypesChargement(); ?>
-                <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listePrestatairesTransport'): ?>
+                <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'listePrestatairesTransport' && hasSubRight('viewPrestataireTransport', 'view', $rights_voyage, $ptTransportSpecifics)): ?>
                     <div class="lt-page-title">Prestataires de transport externes</div>
                     <hr>
                     <?php echo getTableauPrestatairesTransport(); ?>

@@ -191,6 +191,7 @@ function getTableauUsers()
                                     $voyagesSubs = [
                                         ['Rapports',             'report',    '',         '', ''],
                                         ['Trajets',              'viewtrajet', 'savetrajet', 'updtrajet', 'deltrajet'],
+                                        ['Prestataires de transport', 'viewPrestataireTransport', 'savePrestataireTransport', 'updPrestataireTransport', 'delPrestataireTransport'],
                                     ];
                                     // Config specific action rights
                                     $configSubs = [

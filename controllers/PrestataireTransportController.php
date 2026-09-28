@@ -23,11 +23,29 @@ class PrestataireTransportController extends BaseController
         }
     }
 
+    // Droits dédiés aux prestataires de transport (sous-droits de l'objet 'voyages',
+    // visibles dans le modal Modifier l'utilisateur). hasSubRight assure la
+    // rétro-compatibilité : un utilisateur n'ayant AUCUN de ces sous-droits
+    // retombe sur le droit générique voyages correspondant.
+    private const PT_RIGHTS = [
+        'viewPrestataireTransport',
+        'savePrestataireTransport',
+        'updPrestataireTransport',
+        'delPrestataireTransport',
+    ];
+
+    private function requirePrestataireRight(string $specific, string $fallback): void
+    {
+        if (!hasSubRight($specific, $fallback, getUserRightsFor('voyages'), self::PT_RIGHTS)) {
+            $this->jsonError('Accès non autorisé', 403);
+        }
+    }
+
     // ---- Prestataire (transporteur externe) ----
 
     public function createPrestataire(): never
     {
-        $this->requireVoyageRight('save');
+        $this->requirePrestataireRight('savePrestataireTransport', 'save');
         // Nom de société : seul champ obligatoire — nettoyé des espaces superflus.
         $societe = trim(preg_replace('/\s+/', ' ', (string)$this->post('societe-pt-transport')));
         if ($societe === '') $this->jsonError('Le nom de la société est obligatoire');
@@ -50,7 +68,7 @@ class PrestataireTransportController extends BaseController
     /** Charge un prestataire existant dans le modal de modification. */
     public function fetchPrestataire(): never
     {
-        $this->requireVoyageRight('view');
+        $this->requirePrestataireRight('viewPrestataireTransport', 'view');
         $row = $this->prestataireRepo->findById((int)$this->post('id-prestataire-transport-forModal'));
         if (!$row || (int)($row['is_deleted'] ?? 0) === 1) $this->jsonError('Prestataire introuvable');
         $this->json($row);
@@ -58,7 +76,7 @@ class PrestataireTransportController extends BaseController
 
     public function updatePrestataire(): never
     {
-        $this->requireVoyageRight('upd');
+        $this->requirePrestataireRight('updPrestataireTransport', 'upd');
         $id = (int)$this->post('id-prestataire-transport-upd');
         $row = $this->prestataireRepo->findById($id);
         if (!$row || (int)($row['is_deleted'] ?? 0) === 1) $this->jsonError('Prestataire introuvable');
@@ -92,7 +110,7 @@ class PrestataireTransportController extends BaseController
     /** Suppression logique : les voyages déjà enregistrés restent rattachés au prestataire. */
     public function deletePrestataire(): never
     {
-        $this->requireVoyageRight('del');
+        $this->requirePrestataireRight('delPrestataireTransport', 'del');
         $ok = $this->prestataireRepo->softDelete((int)$this->post('id-prestataire-transport-del'));
         if ($ok) $this->json();
         $this->jsonError('Échec de la suppression');

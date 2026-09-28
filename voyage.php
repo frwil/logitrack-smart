@@ -143,8 +143,9 @@ function getTableauPrestatairesTransport()
 {
     global $con;
     global $rights_voyage;
-    $hasUpd = in_array('upd', $rights_voyage);
-    $hasDel = in_array('del', $rights_voyage);
+    $ptSpecifics = ['viewPrestataireTransport', 'savePrestataireTransport', 'updPrestataireTransport', 'delPrestataireTransport'];
+    $hasUpd = hasSubRight('updPrestataireTransport', 'upd', $rights_voyage, $ptSpecifics);
+    $hasDel = hasSubRight('delPrestataireTransport', 'del', $rights_voyage, $ptSpecifics);
 
     $ptRepo = new PrestataireTransportRepository($con);
     $rows = $ptRepo->findAll();
@@ -527,7 +528,8 @@ function getTableauEvaluationVoyages()
 ?>
 <?php include('modalNewVoyage.php'); ?>
 <?php include('modalNewPrestataireTransport.php'); ?>
-<?php if (in_array('upd', $rights_voyage) || in_array('del', $rights_voyage)) include('modalUpdPrestataireTransport.php'); ?>
+<?php $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','updPrestataireTransport','delPrestataireTransport']; ?>
+<?php if (hasSubRight('updPrestataireTransport', 'upd', $rights_voyage, $ptTransportSpecifics) || hasSubRight('delPrestataireTransport', 'del', $rights_voyage, $ptTransportSpecifics)) include('modalUpdPrestataireTransport.php'); ?>
 <?php if (in_array('upd', $rights_voyage) || in_array('del', $rights_voyage)) include('modalUpdVoyagePrestataire.php'); ?>
 <?php /* POST handled by VoyageController — see controllers/router.php */ ?>
 <?php if (isset($_GET['action']) && $_GET['action'] == 'new' && !isset($_GET['subpage'])): ?>

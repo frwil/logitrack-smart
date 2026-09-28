@@ -1,4 +1,5 @@
-<?php /* All POST handlers migrated to controllers/router.php — dateV, trajets, chrelevekms */ ?>
+<?php /* All POST handlers migrated to controllers/router.php — dateV, trajets, chrelevekms */
+$ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','updPrestataireTransport','delPrestataireTransport']; ?>
 <div class="modal fade" id="modal-new-voyage" tabindex="-1" aria-labelledby="modal-new-voyageLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -75,10 +76,10 @@
                                         endforeach;
                                         ?>
                                     </select>
-                                    <?php if (in_array('save', $rights_voyage)): ?>
+                                    <?php if (hasSubRight('savePrestataireTransport', 'save', $rights_voyage, $ptTransportSpecifics)): ?>
                                     <button class="btn btn-primary" onclick="openModalPrestataireTransport()" type="button" title="Ajouter un prestataire"><i class="fa fa-plus"></i></button>
                                     <?php endif; ?>
-                                    <?php if (in_array('upd', $rights_voyage)): ?>
+                                    <?php if (hasSubRight('updPrestataireTransport', 'upd', $rights_voyage, $ptTransportSpecifics)): ?>
                                     <button class="btn btn-light" id="btn-edit-prestataire-vg" onclick="openModalUpdPrestataireTransport()" type="button" title="Modifier le prestataire sélectionné" style="display:none"><i class="fa fa-pencil-alt"></i></button>
                                     <?php endif; ?>
                                 </div>
