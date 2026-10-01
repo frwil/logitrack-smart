@@ -436,7 +436,8 @@ class VoyageRepository extends BaseRepository
             $objWhere .= " AND id_entite IN ($ph)";
             $objParams = array_merge($objParams, $p);
         }
-        $objParams = array_merge($objParams, [$dateFrom, $dateTo]);
+        // Les dates sont les premiers placeholders du SQL (BETWEEN avant les IN).
+        $objParams = array_merge([$dateFrom, $dateTo], $objParams);
         $row = $this->selectOne(
             "SELECT SUM(objectif) AS total FROM objectif_periode_region
              WHERE date_objectif_periode BETWEEN ? AND ?
