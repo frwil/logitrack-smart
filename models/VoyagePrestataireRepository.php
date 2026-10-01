@@ -152,10 +152,15 @@ class VoyagePrestataireRepository extends BaseRepository
         return (float)($row['total'] ?? 0);
     }
 
-    /** Top destinations of external-carrier voyages (context-filtered). */
-    public function topDestinationsExt(int $limit, array $regionIds, array $entiteIds): array
+    /** Top destinations of external-carrier voyages (context-filtered), optionally restricted to a date range. */
+    public function topDestinationsExt(int $limit, array $regionIds, array $entiteIds, ?string $dateFrom = null, ?string $dateTo = null): array
     {
         [$where, $params] = $this->contextFilter('vp', $regionIds, $entiteIds);
+        if ($dateFrom !== null && $dateTo !== null) {
+            $where .= ' AND vp.date_voyage BETWEEN ? AND ?';
+            $params[] = $dateFrom;
+            $params[] = $dateTo;
+        }
         $params[] = $limit;
         return $this->select(
             "SELECT dv.lib_destination, COUNT(*) AS nb_voyages, COALESCE(SUM(dv.distance_destination), 0) AS total_km
@@ -170,6 +175,23 @@ class VoyagePrestataireRepository extends BaseRepository
         );
     }
 
+    /** Sum of destination distances of external-carrier voyages in a date range (context-filtered). */
+    public function sumKmBetween(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): float
+    {
+        [$where, $params] = $this->contextFilter('vp', $regionIds, $entiteIds);
+        $params = array_merge($params, [$dateFrom, $dateTo]);
+        $row = $this->selectOne(
+            "SELECT COALESCE(SUM(dv.distance_destination), 0) AS total
+             FROM voyage_prestataire vp
+             LEFT JOIN voyage_prestataire_destination vpd ON vpd.id_voyage_prestataire = vp.id_voyage_prestataire
+             LEFT JOIN destination_voyage dv ON dv.id_destination = vpd.id_destination
+             WHERE $where
+               AND vp.date_voyage BETWEEN ? AND ?",
+            $params
+        );
+        return (float)($row['total'] ?? 0);
+    }
+
     /**
      * Stats of the current month: number of external-carrier voyages + sum of quantities,
      * optionally restricted to one loading type.
@@ -181,6 +203,36 @@ class VoyagePrestataireRepository extends BaseRepository
                 FROM voyage_prestataire
                 WHERE $where
                   AND MONTH(date_voyage) = MONTH(CURDATE()) AND YEAR(date_voyage) = YEAR(CURDATE())";
+        if ($typeChargementId) {
+            $sql .= " AND id_type_chargement = ?";
+            $params[] = $typeChargementId;
+        }
+        $row = $this->selectOne($sql, $params);
+        $unite = '';
+        if ($typeChargementId) {
+            $t = $this->selectOne("SELECT unite_mesure FROM type_chargement_voyage WHERE id_type_chargement = ?", [$typeChargementId]);
+            $unite = $t['unite_mesure'] ?? '';
+        }
+        return [
+            'nb_voyages' => (int)($row['nb_voyages'] ?? 0),
+            'total_qte' => (float)($row['total_qte'] ?? 0),
+            'total_qte_fmt' => number_format((float)($row['total_qte'] ?? 0), 0, ',', ' '),
+            'unite' => $unite,
+        ];
+    }
+
+    /**
+     * Stats of a date range: number of external-carrier voyages + sum of quantities,
+     * optionally restricted to one loading type.
+     */
+    public function statsExternesBetween(array $regionIds, array $entiteIds, ?int $typeChargementId, string $dateFrom, string $dateTo): array
+    {
+        [$where, $params] = $this->contextFilter('voyage_prestataire', $regionIds, $entiteIds);
+        $params = array_merge($params, [$dateFrom, $dateTo]);
+        $sql = "SELECT COUNT(*) AS nb_voyages, COALESCE(SUM(qte_chargement), 0) AS total_qte
+                FROM voyage_prestataire
+                WHERE $where
+                  AND date_voyage BETWEEN ? AND ?";
         if ($typeChargementId) {
             $sql .= " AND id_type_chargement = ?";
             $params[] = $typeChargementId;

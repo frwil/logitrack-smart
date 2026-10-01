@@ -1,10 +1,13 @@
 <?php /* Cartes stats des voyages prestataires externes — inclus depuis voyage.php et config.php */ ?>
 <?php
-// Portée de la page (filtre ?scope= du tableau de bord voyages) : tout | flotte | externe | comparaison.
+// Portée de la page (barre de filtres voyages) : tout | flotte | externe | comparaison.
 // Hors page voyages (config.php), pas de filtre de portée : radio libre.
 $vpPageScope = function_exists('getVoyagesScope') ? getVoyagesScope() : 'tout';
+// Période d'analyse (barre de filtres voyages) : défaut mois courant (aussi sur config.php).
+[$vpDateFrom, $vpDateTo] = function_exists('getVoyagesPeriod') ? getVoyagesPeriod() : [date('Y-m-01'), date('Y-m-t')];
+$vpPeriodSuffix = (function_exists('getVoyagesPeriodIsCustom') && getVoyagesPeriodIsCustom()) ? ' (période)' : ' (mois)';
 $vpRepo = new VoyagePrestataireRepository($con);
-$vpStats = $vpRepo->statsExternes(getContextRegions(), getContextEntities(), null);
+$vpStats = $vpRepo->statsExternesBetween(getContextRegions(), getContextEntities(), null, $vpDateFrom, $vpDateTo);
 $voyageRepo = new VoyageRepository($con);
 
 // La carte Voyages est masquée en flotte et en comparaison : le nombre de voyages
@@ -12,21 +15,21 @@ $voyageRepo = new VoyageRepository($con);
 $vpShowVoyagesCard = !in_array($vpPageScope, ['flotte', 'comparaison'], true);
 
 if ($vpPageScope === 'comparaison') {
-    $vpFleet = $voyageRepo->statsQteFlotte(getContextRegions(), getContextEntities(), null);
+    $vpFleet = $voyageRepo->statsQteFlotteBetween(getContextRegions(), getContextEntities(), null, $vpDateFrom, $vpDateTo);
     $vpQteDisplay = $vpFleet['total_qte_fmt'] . ' / ' . $vpStats['total_qte_fmt'];
     $vpUnite = '';
-    $vpQteLabel = 'Qtés transportées (mois) flotte / externes';
+    $vpQteLabel = 'Qtés transportées' . $vpPeriodSuffix . ' flotte / externes';
 } elseif ($vpPageScope === 'flotte') {
-    $vpFleet = $voyageRepo->statsQteFlotte(getContextRegions(), getContextEntities(), null);
+    $vpFleet = $voyageRepo->statsQteFlotteBetween(getContextRegions(), getContextEntities(), null, $vpDateFrom, $vpDateTo);
     $vpQteDisplay = $vpFleet['total_qte_fmt'];
     $vpUnite = $vpFleet['unite'];
-    $vpQteLabel = 'Qtés transportées (mois)';
+    $vpQteLabel = 'Qtés transportées' . $vpPeriodSuffix;
 } else {
     $vpNbDisplay = number_format($vpStats['nb_voyages'], 0, ',', ' ');
     $vpQteDisplay = $vpStats['total_qte_fmt'];
     $vpUnite = $vpStats['unite'];
-    $vpVoyagesLabel = 'Voyages prestataires (mois)';
-    $vpQteLabel = 'Qtés transportées (mois)';
+    $vpVoyagesLabel = 'Voyages prestataires' . $vpPeriodSuffix;
+    $vpQteLabel = 'Qtés transportées' . $vpPeriodSuffix;
 }
 // Le radio est libre uniquement en portée « tout » ; sinon figé sur la portée de la page
 // (externe → Prestataires, flotte → Flotte, comparaison → Les 2).
@@ -70,6 +73,10 @@ $vpRadioChecked = $vpPageScope === 'tout' ? 'externe' : ($vpPageScope === 'compa
 </div>
 <script>
     const vpPageScope = '<?= $vpPageScope ?>';
+    const vpPeriodSuffix = '<?= h($vpPeriodSuffix) ?>';
+    // Période de la page (barre de filtres) — sur la page configuration, mois courant par défaut.
+    const vpDateFrom = '<?= h($vpDateFrom) ?>';
+    const vpDateTo = '<?= h($vpDateTo) ?>';
 
     function getStatScope() {
         if (vpPageScope !== 'tout') return vpPageScope;
@@ -77,12 +84,14 @@ $vpRadioChecked = $vpPageScope === 'tout' ? 'externe' : ($vpPageScope === 'compa
     }
 
     // Recharge les stats du bloc selon la portée (bouton radio, figé hors portée « tout »)
-    // et le type de chargement
+    // et le type de chargement — sur la même période que la page.
     function loadStatsPrestataires() {
         $.ajax({
             type: 'post',
             data: 'load-stats-prestataires=1&type-chargement-stat=' + $('#type-chargement-stat').val()
-                + '&scope-stat-prestataires=' + getStatScope(),
+                + '&scope-stat-prestataires=' + getStatScope()
+                + '&date-from-stat=' + vpDateFrom
+                + '&date-to-stat=' + vpDateTo,
             dataType: 'json'
         }).done((res) => {
             if (res.success) {
@@ -90,15 +99,15 @@ $vpRadioChecked = $vpPageScope === 'tout' ? 'externe' : ($vpPageScope === 'compa
                 $('#stat-vp-unite').text(res.unite || '')
                 $('#stat-vp-voyages').text(res.nb_voyages)
                 const voyageLabels = {
-                    externe: 'Voyages prestataires (mois)',
-                    flotte: 'Voyages flotte (mois)',
-                    tout: 'Voyages (mois)'
+                    externe: 'Voyages prestataires' + vpPeriodSuffix,
+                    flotte: 'Voyages flotte' + vpPeriodSuffix,
+                    tout: 'Voyages' + vpPeriodSuffix
                 }
                 const qteLabels = {
-                    externe: 'Qtés transportées (mois)',
-                    flotte: 'Qtés transportées (mois)',
-                    tout: 'Qtés transportées (mois)',
-                    comparaison: 'Qtés transportées (mois) flotte / externes'
+                    externe: 'Qtés transportées' + vpPeriodSuffix,
+                    flotte: 'Qtés transportées' + vpPeriodSuffix,
+                    tout: 'Qtés transportées' + vpPeriodSuffix,
+                    comparaison: 'Qtés transportées' + vpPeriodSuffix + ' flotte / externes'
                 }
                 $('#stat-vp-voyages-label').text(voyageLabels[res.scope] || voyageLabels.externe)
                 $('#stat-vp-qte-label').text(qteLabels[res.scope] || qteLabels.externe)

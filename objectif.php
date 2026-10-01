@@ -14,9 +14,9 @@
         $tableau .= "<tr><td>$i</td><td>" . h($r['date_objectif_periode']) . "</td><td>" . h($r['nom_region'] ?? '—') . "</td><td>" . h($r['nom_entite'] ?? '—') . "</td><td>" . h($r['objectif']) . "</td><td><div class='btn-group'>".(in_array('upd',$rights_voyage) ? "<button class='btn btn-light' type='button' title='Modifier l'objectif " . h($r['date_objectif_periode']) . "' onclick='showModalUpdateObjectif(\"".$r['id_objectif_periode']."\")'><i class='fa fa-pencil-alt'></i></button>" : "").(in_array('del',$rights_voyage) ? "<button class='btn btn-danger' title='Supprimer le objectif " . h($r['date_objectif_periode']) . "' onclick='deleteObjectif(\"".$r['id_objectif_periode']."\")'><i class='fa fa-times'></i></button>" : "")."</div></td></tr>";
         $i++;
     endforeach;
-    $form="<form method='post' action='?page=voyages&subpage=listeObjectifsVoyages' class='row'><div class='col-4'><div class='form-floating'><input type='date' value='".(isset($_POST['date-f']) ? $_POST['date-f'] : date('Y-m-01'))."' class='form-control' id='date-f' name='date-f'><label for='date-f'>Date début</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='".(isset($_POST['date-t']) ? $_POST['date-t'] : date('Y-m-t'))."'><label for='date-t'>Date fin</label></div></div><div class='col-4'><button class='btn btn-primary'>Afficher</button></div></form>";
     $tableau .= "</tbody></table>";
-    return $form."<hr>".$tableau;
+    // La période est fournie par la barre de filtres en haut de page (POST date-f/date-t).
+    return $tableau;
 }
 ?>
 <?php include('modalNewObjectif.php'); ?>

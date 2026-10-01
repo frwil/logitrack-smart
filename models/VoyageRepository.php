@@ -366,7 +366,87 @@ class VoyageRepository extends BaseRepository
         return $fleet + $ext;
     }
 
-    /** Quantités transportées par la flotte du mois courant (contexte filtré) — même forme que statsExternes. */
+    /** Fleet voyages in a date range (context-filtered). */
+    private function countFleetVoyagesBetween(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): int
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $params = array_merge($params, [$dateFrom, $dateTo]);
+        return count($this->select(
+            "SELECT voyage.id_voyage FROM voyage
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             AND date_voyage BETWEEN ? AND ?",
+            $params
+        ));
+    }
+
+    /** Voyages in a date range (fleet + external), scoped: tout | flotte | externe. */
+    public function countVoyagesBetween(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo, string $scope = 'tout'): int
+    {
+        $fleet = $this->countFleetVoyagesBetween($regionIds, $entiteIds, $dateFrom, $dateTo);
+        $vpRepo = new VoyagePrestataireRepository($this->con);
+        $ext = $vpRepo->statsExternesBetween($regionIds, $entiteIds, null, $dateFrom, $dateTo)['nb_voyages'];
+        if ($scope === 'flotte') return $fleet;
+        if ($scope === 'externe') return $ext;
+        return $fleet + $ext;
+    }
+
+    /** Quantités transportées par la flotte sur une plage de dates (contexte filtré) — même forme que statsExternesBetween. */
+    public function statsQteFlotteBetween(array $regionIds, array $entiteIds, ?int $typeChargementId, string $dateFrom, string $dateTo): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $params = array_merge($params, [$dateFrom, $dateTo]);
+        $sql = "SELECT COUNT(*) AS nb_voyages, COALESCE(SUM(qte_chargement), 0) AS total_qte
+                FROM voyage
+                LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
+                WHERE affectation_vehicule.is_deleted = 0 AND $where
+                  AND date_voyage BETWEEN ? AND ?";
+        if ($typeChargementId) {
+            $sql .= " AND voyage.id_type_chargement = ?";
+            $params[] = $typeChargementId;
+        }
+        $row = $this->selectOne($sql, $params);
+        $unite = '';
+        if ($typeChargementId) {
+            $t = $this->selectOne("SELECT unite_mesure FROM type_chargement_voyage WHERE id_type_chargement = ?", [$typeChargementId]);
+            $unite = $t['unite_mesure'] ?? '';
+        }
+        return [
+            'nb_voyages' => (int)($row['nb_voyages'] ?? 0),
+            'total_qte' => (float)($row['total_qte'] ?? 0),
+            'total_qte_fmt' => number_format((float)($row['total_qte'] ?? 0), 0, ',', ' '),
+            'unite' => $unite,
+        ];
+    }
+
+    /** Objectives realisation rate over a date range, scoped: tout | flotte | externe. */
+    public function tauxRealisationBetween(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo, string $scope = 'tout'): float
+    {
+        $voyages = $this->countVoyagesBetween($regionIds, $entiteIds, $dateFrom, $dateTo, $scope);
+
+        $objWhere = '';
+        $objParams = [];
+        if (!empty($regionIds)) {
+            [$ph, $p] = db_in($regionIds);
+            $objWhere .= " AND id_region IN ($ph)";
+            $objParams = array_merge($objParams, $p);
+        }
+        if (!empty($entiteIds)) {
+            [$ph, $p] = db_in($entiteIds);
+            $objWhere .= " AND id_entite IN ($ph)";
+            $objParams = array_merge($objParams, $p);
+        }
+        $objParams = array_merge($objParams, [$dateFrom, $dateTo]);
+        $row = $this->selectOne(
+            "SELECT SUM(objectif) AS total FROM objectif_periode_region
+             WHERE date_objectif_periode BETWEEN ? AND ?
+             $objWhere",
+            $objParams
+        );
+        $objectif = (float)($row['total'] ?? 0);
+        if ($objectif <= 0) return 0;
+        return round($voyages / $objectif * 100, 1);
+    }
     public function statsQteFlotte(array $regionIds, array $entiteIds, ?int $typeChargementId = null): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
@@ -447,6 +527,33 @@ class VoyageRepository extends BaseRepository
         return $fleet + $ext;
     }
 
+    /** Fleet km in a date range (context-filtered). */
+    private function sumKmFleetBetween(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): float
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $params = array_merge($params, [$dateFrom, $dateTo]);
+        $row = $this->selectOne(
+            "SELECT SUM(distance_destination) AS total FROM voyage
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
+             LEFT JOIN voyage_vehicule ON voyage_vehicule.id_voyage = voyage.id_voyage
+             LEFT JOIN destination_voyage ON destination_voyage.id_destination = voyage_vehicule.id_destination
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             AND date_voyage BETWEEN ? AND ?",
+            $params
+        );
+        return (float)($row['total'] ?? 0);
+    }
+
+    /** Km in a date range (fleet + external), scoped: tout | flotte | externe. */
+    public function sumKmBetween(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo, string $scope = 'tout'): float
+    {
+        $fleet = $this->sumKmFleetBetween($regionIds, $entiteIds, $dateFrom, $dateTo);
+        $ext = (new VoyagePrestataireRepository($this->con))->sumKmBetween($regionIds, $entiteIds, $dateFrom, $dateTo);
+        if ($scope === 'flotte') return $fleet;
+        if ($scope === 'externe') return $ext;
+        return $fleet + $ext;
+    }
+
     public function countActiveVehicles(array $regionIds, array $entiteIds): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
@@ -490,13 +597,64 @@ class VoyageRepository extends BaseRepository
         return round($carb / $dist * 100, 2);
     }
 
-    // ---- N2: Dashboard charts ----
-
-    public function dailyVoyagesVsObjectives(int $days, array $regionIds, array $entiteIds, string $scope = 'tout'): array
+    /** Active vehicles on a date range : vehicles with at least one voyage in the period / total open affectations. */
+    public function countActiveVehiclesBetween(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
-        $dateFrom = date('Y-m-d', strtotime("-{$days} days"));
-        $dateTo = date('Y-m-d');
+        $total = count($this->select(
+            "SELECT id_affectation FROM affectation_vehicule
+             WHERE is_deleted = 0 AND is_ferme = 0 AND $where",
+            $params
+        ));
+        $actifs = count($this->select(
+            "SELECT DISTINCT affectation_vehicule.id_vehicule FROM voyage
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
+             WHERE affectation_vehicule.is_deleted = 0 AND is_ferme = 0 AND $where
+             AND date_voyage BETWEEN ? AND ?",
+            array_merge($params, [$dateFrom, $dateTo])
+        ));
+        return ['actifs' => $actifs, 'total' => $total];
+    }
+
+    /** Fleet average consumption (L/100km) over a date range (context-filtered). */
+    public function avgConsumptionBetween(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): ?float
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $carburant = $this->selectOne(
+            "SELECT SUM(qte_carburant) AS total FROM voyage
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             AND date_voyage BETWEEN ? AND ?",
+            array_merge($params, [$dateFrom, $dateTo])
+        );
+        $km = $this->selectOne(
+            "SELECT SUM(distance_destination) AS total FROM voyage
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
+             LEFT JOIN voyage_vehicule ON voyage_vehicule.id_voyage = voyage.id_voyage
+             LEFT JOIN destination_voyage ON destination_voyage.id_destination = voyage_vehicule.id_destination
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             AND date_voyage BETWEEN ? AND ?",
+            array_merge($params, [$dateFrom, $dateTo])
+        );
+        $carb = (float)($carburant['total'] ?? 0);
+        $dist = (float)($km['total'] ?? 0);
+        if ($dist <= 0) return null;
+        return round($carb / $dist * 100, 2);
+    }
+
+    // ---- N2: Dashboard charts ----
+
+    public function dailyVoyagesVsObjectives(int $days, array $regionIds, array $entiteIds, string $scope = 'tout', ?string $dateFrom = null, ?string $dateTo = null): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        if ($dateFrom !== null && $dateTo !== null && strtotime($dateFrom) !== false && strtotime($dateTo) !== false) {
+            $dateFrom = date('Y-m-d', strtotime($dateFrom));
+            $dateTo = date('Y-m-d', strtotime($dateTo));
+            if ($dateFrom > $dateTo) [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+        } else {
+            $dateFrom = date('Y-m-d', strtotime("-{$days} days"));
+            $dateTo = date('Y-m-d');
+        }
 
         $voyages = $this->select(
             "SELECT date_voyage AS date, COUNT(*) AS nb FROM voyage
@@ -545,8 +703,9 @@ class VoyageRepository extends BaseRepository
         }
 
         $result = [];
-        for ($i = $days; $i >= 0; $i--) {
-            $d = date('Y-m-d', strtotime("-{$i} days"));
+        // Garde-fou : borne la boucle à 400 jours pour éviter une plage pathologique.
+        $d = $dateFrom;
+        for ($i = 0; $i < 400 && $d <= $dateTo; $i++) {
             $row = $byDate[$d] ?? ['date' => $d, 'voyages_flotte' => 0, 'voyages_externe' => 0, 'objectif' => 0];
             $f = (int)($row['voyages_flotte'] ?? 0);
             $e = (int)($row['voyages_externe'] ?? 0);
@@ -559,14 +718,21 @@ class VoyageRepository extends BaseRepository
                 unset($row['voyages_flotte'], $row['voyages_externe']);
             }
             $result[] = $row;
+            $d = date('Y-m-d', strtotime($d . ' +1 day'));
         }
         return $result;
     }
 
-    /** Fleet-only top destinations (context-filtered). */
-    private function topDestinationsFlotte(int $limit, array $regionIds, array $entiteIds): array
+    /** Fleet-only top destinations (context-filtered), optionally restricted to a date range. */
+    private function topDestinationsFlotte(int $limit, array $regionIds, array $entiteIds, ?string $dateFrom = null, ?string $dateTo = null): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        if ($dateFrom !== null && $dateTo !== null) {
+            $where .= ' AND v.date_voyage BETWEEN ? AND ?';
+            $params[] = $dateFrom;
+            $params[] = $dateTo;
+        }
+        $params[] = $limit;
         return $this->select(
             "SELECT dv.lib_destination, COUNT(*) AS nb_voyages, SUM(dv.distance_destination) AS total_km
              FROM voyage_vehicule vv
@@ -577,23 +743,24 @@ class VoyageRepository extends BaseRepository
              GROUP BY vv.id_destination, dv.lib_destination
              ORDER BY nb_voyages DESC
              LIMIT ?",
-            array_merge($params, [$limit])
+            $params
         );
     }
 
     /**
      * Top destinations, scoped: tout | flotte | externe | comparaison.
      * In comparaison mode each row carries nb_voyages_flotte/nb_voyages_externe instead of the merged totals.
+     * Optional date range filters both sources.
      */
-    public function topDestinations(int $limit, array $regionIds, array $entiteIds, string $scope = 'tout'): array
+    public function topDestinations(int $limit, array $regionIds, array $entiteIds, string $scope = 'tout', ?string $dateFrom = null, ?string $dateTo = null): array
     {
         $vpRepo = new VoyagePrestataireRepository($this->con);
-        if ($scope === 'flotte') return $this->topDestinationsFlotte($limit, $regionIds, $entiteIds);
-        if ($scope === 'externe') return $vpRepo->topDestinationsExt($limit, $regionIds, $entiteIds);
+        if ($scope === 'flotte') return $this->topDestinationsFlotte($limit, $regionIds, $entiteIds, $dateFrom, $dateTo);
+        if ($scope === 'externe') return $vpRepo->topDestinationsExt($limit, $regionIds, $entiteIds, $dateFrom, $dateTo);
 
         // tout or comparaison: merge both sources on the destination label.
-        $flotte = $this->topDestinationsFlotte($limit * 2, $regionIds, $entiteIds);
-        $externes = $vpRepo->topDestinationsExt($limit * 2, $regionIds, $entiteIds);
+        $flotte = $this->topDestinationsFlotte($limit * 2, $regionIds, $entiteIds, $dateFrom, $dateTo);
+        $externes = $vpRepo->topDestinationsExt($limit * 2, $regionIds, $entiteIds, $dateFrom, $dateTo);
         $map = [];
         foreach ($flotte as $r) {
             $map[$r['lib_destination']] = [

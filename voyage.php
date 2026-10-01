@@ -96,10 +96,8 @@
     endforeach;
     $tableau .= "</tbody></table>";
 
-    $fDateFrom = isset($_POST['date-f']) ? h($_POST['date-f']) : date('Y-m-01');
-    $fDateTo   = isset($_POST['date-t']) ? h($_POST['date-t']) : date('Y-m-t');
-    $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='$fDateFrom'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='$fDateTo'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
-    return $form . "<hr>" . $tableau . getTableauVoyagesPrestataires();
+    // La période est fournie par la barre de filtres en haut de page (POST date-f/date-t).
+    return $tableau . getTableauVoyagesPrestataires();
 }
 function getTableauVoyagesPrestataires()
 {
@@ -291,8 +289,8 @@ function getTableauVoyagesVehicules()
         $tfoot .= "</tr>";
     endif;
     $tableau .= "</tbody><tfoot>$tfoot</tfoot></table>";
-    $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='" . (isset($_POST['date-f']) ? h($_POST['date-f']) : date('Y-m-01')) . "'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='" . (isset($_POST['date-t']) ? h($_POST['date-t']) : date('Y-m-t')) . "'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
-    return $form . "<hr>" . $tableau;
+    // La période est fournie par la barre de filtres en haut de page (POST date-f/date-t).
+    return $tableau;
 }
 function getTableauVoyagesPeriodes()
 {
@@ -426,8 +424,8 @@ function getTableauVoyagesPeriodes()
         $tfoot .= "</tr>";
     endif;
     $tableau .= "</tbody><tfoot>$tfoot</tfoot></table>";
-    $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='" . (isset($_POST['date-f']) ? h($_POST['date-f']) : date('Y-m-01')) . "'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='" . (isset($_POST['date-t']) ? h($_POST['date-t']) : date('Y-m-t')) . "'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
-    return $form . "<hr>" . $tableau;
+    // La période est fournie par la barre de filtres en haut de page (POST date-f/date-t).
+    return $tableau;
 }
 
 function getTableauEvaluationVoyages()
@@ -521,9 +519,8 @@ function getTableauEvaluationVoyages()
         $tableau .= "</tr>";
     endforeach;
     $tableau .= "</tbody></table>";
-    $form = "<form method='post' action='#' class='row'><div class='col-4'><div class='form-floating'><input type='date' id='date-f' name='date-f' class='form-control' value='" . (isset($_POST['date-f']) ? h($_POST['date-f']) : date('Y-m-01')) . "'><label for='date-f'>Date départ</label></div></div><div class='col-4'><div class='form-floating'><input type='date' id='date-t' name='date-t' class='form-control' value='" . (isset($_POST['date-t']) ? h($_POST['date-t']) : date('Y-m-t')) . "'><label for='date-t'>Date fin</label></div></div><div class='col-4' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form>";
-
-    return $form . "<hr>" . $tableau;
+    // La période est fournie par la barre de filtres en haut de page (POST date-f/date-t).
+    return $tableau;
 }
 ?>
 <?php include('modalNewVoyage.php'); ?>
@@ -598,7 +595,7 @@ function getTableauEvaluationVoyages()
                 if (e.success) {
                     showSuccess('Modification effectuée!!')
                     <?php if(isset($_POST['date-f'])):
-                    echo "$('body').append('<form method=\"post\" action=\"#\" id=\"form-reload-after-upd\"><input type=\"hidden\" name=\"date-f\" value=" . j($_POST['date-f']) . "><input type=\"hidden\" name=\"date-t\" value=" . j($_POST['date-t']) . "></form>');$('#form-reload-after-upd').submit();";
+                    echo "$('body').append('<form method=\"post\" action=\"#\" id=\"form-reload-after-upd\"><input type=\"hidden\" name=\"date-f\" value=" . j($_POST['date-f']) . "><input type=\"hidden\" name=\"date-t\" value=" . j($_POST['date-t']) . "><input type=\"hidden\" name=\"scope\" value=" . j(getVoyagesScope()) . "></form>');$('#form-reload-after-upd').submit();";
                     else : ?>
                     location = "?page=voyages"
                     <?php endif; ?>
@@ -722,33 +719,98 @@ function getTableauEvaluationVoyages()
 
 <?php
 /**
- * Scope courant des statistiques voyages (paramètre GET ?scope=).
+ * Période d'analyse des statistiques voyages (POST date-f / date-t, barre de filtres).
+ * Défaut : mois courant. Les bornes sont validées, normalisées et interverties si besoin.
+ */
+function getVoyagesPeriod(): array
+{
+    $from = $_POST['date-f'] ?? '';
+    $to = $_POST['date-t'] ?? '';
+    $tsFrom = strtotime($from);
+    $tsTo = strtotime($to);
+    if ($tsFrom === false || $tsTo === false) return [date('Y-m-01'), date('Y-m-t')];
+    $dateFrom = date('Y-m-d', $tsFrom);
+    $dateTo = date('Y-m-d', $tsTo);
+    if ($dateFrom > $dateTo) [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+    return [$dateFrom, $dateTo];
+}
+
+/** Vrai si une période personnalisée a été soumise (différente du mois courant). */
+function getVoyagesPeriodIsCustom(): bool
+{
+    $from = $_POST['date-f'] ?? '';
+    $to = $_POST['date-t'] ?? '';
+    if (strtotime($from) === false || strtotime($to) === false) return false;
+    [$dateFrom, $dateTo] = getVoyagesPeriod();
+    return $dateFrom !== date('Y-m-01') || $dateTo !== date('Y-m-t');
+}
+
+/**
+ * Scope courant des statistiques voyages (POST barre de filtres, puis GET ?scope=).
  * tout | flotte | externe | comparaison — comparaison affiche flotte et externes côte à côte.
  */
 function getVoyagesScope()
 {
-    $scope = $_GET['scope'] ?? 'tout';
+    $scope = $_POST['scope'] ?? ($_GET['scope'] ?? 'tout');
     return in_array($scope, ['tout', 'flotte', 'externe', 'comparaison'], true) ? $scope : 'tout';
 }
 
-/** Filtre de portée des statistiques voyages (recharge la page avec ?scope=). */
-function getVoyagesScopeFilter(string $scope)
+/**
+ * Barre de filtres période + portée des statistiques voyages.
+ * Formulaire POST unique en haut de page : les tableaux et les cartes lisent
+ * $_POST['date-f']/['date-t']/['scope'] (la soumission du select conserve les dates).
+ */
+function getVoyagesFilterBar(string $scope)
 {
+    [$dateFrom, $dateTo] = getVoyagesPeriod();
+
     $options = [
         'tout' => 'Tous les voyages',
         'flotte' => 'Voyages flotte',
         'externe' => 'Voyages externes',
         'comparaison' => 'Comparaison flotte / externes',
     ];
-    $html = '<div class="d-flex justify-content-end mb-3"><div class="input-group" style="max-width: 320px;">'
+    $presets = [
+        'Mois en cours' => [date('Y-m-01'), date('Y-m-t')],
+        'Mois dernier' => [date('Y-m-01', strtotime('first day of last month')), date('Y-m-t', strtotime('last day of last month'))],
+        '30 derniers jours' => [date('Y-m-d', strtotime('-29 days')), date('Y-m-d')],
+    ];
+
+    $html = '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title"><i class="fa fa-sliders-h me-1"></i>Filtres des statistiques voyages</h2></div>';
+    $html .= '<div class="p-3"><form method="post" action="#" id="form-filtres-voyages" class="d-flex flex-wrap align-items-end gap-2">';
+    $html .= '<div class="me-2">'
+        . '<label class="fw-bold small text-muted d-block mb-1"><i class="fa fa-calendar-alt me-1"></i>PÉRIODE D\'ANALYSE</label>'
+        . '<div class="d-flex align-items-center gap-2">'
+        . '<div class="form-floating" style="min-width:160px"><input type="date" id="date-f" name="date-f" class="form-control" value="' . h($dateFrom) . '"><label for="date-f">Du</label></div>'
+        . '<span class="text-muted"><i class="fa fa-arrow-right"></i></span>'
+        . '<div class="form-floating" style="min-width:160px"><input type="date" id="date-t" name="date-t" class="form-control" value="' . h($dateTo) . '"><label for="date-t">Au</label></div>'
+        . '<button type="submit" class="btn btn-primary"><i class="fa fa-check me-1"></i>Afficher</button>'
+        . '</div></div>';
+    $html .= '<div class="me-2">'
+        . '<label class="fw-bold small text-muted d-block mb-1">RACCOURCIS</label>'
+        . '<div class="btn-group">';
+    foreach ($presets as $label => [$from, $to]) {
+        $html .= '<button type="button" class="btn btn-outline-primary btn-period-shortcut" data-period-from="' . h($from) . '" data-period-to="' . h($to) . '">' . h($label) . '</button>';
+    }
+    $html .= '</div></div>';
+    $html .= '<div class="ms-auto">'
+        . '<label for="scope-stat-voyages" class="fw-bold small text-muted d-block mb-1">PORTÉE DES STATISTIQUES</label>'
+        . '<div class="input-group" style="max-width:320px">'
         . '<span class="input-group-text"><i class="fa fa-filter"></i></span>'
-        . '<select id="scope-stat-voyages" class="form-select" aria-label="Filtre des statistiques"'
-        . ' onchange="var u = new window.URL(location.href); u.searchParams.set(\'scope\', this.value); location = u.toString();">';
+        . '<select id="scope-stat-voyages" name="scope" class="form-select" aria-label="Filtre des statistiques" onchange="this.form.submit()">';
     foreach ($options as $value => $label) {
         $sel = $value === $scope ? ' selected' : '';
         $html .= '<option value="' . $value . '"' . $sel . '>' . h($label) . '</option>';
     }
     $html .= '</select></div></div>';
+    $html .= '</form></div></div>';
+    $html .= '<script>'
+        . "$('#form-filtres-voyages .btn-period-shortcut').on('click', function () {"
+        . "$('#date-f').val($(this).data('period-from'));"
+        . "$('#date-t').val($(this).data('period-to'));"
+        . "$('#form-filtres-voyages').submit();"
+        . '});'
+        . '</script>';
     return $html;
 }
 
@@ -759,58 +821,64 @@ function getDashboardCardsVoyages()
     $regionIds = getContextRegions();
     $entiteIds = getContextEntities();
     $scope = getVoyagesScope();
+    [$dateFrom, $dateTo] = getVoyagesPeriod();
+    $isCustom = getVoyagesPeriodIsCustom();
+    // « du mois » quand la période par défaut (ou égale au mois courant) est active,
+    // « de la période » quand une période personnalisée est choisie.
+    $periodWord = $isCustom ? 'de la période' : 'du mois';
+    $periodDetail = $isCustom ? ' (du ' . date('d/m/Y', strtotime($dateFrom)) . ' au ' . date('d/m/Y', strtotime($dateTo)) . ')' : '';
 
-    $html = getVoyagesScopeFilter($scope);
+    $html = getVoyagesFilterBar($scope);
 
     if ($scope === 'comparaison') {
-        $voyagesF = $repo->countVoyagesThisMonth($regionIds, $entiteIds, 'flotte');
-        $voyagesE = $repo->countVoyagesThisMonth($regionIds, $entiteIds, 'externe');
-        $tauxF = $repo->tauxRealisation($regionIds, $entiteIds, 'flotte');
-        $tauxE = $repo->tauxRealisation($regionIds, $entiteIds, 'externe');
-        $kmF = $repo->sumKmThisMonth($regionIds, $entiteIds, 'flotte');
-        $kmE = $repo->sumKmThisMonth($regionIds, $entiteIds, 'externe');
+        $voyagesF = $repo->countVoyagesBetween($regionIds, $entiteIds, $dateFrom, $dateTo, 'flotte');
+        $voyagesE = $repo->countVoyagesBetween($regionIds, $entiteIds, $dateFrom, $dateTo, 'externe');
+        $tauxF = $repo->tauxRealisationBetween($regionIds, $entiteIds, $dateFrom, $dateTo, 'flotte');
+        $tauxE = $repo->tauxRealisationBetween($regionIds, $entiteIds, $dateFrom, $dateTo, 'externe');
+        $kmF = $repo->sumKmBetween($regionIds, $entiteIds, $dateFrom, $dateTo, 'flotte');
+        $kmE = $repo->sumKmBetween($regionIds, $entiteIds, $dateFrom, $dateTo, 'externe');
         $voyagesMois = $voyagesF + $voyagesE;
-        $taux = $repo->tauxRealisation($regionIds, $entiteIds, 'tout');
+        $taux = $repo->tauxRealisationBetween($regionIds, $entiteIds, $dateFrom, $dateTo, 'tout');
         $kmMois = $kmF + $kmE;
     } else {
-        $voyagesMois = $repo->countVoyagesThisMonth($regionIds, $entiteIds, $scope);
-        $taux = $repo->tauxRealisation($regionIds, $entiteIds, $scope);
-        $kmMois = $repo->sumKmThisMonth($regionIds, $entiteIds, $scope);
+        $voyagesMois = $repo->countVoyagesBetween($regionIds, $entiteIds, $dateFrom, $dateTo, $scope);
+        $taux = $repo->tauxRealisationBetween($regionIds, $entiteIds, $dateFrom, $dateTo, $scope);
+        $kmMois = $repo->sumKmBetween($regionIds, $entiteIds, $dateFrom, $dateTo, $scope);
     }
-    $vehicules = $repo->countActiveVehicles($regionIds, $entiteIds);
-    $conso = $repo->avgConsumption($regionIds, $entiteIds);
+    $vehicules = $repo->countActiveVehiclesBetween($regionIds, $entiteIds, $dateFrom, $dateTo);
+    $conso = $repo->avgConsumptionBetween($regionIds, $entiteIds, $dateFrom, $dateTo);
 
     $tauxClass = $taux >= 100 ? 'lt-stat-success' : ($taux >= 80 ? 'lt-stat-warning' : 'lt-stat-danger');
     $consoClass = $conso === null ? '' : ($conso <= 15 ? 'lt-stat-success' : ($conso <= 25 ? 'lt-stat-warning' : 'lt-stat-danger'));
 
     if ($scope === 'comparaison') {
         $voyagesDisplay = number_format($voyagesF, 0, ',', ' ') . ' / ' . number_format($voyagesE, 0, ',', ' ');
-        $voyagesLabel = 'Voyages du mois (flotte / externes)';
+        $voyagesLabel = 'Voyages ' . $periodWord . ' (flotte / externes)' . $periodDetail;
         $tauxDisplay = $tauxF . ' % / ' . $tauxE . ' %';
-        $tauxLabel = 'Taux réalisation (flotte / externes)';
+        $tauxLabel = 'Taux réalisation ' . $periodWord . ' (flotte / externes)' . $periodDetail;
         $kmDisplay = number_format($kmF, 0, ',', ' ') . ' / ' . number_format($kmE, 0, ',', ' ') . ' km';
-        $kmLabel = 'Km du mois (flotte / externes)';
+        $kmLabel = 'Km ' . $periodWord . ' (flotte / externes)' . $periodDetail;
     } elseif ($scope === 'externe') {
         $voyagesDisplay = number_format($voyagesMois, 0, ',', ' ');
-        $voyagesLabel = 'Voyages externes du mois';
+        $voyagesLabel = 'Voyages externes ' . $periodWord . $periodDetail;
         $tauxDisplay = $taux . ' %';
-        $tauxLabel = 'Taux réalisation externes';
+        $tauxLabel = 'Taux réalisation externes ' . $periodWord . $periodDetail;
         $kmDisplay = number_format($kmMois, 0, ',', ' ') . ' km';
-        $kmLabel = 'Km externes du mois';
+        $kmLabel = 'Km externes ' . $periodWord . $periodDetail;
     } elseif ($scope === 'flotte') {
         $voyagesDisplay = number_format($voyagesMois, 0, ',', ' ');
-        $voyagesLabel = 'Voyages flotte du mois';
+        $voyagesLabel = 'Voyages flotte ' . $periodWord . $periodDetail;
         $tauxDisplay = $taux . ' %';
-        $tauxLabel = 'Taux réalisation flotte';
+        $tauxLabel = 'Taux réalisation flotte ' . $periodWord . $periodDetail;
         $kmDisplay = number_format($kmMois, 0, ',', ' ') . ' km';
-        $kmLabel = 'Km flotte du mois';
+        $kmLabel = 'Km flotte ' . $periodWord . $periodDetail;
     } else {
         $voyagesDisplay = number_format($voyagesMois, 0, ',', ' ');
-        $voyagesLabel = 'Voyages du mois';
+        $voyagesLabel = 'Voyages ' . $periodWord . $periodDetail;
         $tauxDisplay = $taux . ' %';
-        $tauxLabel = 'Taux réalisation objectifs';
+        $tauxLabel = 'Taux réalisation objectifs ' . $periodWord . $periodDetail;
         $kmDisplay = number_format($kmMois, 0, ',', ' ') . ' km';
-        $kmLabel = 'Km parcourus du mois';
+        $kmLabel = 'Km parcourus ' . $periodWord . $periodDetail;
     }
 
     $html .= '<div class="row g-3 mb-3">';
@@ -837,14 +905,14 @@ function getDashboardCardsVoyages()
     $html .= '<div class="col-md"><div class="lt-card lt-stat-card">';
     $html .= '<div class="lt-stat-icon"><i class="fa fa-truck"></i></div>';
     $html .= '<div class="lt-stat-value">' . $vehiculesDisplay . '</div>';
-    $html .= '<div class="lt-stat-label">' . ($scope === 'comparaison' ? 'Véhicules actifs (flotte)' : 'Véhicules actifs') . '</div>';
+    $html .= '<div class="lt-stat-label">' . ($scope === 'comparaison' ? 'Véhicules actifs ' . $periodWord . ' (flotte)' : 'Véhicules actifs ' . $periodWord) . $periodDetail . '</div>';
     $html .= '</div></div>';
 
     $consoDisplay = $scope === 'externe' ? '—' : ($conso !== null ? number_format($conso, 1, ',', '') . ' L/100km' : '—');
     $html .= '<div class="col-md"><div class="lt-card lt-stat-card ' . $consoClass . '">';
     $html .= '<div class="lt-stat-icon"><i class="fa fa-gas-pump"></i></div>';
     $html .= '<div class="lt-stat-value">' . $consoDisplay . '</div>';
-    $html .= '<div class="lt-stat-label">' . ($scope === 'comparaison' ? 'Conso moyenne flotte (mois)' : 'Conso moyenne (mois)') . '</div>';
+    $html .= '<div class="lt-stat-label">' . ($scope === 'comparaison' ? 'Conso moyenne flotte ' . $periodWord : 'Conso moyenne ' . $periodWord) . $periodDetail . '</div>';
     $html .= '</div></div>';
 
     $html .= '</div>';
@@ -857,15 +925,20 @@ function getDashboardCardsVoyages()
 function getDashboardChartsVoyages()
 {
     $scope = getVoyagesScope();
+    [$dateFrom, $dateTo] = getVoyagesPeriod();
+    $isCustom = getVoyagesPeriodIsCustom();
+    $periodLabel = $isCustom ? ' (du ' . date('d/m/Y', strtotime($dateFrom)) . ' au ' . date('d/m/Y', strtotime($dateTo)) . ')' : '';
+    $vsObjSuffix = $isCustom ? $periodLabel : ' (30 jours)';
     $html = '<div class="row g-3 mb-3">';
     $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">'
-        . ($scope === 'comparaison' ? 'Voyages flotte vs externes vs Objectifs (30 jours)' : 'Voyages vs Objectifs (30 jours)') . '</h2></div>';
+        . ($scope === 'comparaison' ? 'Voyages flotte vs externes vs Objectifs' : 'Voyages vs Objectifs') . $vsObjSuffix . '</h2></div>';
     $html .= '<div id="chart-voyages-vs-obj" style="height: 350px;"></div></div></div>';
     $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">'
-        . ($scope === 'comparaison' ? 'Top destinations (flotte vs externes)' : 'Top destinations') . '</h2></div>';
+        . ($scope === 'comparaison' ? 'Top destinations (flotte vs externes)' : 'Top destinations') . $periodLabel . '</h2></div>';
     $html .= '<div id="chart-top-dest" style="height: 350px;"></div></div></div>';
     if ($scope !== 'externe') {
-        $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Consommation par véhicule (mois en cours)</h2></div>';
+        $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Consommation par véhicule'
+            . ($isCustom ? $periodLabel : ' (mois en cours)') . '</h2></div>';
         $html .= '<div id="chart-conso" style="height: 400px;"></div></div></div>';
     }
     $html .= '</div>';
@@ -878,9 +951,13 @@ function getDashboardChartsVoyages()
 
     $html .= '<script>
     var scopeStatsVoyages = ' . json_encode($scope) . ';
+    var customPeriodStats = ' . ($isCustom ? 'true' : 'false') . ';
+    var dateFromStats = ' . json_encode($dateFrom) . ';
+    var dateToStats = ' . json_encode($dateTo) . ';
+    var rangeStats = customPeriodStats ? "&dateFrom=" + dateFromStats + "&dateTo=" + dateToStats : "";
     google.charts.load("current", {packages: ["corechart", "table"]});
     google.charts.setOnLoadCallback(function() {
-        $.ajax({type:"post", data:"load-voyages-vs-obj=1&days=30&scope=" + scopeStatsVoyages, dataType:"json"})
+        $.ajax({type:"post", data:"load-voyages-vs-obj=1&days=30&scope=" + scopeStatsVoyages + rangeStats, dataType:"json"})
         .done(function(e) {
             if (!e.data || !e.data.length) return;
             var dt = new google.visualization.DataTable();
@@ -899,7 +976,7 @@ function getDashboardChartsVoyages()
                 c.draw(dt, {title:"Voyages vs Objectifs journaliers", curveType:"function", legend:{position:"bottom"}, colors:["#5D54A4","#E74C3C"], chartArea:{width:"85%", height:"75%"}});
             }
         });
-        $.ajax({type:"post", data:"load-top-destinations=1&limit=10&scope=" + scopeStatsVoyages, dataType:"json"})
+        $.ajax({type:"post", data:"load-top-destinations=1&limit=10&scope=" + scopeStatsVoyages + rangeStats, dataType:"json"})
         .done(function(e) {
             if (!e.data || !e.data.length) return;
             var dt = new google.visualization.DataTable();
@@ -919,7 +996,7 @@ function getDashboardChartsVoyages()
         });';
     if ($scope !== 'externe') {
         $html .= '
-        $.ajax({type:"post", data:"load-conso-per-vehicle=1", dataType:"json"})
+        $.ajax({type:"post", data:"load-conso-per-vehicle=1" + rangeStats, dataType:"json"})
         .done(function(e) {
             if (!e.data || !e.data.length) return;
             var dt = new google.visualization.DataTable();
@@ -931,7 +1008,7 @@ function getDashboardChartsVoyages()
             });
             dt.sort([{column:1, desc:true}]);
             var c = new google.visualization.ColumnChart(document.getElementById("chart-conso"));
-            c.draw(dt, {title:"Conso L/100km (mois en cours)", legend:"none", colors:["#E67E22"], chartArea:{width:"80%", height:"70%"}});
+            c.draw(dt, {title:"Conso L/100km' . ($isCustom ? $periodLabel : ' (mois en cours)') . '", legend:"none", colors:["#E67E22"], chartArea:{width:"80%", height:"70%"}});
         });
         $.ajax({type:"post", data:"load-vehicules-inactifs=1&days=7", dataType:"json"})
         .done(function(e) {

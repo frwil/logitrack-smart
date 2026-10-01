@@ -94,9 +94,12 @@ class VoyageController extends BaseController
         $days = (int)($this->post('days') ?: 30);
         $scope = $this->post('scope') ?: 'tout';
         if (!in_array($scope, ['tout', 'flotte', 'externe', 'comparaison'], true)) $scope = 'tout';
+        // Période personnalisée (barre de filtres voyages) : prioritaire sur $days.
+        $dateFrom = $this->post('dateFrom') ?: null;
+        $dateTo = $this->post('dateTo') ?: null;
         $regionIds = getContextRegions();
         $entiteIds = getContextEntities();
-        $data = $this->voyageRepo->dailyVoyagesVsObjectives($days, $regionIds, $entiteIds, $scope);
+        $data = $this->voyageRepo->dailyVoyagesVsObjectives($days, $regionIds, $entiteIds, $scope, $dateFrom, $dateTo);
         $this->json(['data' => $data]);
     }
 
@@ -105,9 +108,12 @@ class VoyageController extends BaseController
         $limit = (int)($this->post('limit') ?: 10);
         $scope = $this->post('scope') ?: 'tout';
         if (!in_array($scope, ['tout', 'flotte', 'externe', 'comparaison'], true)) $scope = 'tout';
+        // Période personnalisée (barre de filtres voyages) : filtre optionnel.
+        $dateFrom = $this->post('dateFrom') ?: null;
+        $dateTo = $this->post('dateTo') ?: null;
         $regionIds = getContextRegions();
         $entiteIds = getContextEntities();
-        $data = $this->voyageRepo->topDestinations($limit, $regionIds, $entiteIds, $scope);
+        $data = $this->voyageRepo->topDestinations($limit, $regionIds, $entiteIds, $scope, $dateFrom, $dateTo);
         $this->json(['data' => $data]);
     }
 

@@ -216,9 +216,11 @@ class PrestataireTransportController extends BaseController
     // ---- Stats (AJAX) ----
 
     /**
-     * Qtés transportées du mois, portée : externe | flotte | tout | comparaison
+     * Qtés transportées, portée : externe | flotte | tout | comparaison
      * (le bouton radio du bloc Qtés transportées choisit la portée ;
      * comparaison renvoie flotte / externes côte à côte).
+     * Période optionnelle (date-from-stat / date-to-stat, barre de filtres voyages) :
+     * absente ou invalide → mois courant.
      */
     public function stats(): never
     {
@@ -227,9 +229,22 @@ class PrestataireTransportController extends BaseController
         $scope = (string)$this->post('scope-stat-prestataires', 'externe');
         if (!in_array($scope, ['externe', 'flotte', 'tout', 'comparaison'], true)) $scope = 'externe';
 
-        $stats = $this->voyagePrestataireRepo->statsExternes(getContextRegions(), getContextEntities(), $typeId ?: null);
+        $dateFrom = $this->post('date-from-stat') ?: null;
+        $dateTo = $this->post('date-to-stat') ?: null;
+        $hasRange = $dateFrom !== null && $dateTo !== null
+            && strtotime($dateFrom) !== false && strtotime($dateTo) !== false;
+        if ($hasRange) {
+            $dateFrom = date('Y-m-d', strtotime($dateFrom));
+            $dateTo = date('Y-m-d', strtotime($dateTo));
+            if ($dateFrom > $dateTo) [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+            $stats = $this->voyagePrestataireRepo->statsExternesBetween(getContextRegions(), getContextEntities(), $typeId ?: null, $dateFrom, $dateTo);
+        } else {
+            $stats = $this->voyagePrestataireRepo->statsExternes(getContextRegions(), getContextEntities(), $typeId ?: null);
+        }
         if ($scope !== 'externe') {
-            $fleet = $this->voyageRepo->statsQteFlotte(getContextRegions(), getContextEntities(), $typeId ?: null);
+            $fleet = $hasRange
+                ? $this->voyageRepo->statsQteFlotteBetween(getContextRegions(), getContextEntities(), $typeId ?: null, $dateFrom, $dateTo)
+                : $this->voyageRepo->statsQteFlotte(getContextRegions(), getContextEntities(), $typeId ?: null);
             if ($scope === 'flotte') {
                 $stats = $fleet;
             } elseif ($scope === 'comparaison') {
