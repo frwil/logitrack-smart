@@ -186,6 +186,9 @@ function getTableauUsers()
                                         ['Prestataires',          'viewPrestataire', 'savePrestataire', 'updPrestataire', 'delPrestataire'],
                                         ['Centre de coûts',       'viewCentreCout',  'saveCentreCout',  'updCentreCout',  'delCentreCout'],
                                         ['Bons de réparation',    'viewBonsReparation', 'saveBonsReparation', 'updBonsReparation', 'delBonsReparation'],
+                                        ['Exercices budgétaires', 'viewExercice', 'saveExercice', 'updExercice', 'delExercice'],
+                                        ['Lignes budgétaires',    'viewLigneBudgetaire', 'saveLigneBudgetaire', 'updLigneBudgetaire', 'delLigneBudgetaire'],
+                                        ['Bons — Lier budget',    'linkBudget', '', '', ''],
                                     ];
                                     // Voyages specific action rights
                                     $voyagesSubs = [

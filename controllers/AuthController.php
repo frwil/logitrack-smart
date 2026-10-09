@@ -94,7 +94,7 @@ class AuthController extends BaseController
                 ['users_rights_objet' => 'vehicules', 'users_rights_valeur' => 'view,save,upd,del,print'],
                 ['users_rights_objet' => 'voyages', 'users_rights_valeur' => 'view,save,upd,del,report,savetrajet,viewtrajet,updtrajet,deltrajet'],
                 ['users_rights_objet' => 'affectationVehicules', 'users_rights_valeur' => 'view,save,upd,del,print'],
-                ['users_rights_objet' => 'maintenances', 'users_rights_valeur' => 'view,save,upd,del,print,updPrestataire,viewCentreCout,viewPrestataire,viewVidange,delPrestataire,updCentreCout,delCentreCout,viewBonsReparation,savePrestataire,saveBonsReparation,updBonsReparation,delBonsReparation,viewReleveKms,saveReleveKms,saveCentreCout,delVidange,updVidange,historyVidange'],
+                ['users_rights_objet' => 'maintenances', 'users_rights_valeur' => 'view,save,upd,del,print,updPrestataire,viewCentreCout,viewPrestataire,viewVidange,delPrestataire,updCentreCout,delCentreCout,viewBonsReparation,savePrestataire,saveBonsReparation,updBonsReparation,delBonsReparation,viewReleveKms,saveReleveKms,saveCentreCout,delVidange,updVidange,historyVidange,viewExercice,saveExercice,updExercice,delExercice,viewLigneBudgetaire,saveLigneBudgetaire,updLigneBudgetaire,delLigneBudgetaire,linkBudget'],
                 ['users_rights_objet' => 'users', 'users_rights_valeur' => 'view,save,upd,del'],
                 ['users_rights_objet' => 'config', 'users_rights_valeur' => 'view,save,upd,del,backup,viewPermis,savePermis,updPermis,delPermis,viewDocs,saveDocs,updDocs,delDocs,viewFolders,saveFolders,updFolders,delFolders'],
                 ['users_rights_objet' => 'report', 'users_rights_valeur' => 'view'],

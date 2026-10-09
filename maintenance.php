@@ -79,10 +79,10 @@ function getTableauCentreCout()
     if (in_array("viewCentreCout", $rights_maintenance)):
         $repo = new MaintenanceRepository($con);
         $rows = $repo->findAllCentresCouts();
-        $table = "<table id='table-centrecouts' class='table table-striped'><thead><tr><th>Centre de coûts</th><th></th></tr></thead><tbody>";
+        $table = "<table id='table-centrecouts' class='table table-striped'><thead><tr><th>Centre de coûts</th><th>Montant budget</th><th></th></tr></thead><tbody>";
         foreach ($rows as $r):
             $hash = $r['id_centre_cout'];
-            $table .= "<tr><td>" . h($r['lib_centre_cout']) . "</td><td><div class='btn-group'>" . (in_array("updCentreCout", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le centre de coûts' data-bs-toggle='modal' data-bs-target='#modal-upd-centrecout' data-bs-id-cc='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delCentreCout", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delCentreCout(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div>";
+            $table .= "<tr><td>" . h($r['lib_centre_cout']) . "</td><td>" . number_format((float)$r['montant_budget'], 0, ',', ' ') . "</td><td><div class='btn-group'>" . (in_array("updCentreCout", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier le centre de coûts' data-bs-toggle='modal' data-bs-target='#modal-upd-centrecout' data-bs-id-cc='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delCentreCout", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delCentreCout(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div>";
         endforeach;
         return "<a class='btn btn-primary' href='?page=maintenances&subpage=centreCouts&action=new'>Nouveau Centre de coûts</a><hr>" . $table . "</tbody></table>";
     else :
@@ -96,12 +96,66 @@ function getTableauBonsReparation()
     if (in_array("viewBonsReparation", $rights_maintenance)):
         $repo = new MaintenanceRepository($con);
         $rows = $repo->findAllBonsReparationByContext(getContextRegions(), getContextEntities());
-        $table = "<table id='table-bons-reparation' class='table table-striped responsive'><thead><tr><th>N°</th><th>Véhicule</th><th>Date d'entrée</th><th>Diagnostic</th><th>Type d'exécution</th><th>Prestataire</th><th>Montant</th><th>Opération additionnelle</th><th>Montant opération</th><th>Montant réel</th><th>Destination</th><th>Durée réparation</th><th>Date de justification</th><th>Centre de coûts</th><th>Date prévue de sortie</th><th>Date effective de fin des travaux</th><th>Observations</th><th></th></tr></thead><tbody>";
+        $table = "<table id='table-bons-reparation' class='table table-striped responsive'><thead><tr><th>N°</th><th>Véhicule</th><th>Date d'entrée</th><th>Diagnostic</th><th>Type d'exécution</th><th>Prestataire</th><th>Montant</th><th>Montant payé</th><th>Plus/Moins</th><th>Destination</th><th>Durée réelle</th><th>Date de justification</th><th>Date prévue de sortie</th><th>Durée prévue</th><th>Date effective de sortie</th><th>Observations</th><th>Ligne budgétaire</th><th></th></tr></thead><tbody>";
         foreach ($rows as $r):
             $hash = $r['id_bon_reparation'];
-            $table .= "<tr><td>" . h($r['num_bon_reparation']) . "</td><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . ($r['date_entree'] ? date('d-m-Y', strtotime($r['date_entree'])) : '') . "</td><td>" . h($r['diagnostic']) . "</td><td>" . ($r['type_execution'] == '0' ? "Interne" : "Externe") . "</td><td>" . h($r['nom_prestataire']) . "</td><td>" . h($r['montant_reparation']) . "</td><td>" . h($r['lib_plus_ou_moins_value']) . "</td><td>" . h($r['plus_ou_moins_value_valeur']) . "</td><td>" . ($r['montant_reparation'] + $r['plus_ou_moins_value_valeur'] * ($r['type_plus_ou_moins_value'] == 0 ? 1 : -1)) . "</td><td>" . h($r['destination_bon']) . "</td><td>" . h($r['duree_reparation']) . "</td><td>" . ($r['date_justification'] == '' ? "" : date('d-m-Y', strtotime($r['date_justification']))) . "</td><td>" . h($r['lib_centre_cout']) . "</td><td>" . ($r['date_prevue_sortie'] == "" ? "" : date('d-m-Y', strtotime($r['date_prevue_sortie']))) . "</td><td>" . ($r['date_fin_reparation'] == "" ? "" : date('d-m-Y', strtotime($r['date_fin_reparation']))) . "</td><td>" . h($r['observations']) . "</td><td><div class='btn-group'>" . (in_array("updBonsReparation", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-bonsReparation' data-bs-id-br='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delBonsReparation", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delBonsReparation(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+            // Montant payé NULL = pas encore payé (renseigné plus tard)
+            $paye = ($r['montant_paye'] === null || $r['montant_paye'] === '') ? null : (int)$r['montant_paye'];
+            if ($paye === null) {
+                $pmBadge = "<span class='badge text-bg-secondary'>—</span>";
+            } else {
+                $plusMoins = $paye - (int)$r['montant_reparation'];
+                if ($plusMoins > 0) {
+                    $pmBadge = "<span class='badge text-bg-success'>+$plusMoins</span>";
+                } elseif ($plusMoins < 0) {
+                    $pmBadge = "<span class='badge text-bg-danger'>$plusMoins</span>";
+                } else {
+                    $pmBadge = "<span class='badge text-bg-secondary'>0</span>";
+                }
+            }
+            $dureeReelle = ($r['date_fin_reparation'] === '' || $r['date_fin_reparation'] === '0000-00-00') ? '—' : (int)$r['duree_reparation'];
+            $dureePrevue = ($r['date_prevue_sortie'] === '' || $r['date_prevue_sortie'] === '0000-00-00') ? '—' : (int)$r['duree_prevue'];
+            $table .= "<tr><td>" . h($r['num_bon_reparation']) . "</td><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . ($r['date_entree'] ? date('d-m-Y', strtotime($r['date_entree'])) : '') . "</td><td>" . h($r['diagnostic']) . "</td><td>" . ($r['type_execution'] == '0' ? "Interne" : "Externe") . "</td><td>" . h($r['nom_prestataire']) . "</td><td>" . h($r['montant_reparation']) . "</td><td>" . ($paye === null ? '—' : h($r['montant_paye'])) . "</td><td>$pmBadge</td><td>" . h($r['destination_bon']) . "</td><td>" . $dureeReelle . "</td><td>" . ($r['date_justification'] == '' ? "" : date('d-m-Y', strtotime($r['date_justification']))) . "</td><td>" . ($r['date_prevue_sortie'] == "" ? "" : date('d-m-Y', strtotime($r['date_prevue_sortie']))) . "</td><td>" . $dureePrevue . "</td><td>" . ($r['date_fin_reparation'] == "" ? "" : date('d-m-Y', strtotime($r['date_fin_reparation']))) . "</td><td>" . h($r['observations']) . "</td><td>" . ($r['lib_ligne_budgetaire'] ? h($r['lib_ligne_budgetaire']) : '—') . "</td><td><div class='btn-group'>" . (in_array("updBonsReparation", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-bonsReparation' data-bs-id-br='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("linkBudget", $rights_maintenance) ? "<button class='btn btn-light btn-sm " . ($r['id_ligne_budgetaire'] ? "text-success" : "") . "' title='" . ($r['id_ligne_budgetaire'] ? "Modifier la ligne budgétaire" : "Lier à une ligne budgétaire") . "' data-bs-toggle='modal' data-bs-target='#modal-link-budget-bonReparation' data-bs-id-br='$hash'><i class='fa fa-link'></i></button>" : "") . (in_array("delBonsReparation", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delBonsReparation(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         endforeach;
         return "<a class='btn btn-primary' href='?page=maintenances&subpage=suiviBonsReparation&action=new'>Nouveau Bon de réparation</a><hr>" . $table . "<tfoot></tfoot></tbody></table>";
+    else :
+        return "<div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>";
+    endif;
+}
+
+function getTableauExercicesBudgetaires()
+{
+    global $con;
+    global $rights_maintenance;
+    if (in_array("viewExercice", $rights_maintenance)):
+        $repo = new MaintenanceRepository($con);
+        $rows = $repo->findAllExercicesBudgetaires();
+        $table = "<table id='table-exercices-budgetaires' class='table table-striped'><thead><tr><th>Exercice</th><th>Date début</th><th>Date fin</th><th>Statut</th><th></th></tr></thead><tbody>";
+        foreach ($rows as $r):
+            $hash = $r['id_exercice_budgetaire'];
+            $badge = $r['statut_exercice'] === 'Ouvert' ? "<span class='badge text-bg-success'>Ouvert</span>" : "<span class='badge text-bg-secondary'>Clôturé</span>";
+            $table .= "<tr><td>" . h($r['lib_exercice_budgetaire']) . "</td><td>" . date('d-m-Y', strtotime($r['date_debut_exercice'])) . "</td><td>" . date('d-m-Y', strtotime($r['date_fin_exercice'])) . "</td><td>$badge</td><td><div class='btn-group'>" . (in_array("updExercice", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier l\'exercice' data-bs-toggle='modal' data-bs-target='#modal-upd-exercice' data-bs-id-ex='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delExercice", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delExercice(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+        endforeach;
+        return "<a class='btn btn-primary' href='?page=maintenances&subpage=exercicesBudgetaires&action=new'>Nouvel exercice</a><hr>" . $table . "</tbody></table>";
+    else :
+        return "<div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>";
+    endif;
+}
+
+function getTableauLignesBudgetaires()
+{
+    global $con;
+    global $rights_maintenance;
+    if (in_array("viewLigneBudgetaire", $rights_maintenance)):
+        $repo = new MaintenanceRepository($con);
+        $rows = $repo->findLignesBudgetaires();
+        $table = "<table id='table-lignes-budgetaires' class='table table-striped'><thead><tr><th>Libellé</th><th>Centre de coûts</th><th>Exercice</th><th>Budget centre</th><th>Utilisé</th><th>Restant</th><th></th></tr></thead><tbody>";
+        foreach ($rows as $r):
+            $hash = $r['id_ligne_budgetaire'];
+            $restant = (int)$r['montant_budget'] - (int)$r['montant_utilise'];
+            $table .= "<tr><td>" . h($r['lib_ligne_budgetaire']) . "</td><td>" . h($r['lib_centre_cout']) . "</td><td>" . h($r['lib_exercice_budgetaire']) . "</td><td>" . number_format((float)$r['montant_budget'], 0, ',', ' ') . "</td><td>" . number_format((float)$r['montant_utilise'], 0, ',', ' ') . "</td><td>" . number_format((float)$restant, 0, ',', ' ') . "</td><td><div class='btn-group'>" . (in_array("updLigneBudgetaire", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier la ligne budgétaire' data-bs-toggle='modal' data-bs-target='#modal-upd-ligne-budgetaire' data-bs-id-lb='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("delLigneBudgetaire", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delLigneBudgetaire(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+        endforeach;
+        return "<a class='btn btn-primary' href='?page=maintenances&subpage=lignesBudgetaires&action=new'>Nouvelle ligne budgétaire</a><hr>" . $table . "</tbody></table>";
     else :
         return "<div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>";
     endif;
@@ -705,6 +759,10 @@ function getDashboardCards()
                             <input type="hidden" id="id-upd-cc" name="id-upd-cc">
                             <label for="nom-upd-cc">Désignation Centre de coût</label>
                         </div>
+                        <div class="form-floating mb-3">
+                            <input type="number" id="montant-budget-cc-upd" name="montant-budget-cc-upd" required min="0" value="0" class="form-control">
+                            <label for="montant-budget-cc-upd">Montant budget</label>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -766,6 +824,7 @@ function getDashboardCards()
                         $('#nom-upd-cc').val(v.lib_centre_cout)
                         $('#id-centrecout').html(v.lib_centre_cout)
                         $('#id-upd-cc').val(v.id_centre_cout)
+                        $('#montant-budget-cc-upd').val(v.montant_budget ?? 0)
                     } else {
                         showError(e.error || "Erreur lors du chargement")
                     }
@@ -794,7 +853,274 @@ function getDashboardCards()
             }
         }
     </script>
-    <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviBonsReparation') : include("modalNewSuiviBonsReparation.php"); include("modalUpdBonsReparation.php"); ?>
+    <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'exercicesBudgetaires') :
+    include("modalNewExerciceBudgetaire.php");
+    if (isset($_GET['action']) && $_GET['action'] == 'new' && in_array("saveExercice", $rights_maintenance)):
+    ?>
+        <script>
+            setTimeout(() => {
+                openModalExercice()
+            }, 2000)
+        </script>
+    <?php endif;
+    ?>
+    <div class="modal fade" id="modal-upd-exercice" tabindex="-1" aria-labelledby="modal-upd-exerciceLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="modal-upd-exerciceLabel">Exercice : <span id='id-exercice'></span></h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-upd-ex">
+                        <div class="form-floating mb-3">
+                            <input type="text" id="lib-ex-upd" name="lib-ex-upd" required class="form-control">
+                            <input type="hidden" id="id-ex-upd" name="id-ex-upd">
+                            <label for="lib-ex-upd">Libellé de l'exercice</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="date" id="date-debut-ex-upd" name="date-debut-ex-upd" required class="form-control">
+                            <label for="date-debut-ex-upd">Date début</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="date" id="date-fin-ex-upd" name="date-fin-ex-upd" required class="form-control">
+                            <label for="date-fin-ex-upd">Date fin</label>
+                        </div>
+                        <div class="mb-3">
+                            <label for="statut-ex-upd">Statut</label>
+                            <select id="statut-ex-upd" name="statut-ex-upd" required>
+                                <option value="Ouvert">Ouvert</option>
+                                <option value="Clôturé">Clôturé</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-primary" onclick="updateEX()">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function updateEX() {
+            var valid = true
+            $('#form-upd-ex *[required]').each((e, el) => {
+                $(el).removeClass('is-invalid')
+                $(el).closest('.ts-wrapper').removeClass('is-invalid')
+                if ($(el).val() == '') {
+                    valid = false
+                    $(el).addClass('is-invalid')
+                    $(el).closest('.ts-wrapper').addClass('is-invalid')
+                }
+            })
+            if (!valid) {
+                $('#form-upd-ex').notify("Tous les champs en rouge sont obligatoires!", {
+                    position: 'top'
+                })
+                return false
+            }
+            $.ajax({
+                type: 'post',
+                data: $('#form-upd-ex').serialize(),
+                dataType: 'json'
+            }).done((e) => {
+                if (e.success) {
+                    showSuccess('Enregistrement effectué')
+                    location.reload()
+                } else {
+                    $('#modal-upd-exercice .modal-body').notify(e.error || "Erreur lors de l'enregistrement!", {
+                        position: 'top'
+                    })
+                }
+            }).fail((jqXHR) => {
+                $('#modal-upd-exercice .modal-body').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement!", {
+                    position: 'top'
+                })
+            })
+        }
+        const modalUpdEX = document.getElementById('modal-upd-exercice')
+        if (modalUpdEX) {
+            modalUpdEX.addEventListener('show.bs.modal', event => {
+                // Button that triggered the modal
+                const id = event.relatedTarget.getAttribute('data-bs-id-ex')
+                $.ajax({
+                    type: 'post',
+                    data: 'c-ex-s=' + id,
+                    dataType: 'json'
+                }).done((e) => {
+                    if (e.success) {
+                        let v = e.data
+                        $('#lib-ex-upd').val(v.lib_exercice_budgetaire)
+                        $('#id-exercice').html(v.lib_exercice_budgetaire)
+                        $('#id-ex-upd').val(v.id_exercice_budgetaire)
+                        $('#date-debut-ex-upd').val(v.date_debut_exercice)
+                        $('#date-fin-ex-upd').val(v.date_fin_exercice)
+                        $('#statut-ex-upd').val(v.statut_exercice)
+                    } else {
+                        showError(e.error || "Erreur lors du chargement")
+                    }
+                }).fail((jqXHR) => {
+                    showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
+                })
+            })
+        }
+
+        function delExercice(id) {
+            if (confirm("Etes-vous sûr de vouloir supprimer ?")) {
+                $.ajax({
+                    type: 'post',
+                    data: 'del-ex-id=' + id,
+                    dataType: 'json'
+                }).done((e) => {
+                    if (e.success) {
+                        showSuccess('Suppression effectuée!')
+                        location.reload()
+                    } else {
+                        showError(e.error || "Erreur lors de la suppression!")
+                    }
+                }).fail((jqXHR) => {
+                    showError(jqXHR.responseJSON?.error || "Erreur lors de la suppression!")
+                })
+            }
+        }
+    </script>
+    <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'lignesBudgetaires') :
+    include("modalNewLigneBudgetaire.php");
+    if (isset($_GET['action']) && $_GET['action'] == 'new' && in_array("saveLigneBudgetaire", $rights_maintenance)):
+    ?>
+        <script>
+            setTimeout(() => {
+                openModalLigneBudgetaire()
+            }, 2000)
+        </script>
+    <?php endif;
+    ?>
+    <div class="modal fade" id="modal-upd-ligne-budgetaire" tabindex="-1" aria-labelledby="modal-upd-ligne-budgetaireLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="modal-upd-ligne-budgetaireLabel">Ligne budgétaire : <span id='id-ligne-budgetaire'></span></h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-upd-lb">
+                        <div class="form-floating mb-3">
+                            <input type="text" id="lib-lb-upd" name="lib-lb-upd" required class="form-control">
+                            <input type="hidden" id="id-lb-upd" name="id-lb-upd">
+                            <label for="lib-lb-upd">Libellé de la ligne budgétaire</label>
+                        </div>
+                        <div class="mb-3">
+                            <label for="cc-lb-upd">Centre de coûts</label>
+                            <select id="cc-lb-upd" name="cc-lb-upd" required>
+                                <?php $maintenanceRepo = new MaintenanceRepository($con);
+                                foreach ($maintenanceRepo->findAllCentresCouts() as $r):
+                                    echo "<option value='" . $r['id_centre_cout'] . "'>" . h($r['lib_centre_cout']) . "</option>";
+                                endforeach;
+                                ?>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="exercice-lb-upd">Exercice</label>
+                            <select id="exercice-lb-upd" name="exercice-lb-upd" required>
+                                <?php foreach ($maintenanceRepo->findAllExercicesBudgetaires() as $r):
+                                    echo "<option value='" . $r['id_exercice_budgetaire'] . "'>" . h($r['lib_exercice_budgetaire']) . "</option>";
+                                endforeach;
+                                ?>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-primary" onclick="updateLB()">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function updateLB() {
+            var valid = true
+            $('#form-upd-lb *[required]').each((e, el) => {
+                $(el).removeClass('is-invalid')
+                $(el).closest('.ts-wrapper').removeClass('is-invalid')
+                if ($(el).val() == '') {
+                    valid = false
+                    $(el).addClass('is-invalid')
+                    $(el).closest('.ts-wrapper').addClass('is-invalid')
+                }
+            })
+            if (!valid) {
+                $('#form-upd-lb').notify("Tous les champs en rouge sont obligatoires!", {
+                    position: 'top'
+                })
+                return false
+            }
+            $.ajax({
+                type: 'post',
+                data: $('#form-upd-lb').serialize(),
+                dataType: 'json'
+            }).done((e) => {
+                if (e.success) {
+                    showSuccess('Enregistrement effectué')
+                    location.reload()
+                } else {
+                    $('#modal-upd-ligne-budgetaire .modal-body').notify(e.error || "Erreur lors de l'enregistrement!", {
+                        position: 'top'
+                    })
+                }
+            }).fail((jqXHR) => {
+                $('#modal-upd-ligne-budgetaire .modal-body').notify(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement!", {
+                    position: 'top'
+                })
+            })
+        }
+        const modalUpdLB = document.getElementById('modal-upd-ligne-budgetaire')
+        if (modalUpdLB) {
+            modalUpdLB.addEventListener('show.bs.modal', event => {
+                // Button that triggered the modal
+                const id = event.relatedTarget.getAttribute('data-bs-id-lb')
+                $.ajax({
+                    type: 'post',
+                    data: 'c-lb-s=' + id,
+                    dataType: 'json'
+                }).done((e) => {
+                    if (e.success) {
+                        let v = e.data
+                        $('#lib-lb-upd').val(v.lib_ligne_budgetaire)
+                        $('#id-ligne-budgetaire').html(v.lib_ligne_budgetaire)
+                        $('#id-lb-upd').val(v.id_ligne_budgetaire)
+                        $('#cc-lb-upd').val(v.id_centre_cout)
+                        $('#exercice-lb-upd').val(v.id_exercice_budgetaire)
+                    } else {
+                        showError(e.error || "Erreur lors du chargement")
+                    }
+                }).fail((jqXHR) => {
+                    showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
+                })
+            })
+        }
+
+        function delLigneBudgetaire(id) {
+            if (confirm("Etes-vous sûr de vouloir supprimer ?")) {
+                $.ajax({
+                    type: 'post',
+                    data: 'del-lb-id=' + id,
+                    dataType: 'json'
+                }).done((e) => {
+                    if (e.success) {
+                        showSuccess('Suppression effectuée!')
+                        location.reload()
+                    } else {
+                        showError(e.error || "Erreur lors de la suppression!")
+                    }
+                }).fail((jqXHR) => {
+                    showError(jqXHR.responseJSON?.error || "Erreur lors de la suppression!")
+                })
+            }
+        }
+    </script>
+    <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviBonsReparation') : include("modalNewSuiviBonsReparation.php"); include("modalUpdBonsReparation.php"); if (in_array("linkBudget", $rights_maintenance)) include("modalLinkBudgetBonReparation.php"); ?>
         <script>
             function delBonsReparation(id) {
                 if (confirm("Etes-vous sûr de vouloir supprimer ?")) {

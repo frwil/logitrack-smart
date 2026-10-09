@@ -231,6 +231,12 @@ if (!$renderPartial):
             <?php if (in_array('viewCentreCout', $rights_maintenance)): ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'centreCouts') echo 'active'; ?>" href="?page=maintenances&subpage=centreCouts"><i class="fa fa-euro-sign"></i> Centre de coûts</a>
             <?php endif; ?>
+            <?php if (in_array('viewExercice', $rights_maintenance)): ?>
+            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'exercicesBudgetaires') echo 'active'; ?>" href="?page=maintenances&subpage=exercicesBudgetaires"><i class="fa fa-calendar-alt"></i> Exercices budgétaires</a>
+            <?php endif; ?>
+            <?php if (in_array('viewLigneBudgetaire', $rights_maintenance)): ?>
+            <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'lignesBudgetaires') echo 'active'; ?>" href="?page=maintenances&subpage=lignesBudgetaires"><i class="fa fa-list-ol"></i> Lignes budgétaires</a>
+            <?php endif; ?>
             <?php if (in_array('viewBonsReparation', $rights_maintenance)): ?>
             <a class="lt-sidebar-link <?php if (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviBonsReparation') echo 'active'; ?>" href="?page=maintenances&subpage=suiviBonsReparation"><i class="fa fa-tools"></i> Bons de réparation</a>
             <?php endif; ?>
@@ -350,6 +356,14 @@ if (!$renderPartial):
                     <div class="lt-page-title">Liste des Centres de coûts</div>
                     <hr>
                     <?php echo getTableauCentreCout(); ?>
+                <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'exercicesBudgetaires'):  ?>
+                    <div class="lt-page-title">Liste des exercices budgétaires</div>
+                    <hr>
+                    <?php echo getTableauExercicesBudgetaires(); ?>
+                <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'lignesBudgetaires'):  ?>
+                    <div class="lt-page-title">Liste des lignes budgétaires</div>
+                    <hr>
+                    <?php echo getTableauLignesBudgetaires(); ?>
                 <?php elseif (isset($_GET['subpage']) && $_GET['subpage'] == 'suiviBonsReparation'):  ?>
                     <div class="lt-page-title">Suivi des bons de réparation</div>
                     <hr>

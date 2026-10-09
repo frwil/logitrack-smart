@@ -57,7 +57,7 @@
                         <div class="mb-3">
                             <label for="prestataire-br">Prestataire</label>
                             <div class="input-group">
-                                <select id="prestataire-br" name="prestataire-br" required>
+                                <select id="prestataire-br" name="prestataire-br">
                                     <?php $maintenanceRepo = new MaintenanceRepository($con);
                                     $prestataires = $maintenanceRepo->findAllPrestataires();
                                     foreach ($prestataires as $r):
@@ -77,37 +77,9 @@
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="mb-3">
-
-                            <label for="plus-moins-br">Type Valeur additionnelle</label>
-
-                            <select id="plus-moins-br" name="plus-moins-br" required>
-                                <?php $plusOuMoins = $maintenanceRepo->findAllPlusOuMoinsValue();
-                                foreach ($plusOuMoins as $r):
-                                    echo "<option value='" . $r['id_plus_ou_moins_value'] . "'>" . h($r['lib_plus_ou_moins_value']) . "</option>";
-                                endforeach;
-                                if (count($plusOuMoins) == 0) echo "<option value=''></option>";
-                                ?>
-                            </select>
-
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-floating mb-3">
-                            <input type="number" id="plus-moins-val-br" name="plus-moins-val-br" required value="0" min="0" class="form-control">
-                            <label for="plus-moins-val-br">Valeur additionnelle</label>
-                        </div>
-                    </div>
-                    <div class="col-6">
                         <div class="form-floating mb-3">
                             <input type="text" id="destination-br" name="destination-br" required class="form-control">
                             <label for="destination-br">Destination</label>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-floating mb-3">
-                            <input type="number" id="duree-br" name="duree-br" required value="0" min="0" class="form-control">
-                            <label for="duree-br">Durée (en jours)</label>
                         </div>
                     </div>
                     <div class="col-6">
@@ -117,32 +89,9 @@
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="mb-3">
-                            <label for="centrecout-br">Centre de coûts</label>
-                            <div class="input-group">
-                                <select id="centrecout-br" name="centrecout-br" required>
-                                    <?php $maintenanceRepo = new MaintenanceRepository($con);
-                                    $centresCouts = $maintenanceRepo->findAllCentresCouts();
-                                    foreach ($centresCouts as $r):
-                                        echo "<option value='" . $r['id_centre_cout'] . "'>" . h($r['lib_centre_cout']) . "</option>";
-                                    endforeach;
-                                    if (count($centresCouts) == 0) echo "<option value=''></option>";
-                                    ?>
-                                </select>
-                                <button class="btn btn-primary" style="padding:15px" onclick="var win = window.open('?page=maintenances&subpage=centreCouts&action=new&extpage', '_blank'); setTimeout(()=>{win.addEventListener('beforeunload', function(event) {loadCentreCouts()})},5000);" type="button" title="Nouveau centre de coûts"><i class="fa fa-plus"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6">
                         <div class="form-floating mb-3">
                             <input type="date" name="date-prevue-br" id="date-prevue-br" class="form-control">
                             <label for="date-prevue-br">Date prévue sortie</label>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-floating mb-3">
-                            <input type="date" name="date-fin-br" id="date-fin-br" class="form-control">
-                            <label for="date-fin-br">Date effective de fin</label>
                         </div>
                     </div>
                     <div class="col-6">
@@ -206,19 +155,15 @@
         $('#modal-new-suiviBonsReparation').modal('show')
     }
 
-    function loadCentreCouts() {
-        $.ajax({
-            type: 'post',
-            data: 'load-cc-br=1',
-            dataType: 'json'
-        }).done((e) => {
-            if (e.success) {
-                $('#centrecout-br').html(e.html)
-            } else {
-                showError(e.error || "Erreur lors du chargement")
-            }
-        }).fail((jqXHR) => {
-            showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
-        })
+    function togglePrestataireBR() {
+        const externe = $('#type-execution-br').val() === '1'
+        $('#prestataire-br').closest('.col-6').toggle(externe)
+        $('#prestataire-br').prop('required', externe)
+        if (!externe) {
+            const ts = $('#prestataire-br')[0] && $('#prestataire-br')[0].tomselect
+            ts ? ts.clear() : $('#prestataire-br').val('')
+        }
     }
+    $('#type-execution-br').on('change', togglePrestataireBR)
+    togglePrestataireBR()   // masqué au chargement (Interne par défaut)
 </script>

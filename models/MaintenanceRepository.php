@@ -4,6 +4,21 @@
  */
 class MaintenanceRepository extends BaseRepository
 {
+    // ---- Helpers dates ----
+
+    /** Durée en jours entre deux dates ; dates vides ou '0000-00-00' → 0. */
+    private static function joursEntre(?string $debut, ?string $fin): int
+    {
+        if (!$debut || !$fin || $debut === '0000-00-00' || $fin === '0000-00-00') return 0;
+        return max(0, (int)((strtotime($fin) - strtotime($debut)) / 86400));
+    }
+
+    /** Normalise une date optionnelle : '' / '0000-00-00' → '0000-00-00'. */
+    private static function normDate(?string $d): string
+    {
+        return (!$d || $d === '0000-00-00') ? '0000-00-00' : $d;
+    }
+
     // ---- Relevé KMS ----
 
     public function findReleveKms(?string $dateFrom = null, ?string $dateTo = null): array
@@ -317,19 +332,19 @@ class MaintenanceRepository extends BaseRepository
         );
     }
 
-    public function insertCentreCout(string $nom): int
+    public function insertCentreCout(string $nom, int $montantBudget): int
     {
         return (int)$this->insertGetId(
-            "INSERT INTO centre_couts (lib_centre_cout) VALUES (?)",
-            [$nom]
+            "INSERT INTO centre_couts (lib_centre_cout, montant_budget) VALUES (?, ?)",
+            [$nom, $montantBudget]
         );
     }
 
-    public function updateCentreCout(int $id, string $nom): bool
+    public function updateCentreCout(int $id, string $nom, int $montantBudget): bool
     {
         return $this->exec(
-            "UPDATE centre_couts SET lib_centre_cout = ? WHERE id_centre_cout = ?",
-            [$nom, $id]
+            "UPDATE centre_couts SET lib_centre_cout = ?, montant_budget = ? WHERE id_centre_cout = ?",
+            [$nom, $montantBudget, $id]
         );
     }
 
@@ -346,13 +361,17 @@ class MaintenanceRepository extends BaseRepository
     public function findAllBonsReparation(): array
     {
         return $this->select(
-            "SELECT * FROM bons_reparation
+            "SELECT bons_reparation.*,
+                    affectation_vehicule.id_affectation, affectation_vehicule.is_deleted,
+                    vehicule.immatriculation_vehicule, chauffeur.nom_chauffeur,
+                    prestataire_intervention.nom_prestataire,
+                    ligne_budgetaire.lib_ligne_budgetaire
+             FROM bons_reparation
              LEFT JOIN affectation_vehicule ON id_affectation_vehicule = id_affectation
              LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN prestataire_intervention ON prestataire_intervention.id_prestataire = bons_reparation.id_prestataire
-             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
-             LEFT JOIN centre_couts ON centre_couts.id_centre_cout = bons_reparation.id_centre_cout
+             LEFT JOIN ligne_budgetaire ON ligne_budgetaire.id_ligne_budgetaire = bons_reparation.id_ligne_budgetaire
              WHERE affectation_vehicule.is_deleted = 0",
             []
         );
@@ -362,21 +381,20 @@ class MaintenanceRepository extends BaseRepository
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
         return $this->select(
-            "SELECT * FROM bons_reparation
+            "SELECT bons_reparation.*,
+                    affectation_vehicule.id_affectation, affectation_vehicule.is_deleted,
+                    vehicule.immatriculation_vehicule, chauffeur.nom_chauffeur,
+                    prestataire_intervention.nom_prestataire,
+                    ligne_budgetaire.lib_ligne_budgetaire
+             FROM bons_reparation
              LEFT JOIN affectation_vehicule ON id_affectation_vehicule = id_affectation
              LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN prestataire_intervention ON prestataire_intervention.id_prestataire = bons_reparation.id_prestataire
-             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
-             LEFT JOIN centre_couts ON centre_couts.id_centre_cout = bons_reparation.id_centre_cout
+             LEFT JOIN ligne_budgetaire ON ligne_budgetaire.id_ligne_budgetaire = bons_reparation.id_ligne_budgetaire
              WHERE affectation_vehicule.is_deleted = 0 AND $where",
             $params
         );
-    }
-
-    public function findAllPlusOuMoinsValue(): array
-    {
-        return $this->select("SELECT * FROM plus_ou_moins_value", []);
     }
 
     // ---- Prestataire insert ----
@@ -418,22 +436,18 @@ class MaintenanceRepository extends BaseRepository
         string $dateEntree,
         string $diagnostic,
         string $typeExecution,
-        int $prestataireId,
+        ?int $prestataireId,
         float $montant,
-        ?int $plusMoinsId,
-        ?float $plusMoinsVal,
         string $destination,
-        int $duree,
         string $dateJustif,
-        int $centreCoutId,
         string $datePrevue,
-        string $dateFin,
         string $observation
     ): int|string {
+        // Bon ouvert à la création : pas de date de sortie, montant payé NULL (renseigné plus tard)
         return $this->insertGetId(
-            "INSERT INTO bons_reparation (num_bon_reparation, id_affectation_vehicule, date_entree, diagnostic, type_execution, id_prestataire, montant_reparation, id_plus_ou_moins_value, plus_ou_moins_value_valeur, destination_bon, duree_reparation, date_justification, id_centre_cout, date_prevue_sortie, date_fin_reparation, observations)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [$num, $affectationId, $dateEntree, $diagnostic, $typeExecution, $prestataireId, $montant, $plusMoinsId, $plusMoinsVal, $destination, $duree, $dateJustif, $centreCoutId, $datePrevue, $dateFin, $observation]
+            "INSERT INTO bons_reparation (num_bon_reparation, id_affectation_vehicule, date_entree, diagnostic, type_execution, id_prestataire, montant_reparation, destination_bon, duree_reparation, date_justification, date_prevue_sortie, date_fin_reparation, duree_prevue, observations, id_plus_ou_moins_value, plus_ou_moins_value_valeur, id_centre_cout)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)",
+            [$num, $affectationId, self::normDate($dateEntree), $diagnostic, $typeExecution, $prestataireId, $montant, $destination, self::joursEntre($dateEntree, ''), self::normDate($dateJustif), self::normDate($datePrevue), self::normDate(''), self::joursEntre($dateEntree, $datePrevue), $observation]
         );
     }
 
@@ -491,11 +505,9 @@ class MaintenanceRepository extends BaseRepository
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
         $row = $this->selectOne(
-            "SELECT SUM(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0)) AS total
+            "SELECT SUM(montant_reparation) AS total
              FROM bons_reparation
-             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
-             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
-             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule             WHERE affectation_vehicule.is_deleted = 0 AND $where
              AND MONTH(date_entree) = MONTH(CURDATE()) AND YEAR(date_entree) = YEAR(CURDATE())",
             $params
         );
@@ -532,11 +544,9 @@ class MaintenanceRepository extends BaseRepository
         $params[] = $months;
         return $this->select(
             "SELECT DATE_FORMAT(date_entree, '%Y-%m') AS mois,
-                    SUM(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0)) AS total
+                    SUM(montant_reparation) AS total
              FROM bons_reparation
-             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
-             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
-             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule             WHERE affectation_vehicule.is_deleted = 0 AND $where
              AND date_entree >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
              GROUP BY YEAR(date_entree), MONTH(date_entree)
              ORDER BY mois ASC",
@@ -551,12 +561,10 @@ class MaintenanceRepository extends BaseRepository
             "SELECT prestataire_intervention.nom_prestataire,
                     COUNT(bons_reparation.id_bon_reparation) AS nb_reparations,
                     AVG(duree_reparation) AS duree_moyenne,
-                    AVG(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0)) AS cout_moyen
+                    AVG(montant_reparation) AS cout_moyen
              FROM bons_reparation
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
-             LEFT JOIN prestataire_intervention ON prestataire_intervention.id_prestataire = bons_reparation.id_prestataire
-             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
-             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             LEFT JOIN prestataire_intervention ON prestataire_intervention.id_prestataire = bons_reparation.id_prestataire             WHERE affectation_vehicule.is_deleted = 0 AND $where
              GROUP BY prestataire_intervention.id_prestataire, prestataire_intervention.nom_prestataire
              ORDER BY nb_reparations DESC",
             $params
@@ -569,14 +577,12 @@ class MaintenanceRepository extends BaseRepository
         $params = array_merge($params, [$dateFrom, $dateTo, $dateFrom, $dateTo]);
         return $this->select(
             "SELECT vehicule.immatriculation_vehicule,
-                    SUM(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0)) AS total_cout,
+                    SUM(montant_reparation) AS total_cout,
                     km_data.km_max,
                     km_data.km_min
              FROM bons_reparation
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
-             LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
-             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
-             LEFT JOIN (
+             LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule             LEFT JOIN (
                  SELECT id_affectation_vehicule,
                         MAX(km_releve) AS km_max,
                         MIN(km_releve) AS km_min
@@ -597,13 +603,13 @@ class MaintenanceRepository extends BaseRepository
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
         return $this->select(
-            "SELECT centre_couts.lib_centre_cout,
+            "SELECT IFNULL(centre_couts.lib_centre_cout, 'Non affecté') AS lib_centre_cout,
                     COUNT(bons_reparation.id_bon_reparation) AS nb_bons,
-                    SUM(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0)) AS total_cout
+                    SUM(bons_reparation.montant_reparation) AS total_cout
              FROM bons_reparation
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
-             LEFT JOIN centre_couts ON centre_couts.id_centre_cout = bons_reparation.id_centre_cout
-             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
+             LEFT JOIN ligne_budgetaire ON ligne_budgetaire.id_ligne_budgetaire = bons_reparation.id_ligne_budgetaire
+             LEFT JOIN centre_couts ON centre_couts.id_centre_cout = ligne_budgetaire.id_centre_cout
              WHERE affectation_vehicule.is_deleted = 0 AND $where
              GROUP BY centre_couts.id_centre_cout, centre_couts.lib_centre_cout
              ORDER BY total_cout DESC",
@@ -617,14 +623,12 @@ class MaintenanceRepository extends BaseRepository
         return $this->select(
             "SELECT vehicule.immatriculation_vehicule,
                     COUNT(bons_reparation.id_bon_reparation) AS nb_pannes,
-                    SUM(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0)) AS total_cout,
+                    SUM(montant_reparation) AS total_cout,
                     AVG(duree_reparation) AS duree_moyenne,
                     MAX(date_entree) AS derniere_panne
              FROM bons_reparation
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
-             LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
-             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
-             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule             WHERE affectation_vehicule.is_deleted = 0 AND $where
                AND date_entree >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
              GROUP BY vehicule.id_vehicule, vehicule.immatriculation_vehicule
              HAVING nb_pannes >= 2
@@ -658,11 +662,9 @@ class MaintenanceRepository extends BaseRepository
         return $this->select(
             "SELECT type_execution,
                     COUNT(id_bon_reparation) AS nb_bons,
-                    SUM(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0)) AS total_cout
+                    SUM(montant_reparation) AS total_cout
              FROM bons_reparation
-             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
-             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
-             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule             WHERE affectation_vehicule.is_deleted = 0 AND $where
              GROUP BY type_execution
              ORDER BY total_cout DESC",
             $params
@@ -705,9 +707,8 @@ class MaintenanceRepository extends BaseRepository
              LEFT JOIN (
                  SELECT br2.id_affectation_vehicule,
                         COUNT(CASE WHEN br2.date_entree >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) THEN 1 END) AS nb_pannes_6mois,
-                        SUM(br2.montant_reparation + IFNULL(IF(pmv.type_plus_ou_moins_value = 0, pmv.plus_ou_moins_value_valeur, -pmv.plus_ou_moins_value_valeur), 0)) AS total_cout
+                        SUM(br2.montant_reparation) AS total_cout
                  FROM bons_reparation br2
-                 LEFT JOIN plus_ou_moins_value pmv ON pmv.id_plus_ou_moins_value = br2.id_plus_ou_moins_value
                  GROUP BY br2.id_affectation_vehicule
              ) br_agg ON br_agg.id_affectation_vehicule = affectation_vehicule.id_affectation
              WHERE affectation_vehicule.is_deleted = 0 AND is_ferme = 0 AND $where",
@@ -860,14 +861,11 @@ class MaintenanceRepository extends BaseRepository
         string $dateEntree,
         string $diagnostic,
         string $typeExecution,
-        int $prestataireId,
+        ?int $prestataireId,
         float $montant,
-        ?int $plusMoinsId,
-        ?float $plusMoinsVal,
+        ?float $montantPaye,
         string $destination,
-        int $duree,
         string $dateJustif,
-        int $centreCoutId,
         string $datePrevue,
         string $dateFin,
         string $observation
@@ -881,17 +879,177 @@ class MaintenanceRepository extends BaseRepository
              type_execution = ?,
              id_prestataire = ?,
              montant_reparation = ?,
-             id_plus_ou_moins_value = ?,
-             plus_ou_moins_value_valeur = ?,
+             montant_paye = ?,
              destination_bon = ?,
              duree_reparation = ?,
              date_justification = ?,
-             id_centre_cout = ?,
              date_prevue_sortie = ?,
              date_fin_reparation = ?,
-             observations = ?
+             duree_prevue = ?,
+             observations = ?,
+             id_plus_ou_moins_value = NULL,
+             plus_ou_moins_value_valeur = NULL,
+             id_centre_cout = NULL
              WHERE id_bon_reparation = ?",
-            [$num, $affectationId, $dateEntree, $diagnostic, $typeExecution, $prestataireId, $montant, $plusMoinsId, $plusMoinsVal, $destination, $duree, $dateJustif, $centreCoutId, $datePrevue, $dateFin, $observation, $id]
+            [$num, $affectationId, self::normDate($dateEntree), $diagnostic, $typeExecution, $prestataireId, $montant, $montantPaye, $destination, self::joursEntre($dateEntree, $dateFin), self::normDate($dateJustif), self::normDate($datePrevue), self::normDate($dateFin), self::joursEntre($dateEntree, $datePrevue), $observation, $id]
+        );
+    }
+
+    // ---- Exercices budgétaires ----
+
+    public function findAllExercicesBudgetaires(): array
+    {
+        return $this->select("SELECT * FROM exercice_budgetaire ORDER BY date_debut_exercice DESC", []);
+    }
+
+    public function findExerciceBudgetaireById(int $id): ?array
+    {
+        return $this->selectOne(
+            "SELECT * FROM exercice_budgetaire WHERE id_exercice_budgetaire = ?",
+            [$id]
+        );
+    }
+
+    public function findOpenExerciceBudgetaire(): ?array
+    {
+        return $this->selectOne(
+            "SELECT * FROM exercice_budgetaire WHERE statut_exercice = 'Ouvert' ORDER BY id_exercice_budgetaire DESC LIMIT 1",
+            []
+        );
+    }
+
+    public function insertExerciceBudgetaire(string $lib, string $dateDebut, string $dateFin, string $statut): int
+    {
+        return (int)$this->insertGetId(
+            "INSERT INTO exercice_budgetaire (lib_exercice_budgetaire, date_debut_exercice, date_fin_exercice, statut_exercice) VALUES (?, ?, ?, ?)",
+            [$lib, $dateDebut, $dateFin, $statut]
+        );
+    }
+
+    public function updateExerciceBudgetaire(int $id, string $lib, string $dateDebut, string $dateFin, string $statut): bool
+    {
+        return $this->exec(
+            "UPDATE exercice_budgetaire SET lib_exercice_budgetaire = ?, date_debut_exercice = ?, date_fin_exercice = ?, statut_exercice = ? WHERE id_exercice_budgetaire = ?",
+            [$lib, $dateDebut, $dateFin, $statut, $id]
+        );
+    }
+
+    public function deleteExerciceBudgetaireById(int $id): bool
+    {
+        return $this->exec(
+            "DELETE FROM exercice_budgetaire WHERE id_exercice_budgetaire = ?",
+            [$id]
+        );
+    }
+
+    public function countLignesByExercice(int $exerciceId): int
+    {
+        $row = $this->selectOne(
+            "SELECT COUNT(*) AS nb FROM ligne_budgetaire WHERE id_exercice_budgetaire = ?",
+            [$exerciceId]
+        );
+        return (int)($row['nb'] ?? 0);
+    }
+
+    /** Clôture tous les exercices ouverts sauf éventuellement $exceptId (un seul ouvert à la fois). */
+    public function closeOpenExercices(int $exceptId = 0): bool
+    {
+        return $this->exec(
+            "UPDATE exercice_budgetaire SET statut_exercice = 'Clôturé' WHERE statut_exercice = 'Ouvert' AND id_exercice_budgetaire <> ?",
+            [$exceptId]
+        );
+    }
+
+    // ---- Lignes budgétaires ----
+
+    public function findLignesBudgetaires(): array
+    {
+        return $this->select(
+            "SELECT lb.id_ligne_budgetaire, lb.lib_ligne_budgetaire,
+                    cc.id_centre_cout, cc.lib_centre_cout, cc.montant_budget,
+                    ex.id_exercice_budgetaire, ex.lib_exercice_budgetaire, ex.statut_exercice,
+                    COALESCE(SUM(br.montant_reparation), 0) AS montant_utilise
+             FROM ligne_budgetaire lb
+             LEFT JOIN centre_couts cc ON cc.id_centre_cout = lb.id_centre_cout
+             LEFT JOIN exercice_budgetaire ex ON ex.id_exercice_budgetaire = lb.id_exercice_budgetaire
+             LEFT JOIN bons_reparation br ON br.id_ligne_budgetaire = lb.id_ligne_budgetaire
+             GROUP BY lb.id_ligne_budgetaire, lb.lib_ligne_budgetaire,
+                      cc.id_centre_cout, cc.lib_centre_cout, cc.montant_budget,
+                      ex.id_exercice_budgetaire, ex.lib_exercice_budgetaire, ex.statut_exercice
+             ORDER BY ex.date_debut_exercice DESC, cc.lib_centre_cout, lb.lib_ligne_budgetaire",
+            []
+        );
+    }
+
+    public function findLigneBudgetaireById(int $id): ?array
+    {
+        return $this->selectOne(
+            "SELECT lb.*, cc.lib_centre_cout, ex.lib_exercice_budgetaire
+             FROM ligne_budgetaire lb
+             LEFT JOIN centre_couts cc ON cc.id_centre_cout = lb.id_centre_cout
+             LEFT JOIN exercice_budgetaire ex ON ex.id_exercice_budgetaire = lb.id_exercice_budgetaire
+             WHERE lb.id_ligne_budgetaire = ?",
+            [$id]
+        );
+    }
+
+    public function insertLigneBudgetaire(string $lib, int $centreCoutId, int $exerciceId): int
+    {
+        return (int)$this->insertGetId(
+            "INSERT INTO ligne_budgetaire (lib_ligne_budgetaire, id_centre_cout, id_exercice_budgetaire) VALUES (?, ?, ?)",
+            [$lib, $centreCoutId, $exerciceId]
+        );
+    }
+
+    public function updateLigneBudgetaire(int $id, string $lib, int $centreCoutId, int $exerciceId): bool
+    {
+        return $this->exec(
+            "UPDATE ligne_budgetaire SET lib_ligne_budgetaire = ?, id_centre_cout = ?, id_exercice_budgetaire = ? WHERE id_ligne_budgetaire = ?",
+            [$lib, $centreCoutId, $exerciceId, $id]
+        );
+    }
+
+    public function deleteLigneBudgetaireById(int $id): bool
+    {
+        return $this->exec(
+            "DELETE FROM ligne_budgetaire WHERE id_ligne_budgetaire = ?",
+            [$id]
+        );
+    }
+
+    public function countBonsByLigneBudgetaire(int $id): int
+    {
+        $row = $this->selectOne(
+            "SELECT COUNT(*) AS nb FROM bons_reparation WHERE id_ligne_budgetaire = ?",
+            [$id]
+        );
+        return (int)($row['nb'] ?? 0);
+    }
+
+    // ---- Liaison bon ↔ ligne budgétaire ----
+
+    /** Lie (ou modifie le lien d') un bon de réparation à une ligne budgétaire. */
+    public function linkBonReparationBudget(int $bonId, int $ligneId): bool
+    {
+        return $this->exec(
+            "UPDATE bons_reparation SET id_ligne_budgetaire = ? WHERE id_bon_reparation = ?",
+            [$ligneId, $bonId]
+        );
+    }
+
+    /** Ligne budgétaire liée à un bon, avec centre de coût et exercice. */
+    public function findLinkedBudget(int $bonId): ?array
+    {
+        return $this->selectOne(
+            "SELECT lb.id_ligne_budgetaire, lb.lib_ligne_budgetaire,
+                    cc.lib_centre_cout, cc.montant_budget,
+                    ex.lib_exercice_budgetaire
+             FROM bons_reparation br
+             LEFT JOIN ligne_budgetaire lb ON lb.id_ligne_budgetaire = br.id_ligne_budgetaire
+             LEFT JOIN centre_couts cc ON cc.id_centre_cout = lb.id_centre_cout
+             LEFT JOIN exercice_budgetaire ex ON ex.id_exercice_budgetaire = lb.id_exercice_budgetaire
+             WHERE br.id_bon_reparation = ?",
+            [$bonId]
         );
     }
 
@@ -928,14 +1086,12 @@ class MaintenanceRepository extends BaseRepository
         return $this->select(
             "SELECT chauffeur.nom_chauffeur,
                     COUNT(bons_reparation.id_bon_reparation) AS nb_pannes,
-                    SUM(montant_reparation + IFNULL(IF(type_plus_ou_moins_value = 0, plus_ou_moins_value_valeur, -plus_ou_moins_value_valeur), 0)) AS total_cout,
+                    SUM(montant_reparation) AS total_cout,
                     ROUND(AVG(duree_reparation), 1) AS duree_moyenne,
                     MAX(bons_reparation.date_entree) AS derniere_panne
              FROM bons_reparation
              JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
-             JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
-             LEFT JOIN plus_ou_moins_value ON plus_ou_moins_value.id_plus_ou_moins_value = bons_reparation.id_plus_ou_moins_value
-             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur             WHERE affectation_vehicule.is_deleted = 0 AND $where
              GROUP BY chauffeur.id_chauffeur, chauffeur.nom_chauffeur
              HAVING nb_pannes > 0
              ORDER BY total_cout DESC",

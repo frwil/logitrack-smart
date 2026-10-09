@@ -135,6 +135,20 @@ $routes = [
     'num-br'              => [$maintenanceCtrl, 'createBonReparation'],
     'load-cc-br'          => [$maintenanceCtrl, 'fetchAllCentresCouts'],
 
+    // Maintenance — Exercices budgétaires
+    'lib-ex'              => [$maintenanceCtrl, 'createExerciceBudgetaire'],
+    'id-ex-upd'           => [$maintenanceCtrl, 'updateExerciceBudgetaire'],
+    'del-ex-id'           => [$maintenanceCtrl, 'deleteExerciceBudgetaire'],
+    'c-ex-s'              => [$maintenanceCtrl, 'fetchExerciceBudgetaire'],
+
+    // Maintenance — Lignes budgétaires
+    'lib-lb'              => [$maintenanceCtrl, 'createLigneBudgetaire'],
+    'id-lb-upd'           => [$maintenanceCtrl, 'updateLigneBudgetaire'],
+    'del-lb-id'           => [$maintenanceCtrl, 'deleteLigneBudgetaire'],
+    'c-lb-s'              => [$maintenanceCtrl, 'fetchLigneBudgetaire'],
+    'load-lb'             => [$maintenanceCtrl, 'fetchLignesBudgetaires'],
+    'link-budget-br'      => [$maintenanceCtrl, 'linkBudgetBonReparation'],
+
     // Maintenance — Dashboard analytics
     'load-budget-projection'   => [$maintenanceCtrl, 'budgetProjection'],
     'load-provider-comparison' => [$maintenanceCtrl, 'providerComparison'],

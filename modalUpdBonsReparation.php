@@ -51,7 +51,7 @@
                     <div class="col-6">
                         <div class="mb-3">
                             <label for="prestataire-br-upd">Prestataire</label>
-                            <select id="prestataire-br-upd" name="prestataire-br-upd" required>
+                            <select id="prestataire-br-upd" name="prestataire-br-upd">
                                 <?php $maintenanceRepo = new MaintenanceRepository($con);
                                 foreach ($maintenanceRepo->findAllPrestataires() as $r):
                                     echo "<option value='" . $r['id_prestataire'] . "'>" . h($r['nom_prestataire']) . "</option>";
@@ -67,20 +67,9 @@
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="mb-3">
-                            <label for="plus-moins-br-upd">Type Valeur additionnelle</label>
-                            <select id="plus-moins-br-upd" name="plus-moins-br-upd" required>
-                                <?php foreach ($maintenanceRepo->findAllPlusOuMoinsValue() as $r):
-                                    echo "<option value='" . $r['id_plus_ou_moins_value'] . "'>" . h($r['lib_plus_ou_moins_value']) . "</option>";
-                                endforeach;
-                                ?>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-6">
                         <div class="form-floating mb-3">
-                            <input type="number" id="plus-moins-val-br-upd" name="plus-moins-val-br-upd" required value="0" min="0" class="form-control">
-                            <label for="plus-moins-val-br-upd">Valeur additionnelle</label>
+                            <input type="number" id="montant-paye-br-upd" name="montant-paye-br-upd" min="0" class="form-control">
+                            <label for="montant-paye-br-upd">Montant payé</label>
                         </div>
                     </div>
                     <div class="col-6">
@@ -91,25 +80,8 @@
                     </div>
                     <div class="col-6">
                         <div class="form-floating mb-3">
-                            <input type="number" id="duree-br-upd" name="duree-br-upd" required value="0" min="0" class="form-control">
-                            <label for="duree-br-upd">Durée (en jours)</label>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-floating mb-3">
                             <input type="date" id="date-justif-br-upd" name="date-justif-br-upd" required class="form-control">
                             <label for="date-justif-br-upd">Date Justification</label>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="mb-3">
-                            <label for="centrecout-br-upd">Centre de coûts</label>
-                            <select id="centrecout-br-upd" name="centrecout-br-upd" required>
-                                <?php foreach ($maintenanceRepo->findAllCentresCouts() as $r):
-                                    echo "<option value='" . $r['id_centre_cout'] . "'>" . h($r['lib_centre_cout']) . "</option>";
-                                endforeach;
-                                ?>
-                            </select>
                         </div>
                     </div>
                     <div class="col-6">
@@ -121,7 +93,7 @@
                     <div class="col-6">
                         <div class="form-floating mb-3">
                             <input type="date" name="date-fin-br-upd" id="date-fin-br-upd" class="form-control">
-                            <label for="date-fin-br-upd">Date effective de fin</label>
+                            <label for="date-fin-br-upd">Date effective de sortie</label>
                         </div>
                     </div>
                     <div class="col-6">
@@ -158,21 +130,29 @@
                 $('#date-entree-br-upd').val(v.date_entree)
                 $('#diagnostic-br-upd').val(v.diagnostic)
                 $('#type-execution-br-upd').val(v.type_execution)
-                $('#prestataire-br-upd').val(v.id_prestataire)
+                if (v.id_prestataire) $('#prestataire-br-upd').val(v.id_prestataire)
                 $('#montant-br-upd').val(v.montant_reparation)
-                $('#plus-moins-br-upd').val(v.id_plus_ou_moins_value)
-                $('#plus-moins-val-br-upd').val(v.plus_ou_moins_value_valeur)
+                $('#montant-paye-br-upd').val(v.montant_paye ?? '')
                 $('#destination-br-upd').val(v.destination_bon)
-                $('#duree-br-upd').val(v.duree_reparation)
                 $('#date-justif-br-upd').val(v.date_justification)
-                $('#centrecout-br-upd').val(v.id_centre_cout)
                 $('#date-prevue-br-upd').val(v.date_prevue_sortie)
-                $('#date-fin-br-upd').val(v.date_fin_reparation)
+                $('#date-fin-br-upd').val(v.date_fin_reparation === '0000-00-00' ? '' : v.date_fin_reparation)
                 $('#observation-br-upd').val(v.observations)
+                togglePrestataireBRUpd()
             }).fail((jqXHR) => {
                 showError(jqXHR.responseJSON?.error || "Erreur lors du chargement")
             })
         })
+    }
+
+    function togglePrestataireBRUpd() {
+        const externe = $('#type-execution-br-upd').val() === '1'
+        $('#prestataire-br-upd').closest('.col-6').toggle(externe)
+        $('#prestataire-br-upd').prop('required', externe)
+        if (!externe) {
+            const ts = $('#prestataire-br-upd')[0] && $('#prestataire-br-upd')[0].tomselect
+            ts ? ts.clear() : $('#prestataire-br-upd').val('')
+        }
     }
 
     function updateBR() {

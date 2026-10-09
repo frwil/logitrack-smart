@@ -11,6 +11,14 @@ class MaintenanceController extends BaseController
         $this->maintenanceRepo = $maintenanceRepo;
     }
 
+    /** Bloque l'action si l'utilisateur n'a pas le droit maintenance demandé. */
+    private function requireMaintenanceSubRight(string $code): void
+    {
+        if (!in_array($code, getUserRightsFor('maintenances'), true)) {
+            $this->jsonError('Accès non autorisé', 403);
+        }
+    }
+
     // ---- Vidange ----
 
     public function fetchVidange(): never
@@ -138,9 +146,13 @@ class MaintenanceController extends BaseController
         if (!$nom) {
             $this->jsonError('La désignation est obligatoire');
         }
+        $montant = $this->post('montant-budget-cc', 0);
+        if (!is_numeric($montant) || (float)$montant < 0) {
+            $this->jsonError('Le montant budget doit être un nombre positif ou nul');
+        }
         try {
-            $id = $this->maintenanceRepo->transactional(function () use ($nom) {
-                return $this->maintenanceRepo->insertCentreCout($nom);
+            $id = $this->maintenanceRepo->transactional(function () use ($nom, $montant) {
+                return $this->maintenanceRepo->insertCentreCout($nom, (int)$montant);
             });
             $this->json(['data' => ['id' => $id]]);
         } catch (\mysqli_sql_exception $e) {
@@ -158,9 +170,13 @@ class MaintenanceController extends BaseController
         if (!$id || !$nom) {
             $this->jsonError('Tous les champs sont obligatoires');
         }
+        $montant = $this->post('montant-budget-cc-upd', 0);
+        if (!is_numeric($montant) || (float)$montant < 0) {
+            $this->jsonError('Le montant budget doit être un nombre positif ou nul');
+        }
         try {
-            $this->maintenanceRepo->transactional(function () use ($id, $nom) {
-                $this->maintenanceRepo->updateCentreCout($id, $nom);
+            $this->maintenanceRepo->transactional(function () use ($id, $nom, $montant) {
+                $this->maintenanceRepo->updateCentreCout($id, $nom, (int)$montant);
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {
@@ -383,6 +399,7 @@ class MaintenanceController extends BaseController
 
     public function deleteBonReparation(): never
     {
+        $this->requireMaintenanceSubRight('delBonsReparation');
         try {
             $this->maintenanceRepo->transactional(function () {
                 $this->maintenanceRepo->deleteBonReparationById((int)$this->post('del-br-id'));
@@ -395,23 +412,43 @@ class MaintenanceController extends BaseController
 
     public function updateBonReparation(): never
     {
+        $this->requireMaintenanceSubRight('updBonsReparation');
+        $typeExecution = $this->post('type-execution-br-upd');
+        if (!in_array($typeExecution, ['0', '1'], true)) {
+            $this->jsonError("Type d'exécution invalide");
+        }
+        $prestataireId = null;
+        if ($typeExecution === '1') {
+            $prestataireId = (int)$this->post('prestataire-br-upd');
+            if ($prestataireId <= 0) {
+                $this->jsonError('Le prestataire est obligatoire pour une exécution externe');
+            }
+        }
+        // Montant payé facultatif : renseigné plus tard (NULL tant que non payé)
+        $montantPaye = null;
+        if (trim((string)$this->post('montant-paye-br-upd', '')) !== '') {
+            if (!is_numeric($this->post('montant-paye-br-upd')) || (float)$this->post('montant-paye-br-upd') < 0) {
+                $this->jsonError('Le montant payé doit être un nombre positif ou nul');
+            }
+            $montantPaye = (float)$this->post('montant-paye-br-upd');
+        }
+        if (!$this->post('date-entree-br-upd')) {
+            $this->jsonError("La date d'entrée est obligatoire");
+        }
         try {
-            $this->maintenanceRepo->transactional(function () {
+            $this->maintenanceRepo->transactional(function () use ($typeExecution, $prestataireId, $montantPaye) {
                 $this->maintenanceRepo->updateBonReparation(
                     (int)$this->post('id-upd-br'),
                     $this->post('num-br-upd'),
                     (int)$this->post('vh-br-upd'),
                     $this->post('date-entree-br-upd'),
                     $this->post('diagnostic-br-upd'),
-                    $this->post('type-execution-br-upd'),
-                    (int)$this->post('prestataire-br-upd'),
+                    $typeExecution,
+                    $prestataireId,
                     (float)$this->post('montant-br-upd'),
-                    $this->post('plus-moins-br-upd') ? (int)$this->post('plus-moins-br-upd') : null,
-                    (float)$this->post('plus-moins-val-br-upd'),
+                    $montantPaye,
                     $this->post('destination-br-upd'),
-                    (int)$this->post('duree-br-upd'),
                     $this->post('date-justif-br-upd'),
-                    (int)$this->post('centrecout-br-upd'),
                     $this->post('date-prevue-br-upd'),
                     $this->post('date-fin-br-upd'),
                     $this->post('observation-br-upd')
@@ -425,30 +462,261 @@ class MaintenanceController extends BaseController
 
     public function createBonReparation(): never
     {
+        $this->requireMaintenanceSubRight('saveBonsReparation');
+        $typeExecution = $this->post('type-execution-br');
+        if (!in_array($typeExecution, ['0', '1'], true)) {
+            $this->jsonError("Type d'exécution invalide");
+        }
+        $prestataireId = null;
+        if ($typeExecution === '1') {
+            $prestataireId = (int)$this->post('prestataire-br');
+            if ($prestataireId <= 0) {
+                $this->jsonError('Le prestataire est obligatoire pour une exécution externe');
+            }
+        }
+        if (!$this->post('date-entree-br')) {
+            $this->jsonError("La date d'entrée est obligatoire");
+        }
         try {
-            $this->maintenanceRepo->transactional(function () {
+            // Bon ouvert : pas de montant payé ni de date de sortie à la création
+            $this->maintenanceRepo->transactional(function () use ($typeExecution, $prestataireId) {
                 $this->maintenanceRepo->insertBonReparation(
                     $this->post('num-br'),
                     (int)$this->post('vh-br'),
                     $this->post('date-entree-br'),
                     $this->post('diagnostic-br'),
-                    $this->post('type-execution-br'),
-                    (int)$this->post('prestataire-br'),
+                    $typeExecution,
+                    $prestataireId,
                     (float)$this->post('montant-br'),
-                    $this->post('plus-moins-br') ? (int)$this->post('plus-moins-br') : null,
-                    (float)$this->post('plus-moins-val-br'),
                     $this->post('destination-br'),
-                    (int)$this->post('duree-br'),
                     $this->post('date-justif-br'),
-                    (int)$this->post('centrecout-br'),
                     $this->post('date-prevue-br'),
-                    $this->post('date-fin-br'),
                     $this->post('observation-br')
                 );
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {
             $this->jsonError("Erreur lors de l'enregistrement — " . $e->getMessage());
+        }
+    }
+
+    // ---- Exercices budgétaires ----
+
+    public function createExerciceBudgetaire(): never
+    {
+        $this->requireMaintenanceSubRight('saveExercice');
+        $lib = $this->post('lib-ex');
+        $dateDebut = $this->post('date-debut-ex');
+        $dateFin = $this->post('date-fin-ex');
+        $statut = $this->post('statut-ex');
+        if (!$lib || !$dateDebut || !$dateFin || !in_array($statut, ['Ouvert', 'Clôturé'], true)) {
+            $this->jsonError('Tous les champs sont obligatoires');
+        }
+        if ($dateFin < $dateDebut) {
+            $this->jsonError('La date de fin doit être postérieure ou égale à la date de début');
+        }
+        try {
+            $id = $this->maintenanceRepo->transactional(function () use ($lib, $dateDebut, $dateFin, $statut) {
+                // Un seul exercice ouvert à la fois
+                if ($statut === 'Ouvert') {
+                    $this->maintenanceRepo->closeOpenExercices();
+                }
+                return $this->maintenanceRepo->insertExerciceBudgetaire($lib, $dateDebut, $dateFin, $statut);
+            });
+            $this->json(['data' => ['id' => $id]]);
+        } catch (\mysqli_sql_exception $e) {
+            if ($e->getCode() == 1062) {
+                $this->jsonError('Cet exercice existe déjà');
+            }
+            $this->jsonError('Erreur lors de la création');
+        }
+    }
+
+    public function updateExerciceBudgetaire(): never
+    {
+        $this->requireMaintenanceSubRight('updExercice');
+        $id = (int)$this->post('id-ex-upd');
+        $lib = $this->post('lib-ex-upd');
+        $dateDebut = $this->post('date-debut-ex-upd');
+        $dateFin = $this->post('date-fin-ex-upd');
+        $statut = $this->post('statut-ex-upd');
+        if (!$id || !$lib || !$dateDebut || !$dateFin || !in_array($statut, ['Ouvert', 'Clôturé'], true)) {
+            $this->jsonError('Tous les champs sont obligatoires');
+        }
+        if ($dateFin < $dateDebut) {
+            $this->jsonError('La date de fin doit être postérieure ou égale à la date de début');
+        }
+        try {
+            $this->maintenanceRepo->transactional(function () use ($id, $lib, $dateDebut, $dateFin, $statut) {
+                if ($statut === 'Ouvert') {
+                    $this->maintenanceRepo->closeOpenExercices($id);
+                }
+                $this->maintenanceRepo->updateExerciceBudgetaire($id, $lib, $dateDebut, $dateFin, $statut);
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            if ($e->getCode() == 1062) {
+                $this->jsonError('Cet exercice existe déjà');
+            }
+            $this->jsonError('Erreur lors de la modification');
+        }
+    }
+
+    public function fetchExerciceBudgetaire(): never
+    {
+        $this->requireMaintenanceSubRight('viewExercice');
+        $row = $this->maintenanceRepo->findExerciceBudgetaireById((int)$this->post('c-ex-s'));
+        if (!$row) {
+            $this->jsonError('Exercice introuvable', 404);
+        }
+        unset($row[0]);
+        $this->json(['data' => $row]);
+    }
+
+    public function deleteExerciceBudgetaire(): never
+    {
+        $this->requireMaintenanceSubRight('delExercice');
+        $id = (int)$this->post('del-ex-id');
+        try {
+            if ($this->maintenanceRepo->countLignesByExercice($id) > 0) {
+                $this->jsonError('Impossible de supprimer : des lignes budgétaires sont rattachées à cet exercice');
+            }
+            $this->maintenanceRepo->transactional(function () use ($id) {
+                $this->maintenanceRepo->deleteExerciceBudgetaireById($id);
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            $this->jsonError('Échec de la suppression');
+        }
+    }
+
+    // ---- Lignes budgétaires ----
+
+    public function createLigneBudgetaire(): never
+    {
+        $this->requireMaintenanceSubRight('saveLigneBudgetaire');
+        $lib = $this->post('lib-lb');
+        $centreCoutId = (int)$this->post('cc-lb');
+        $exerciceId = (int)$this->post('exercice-lb');
+        if (!$lib || $centreCoutId <= 0 || $exerciceId <= 0) {
+            $this->jsonError('Tous les champs sont obligatoires');
+        }
+        if (!$this->maintenanceRepo->findCentreCoutById($centreCoutId)) {
+            $this->jsonError('Centre de coût introuvable');
+        }
+        if (!$this->maintenanceRepo->findExerciceBudgetaireById($exerciceId)) {
+            $this->jsonError('Exercice introuvable');
+        }
+        try {
+            $id = $this->maintenanceRepo->transactional(function () use ($lib, $centreCoutId, $exerciceId) {
+                return $this->maintenanceRepo->insertLigneBudgetaire($lib, $centreCoutId, $exerciceId);
+            });
+            $this->json(['data' => ['id' => $id]]);
+        } catch (\mysqli_sql_exception $e) {
+            if ($e->getCode() == 1062) {
+                $this->jsonError('Cette ligne budgétaire existe déjà');
+            }
+            $this->jsonError('Erreur lors de la création');
+        }
+    }
+
+    public function updateLigneBudgetaire(): never
+    {
+        $this->requireMaintenanceSubRight('updLigneBudgetaire');
+        $id = (int)$this->post('id-lb-upd');
+        $lib = $this->post('lib-lb-upd');
+        $centreCoutId = (int)$this->post('cc-lb-upd');
+        $exerciceId = (int)$this->post('exercice-lb-upd');
+        if (!$id || !$lib || $centreCoutId <= 0 || $exerciceId <= 0) {
+            $this->jsonError('Tous les champs sont obligatoires');
+        }
+        try {
+            $this->maintenanceRepo->transactional(function () use ($id, $lib, $centreCoutId, $exerciceId) {
+                $this->maintenanceRepo->updateLigneBudgetaire($id, $lib, $centreCoutId, $exerciceId);
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            if ($e->getCode() == 1062) {
+                $this->jsonError('Cette ligne budgétaire existe déjà');
+            }
+            $this->jsonError('Erreur lors de la modification');
+        }
+    }
+
+    public function fetchLigneBudgetaire(): never
+    {
+        $this->requireMaintenanceSubRight('viewLigneBudgetaire');
+        $row = $this->maintenanceRepo->findLigneBudgetaireById((int)$this->post('c-lb-s'));
+        if (!$row) {
+            $this->jsonError('Ligne budgétaire introuvable', 404);
+        }
+        unset($row[0]);
+        $this->json(['data' => $row]);
+    }
+
+    public function deleteLigneBudgetaire(): never
+    {
+        $this->requireMaintenanceSubRight('delLigneBudgetaire');
+        try {
+            $this->maintenanceRepo->transactional(function () {
+                $this->maintenanceRepo->deleteLigneBudgetaireById((int)$this->post('del-lb-id'));
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            $this->jsonError('Échec de la suppression');
+        }
+    }
+
+    /** Options du select des lignes budgétaires + libellé de la ligne actuellement liée au bon. */
+    public function fetchLignesBudgetaires(): never
+    {
+        $rights = getUserRightsFor('maintenances');
+        if (!in_array('linkBudget', $rights, true) && !in_array('viewLigneBudgetaire', $rights, true)) {
+            $this->jsonError('Accès non autorisé', 403);
+        }
+        $rows = $this->maintenanceRepo->findLignesBudgetaires();
+        $html = '';
+        foreach ($rows as $r) {
+            $html .= "<option value='{$r['id_ligne_budgetaire']}' data-budget='{$r['montant_budget']}' data-utilise='{$r['montant_utilise']}'>"
+                . h($r['lib_ligne_budgetaire']) . ' — ' . h($r['lib_centre_cout']) . ' (' . h($r['lib_exercice_budgetaire']) . ')</option>';
+        }
+        if ($html === '') {
+            $html = "<option value=''></option>";
+        }
+        $linked = null;
+        $bonId = (int)$this->post('bon-lb');
+        if ($bonId > 0) {
+            $link = $this->maintenanceRepo->findLinkedBudget($bonId);
+            if ($link && !empty($link['id_ligne_budgetaire'])) {
+                $linked = $link['lib_ligne_budgetaire'] . ' — ' . $link['lib_centre_cout'] . ' (' . $link['lib_exercice_budgetaire'] . ')';
+            }
+        }
+        $this->json(['html' => $html, 'linked' => $linked]);
+    }
+
+    // ---- Liaison bon ↔ ligne budgétaire ----
+
+    public function linkBudgetBonReparation(): never
+    {
+        $this->requireMaintenanceSubRight('linkBudget');
+        $bonId = (int)$this->post('link-budget-br');
+        $ligneId = (int)$this->post('id-lb-link');
+        if ($bonId <= 0 || $ligneId <= 0) {
+            $this->jsonError('Paramètres invalides');
+        }
+        if (!$this->maintenanceRepo->findBonReparationById($bonId)) {
+            $this->jsonError('Bon de réparation introuvable');
+        }
+        if (!$this->maintenanceRepo->findLigneBudgetaireById($ligneId)) {
+            $this->jsonError('Ligne budgétaire introuvable');
+        }
+        try {
+            $this->maintenanceRepo->transactional(function () use ($bonId, $ligneId) {
+                $this->maintenanceRepo->linkBonReparationBudget($bonId, $ligneId);
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            $this->jsonError('Échec de la liaison');
         }
     }
 
