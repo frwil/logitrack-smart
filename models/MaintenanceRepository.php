@@ -422,7 +422,7 @@ class MaintenanceRepository extends BaseRepository
         float $montant,
         ?int $plusMoinsId,
         ?float $plusMoinsVal,
-        int $destinationId,
+        string $destination,
         int $duree,
         string $dateJustif,
         int $centreCoutId,
@@ -433,7 +433,7 @@ class MaintenanceRepository extends BaseRepository
         return $this->insertGetId(
             "INSERT INTO bons_reparation (num_bon_reparation, id_affectation_vehicule, date_entree, diagnostic, type_execution, id_prestataire, montant_reparation, id_plus_ou_moins_value, plus_ou_moins_value_valeur, destination_bon, duree_reparation, date_justification, id_centre_cout, date_prevue_sortie, date_fin_reparation, observations)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [$num, $affectationId, $dateEntree, $diagnostic, $typeExecution, $prestataireId, $montant, $plusMoinsId, $plusMoinsVal, $destinationId, $duree, $dateJustif, $centreCoutId, $datePrevue, $dateFin, $observation]
+            [$num, $affectationId, $dateEntree, $diagnostic, $typeExecution, $prestataireId, $montant, $plusMoinsId, $plusMoinsVal, $destination, $duree, $dateJustif, $centreCoutId, $datePrevue, $dateFin, $observation]
         );
     }
 
@@ -864,7 +864,7 @@ class MaintenanceRepository extends BaseRepository
         float $montant,
         ?int $plusMoinsId,
         ?float $plusMoinsVal,
-        int $destinationId,
+        string $destination,
         int $duree,
         string $dateJustif,
         int $centreCoutId,
@@ -891,7 +891,7 @@ class MaintenanceRepository extends BaseRepository
              date_fin_reparation = ?,
              observations = ?
              WHERE id_bon_reparation = ?",
-            [$num, $affectationId, $dateEntree, $diagnostic, $typeExecution, $prestataireId, $montant, $plusMoinsId, $plusMoinsVal, $destinationId, $duree, $dateJustif, $centreCoutId, $datePrevue, $dateFin, $observation, $id]
+            [$num, $affectationId, $dateEntree, $diagnostic, $typeExecution, $prestataireId, $montant, $plusMoinsId, $plusMoinsVal, $destination, $duree, $dateJustif, $centreCoutId, $datePrevue, $dateFin, $observation, $id]
         );
     }
 

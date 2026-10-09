@@ -408,7 +408,7 @@ class MaintenanceController extends BaseController
                     (float)$this->post('montant-br-upd'),
                     $this->post('plus-moins-br-upd') ? (int)$this->post('plus-moins-br-upd') : null,
                     $this->post('plus-moins-val-br-upd') ? (float)$this->post('plus-moins-val-br-upd') : null,
-                    (int)$this->post('destination-br-upd'),
+                    $this->post('destination-br-upd'),
                     (int)$this->post('duree-br-upd'),
                     $this->post('date-justif-br-upd'),
                     (int)$this->post('centrecout-br-upd'),
@@ -419,7 +419,7 @@ class MaintenanceController extends BaseController
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {
-            $this->jsonError('Erreur lors de la mise à jour');
+            $this->jsonError('Erreur lors de la mise à jour — ' . $e->getMessage());
         }
     }
 
@@ -437,7 +437,7 @@ class MaintenanceController extends BaseController
                     (float)$this->post('montant-br'),
                     $this->post('plus-moins-br') ? (int)$this->post('plus-moins-br') : null,
                     $this->post('plus-moins-val-br') ? (float)$this->post('plus-moins-val-br') : null,
-                    (int)$this->post('destination-br'),
+                    $this->post('destination-br'),
                     (int)$this->post('duree-br'),
                     $this->post('date-justif-br'),
                     (int)$this->post('centrecout-br'),
@@ -448,7 +448,7 @@ class MaintenanceController extends BaseController
             });
             $this->json();
         } catch (\mysqli_sql_exception $e) {
-            $this->jsonError("Erreur lors de l'enregistrement");
+            $this->jsonError("Erreur lors de l'enregistrement — " . $e->getMessage());
         }
     }
 
