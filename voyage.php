@@ -595,7 +595,7 @@ function getTableauEvaluationVoyages()
                 if (e.success) {
                     showSuccess('Modification effectuée!!')
                     <?php if(isset($_POST['date-f'])):
-                    echo "$('body').append('<form method=\"post\" action=\"#\" id=\"form-reload-after-upd\"><input type=\"hidden\" name=\"date-f\" value=" . j($_POST['date-f']) . "><input type=\"hidden\" name=\"date-t\" value=" . j($_POST['date-t']) . "><input type=\"hidden\" name=\"scope\" value=" . j(getVoyagesScope()) . "></form>');$('#form-reload-after-upd').submit();";
+                    echo "$('body').append('<form method=\"post\" action=\"#\" id=\"form-reload-after-upd\"><input type=\"hidden\" name=\"csrf_token\" value=\"' + window.CSRF_TOKEN + '\"><input type=\"hidden\" name=\"date-f\" value=" . j($_POST['date-f']) . "><input type=\"hidden\" name=\"date-t\" value=" . j($_POST['date-t']) . "><input type=\"hidden\" name=\"scope\" value=" . j(getVoyagesScope()) . "></form>');$('#form-reload-after-upd').submit();";
                     else : ?>
                     location = "?page=voyages"
                     <?php endif; ?>
@@ -778,6 +778,9 @@ function getVoyagesFilterBar(string $scope)
 
     $html = '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title"><i class="fa fa-sliders-h me-1"></i>Filtres des statistiques voyages</h2></div>';
     $html .= '<div class="p-3"><form method="post" action="#" id="form-filtres-voyages" class="d-flex flex-wrap align-items-end gap-2">';
+    // Token injecté côté serveur : le onchange="this.form.submit()" du select de portée
+    // est un submit natif qui ne déclenche pas l'événement jQuery qui l'ajouterait.
+    $html .= '<input type="hidden" name="csrf_token" value="' . h($_SESSION['csrf_token'] ?? '') . '">';
     $html .= '<div class="me-2">'
         . '<label class="fw-bold small text-muted d-block mb-1"><i class="fa fa-calendar-alt me-1"></i>PÉRIODE D\'ANALYSE</label>'
         . '<div class="d-flex align-items-center gap-2">'
