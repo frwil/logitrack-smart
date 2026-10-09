@@ -85,6 +85,63 @@ class VoyagePrestataireRepository extends BaseRepository
         );
     }
 
+    /** Counts per date + destination — merged into the voyages/périodes table. */
+    public function countByDateAndDestination(string $dateFrom, string $dateTo, array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = $this->contextFilter('vp', $regionIds, $entiteIds);
+        $params = array_merge($params, [$dateFrom, $dateTo]);
+        return $this->select(
+            "SELECT vp.date_voyage, vpd.id_destination,
+                    COUNT(DISTINCT vp.id_voyage_prestataire) AS nb_voyages
+             FROM voyage_prestataire vp
+             LEFT JOIN voyage_prestataire_destination vpd ON vpd.id_voyage_prestataire = vp.id_voyage_prestataire
+             WHERE $where AND vp.date_voyage BETWEEN ? AND ?
+             GROUP BY vp.date_voyage, vpd.id_destination",
+            $params
+        );
+    }
+
+    /**
+     * Total external voyages per carrier (prestataire + immatriculation) —
+     * one row per voyage, so nb_voyages is the distinct count per carrier.
+     */
+    public function countByCarrier(string $dateFrom, string $dateTo, array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = $this->contextFilter('vp', $regionIds, $entiteIds);
+        $params = array_merge($params, [$dateFrom, $dateTo]);
+        return $this->select(
+            "SELECT vp.id_prestataire_transport, pt.nom_societe,
+                    COALESCE(NULLIF(vp.immatriculation, ''), pt.immatriculation) AS immatriculation,
+                    COALESCE(NULLIF(vp.nom_chauffeur, ''), pt.nom_chauffeur) AS nom_chauffeur,
+                    COUNT(DISTINCT vp.id_voyage_prestataire) AS nb_voyages
+             FROM voyage_prestataire vp
+             LEFT JOIN prestataire_transport pt ON pt.id_prestataire_transport = vp.id_prestataire_transport
+             WHERE $where AND vp.date_voyage BETWEEN ? AND ?
+             GROUP BY vp.id_prestataire_transport, pt.nom_societe, vp.immatriculation, pt.immatriculation, vp.nom_chauffeur, pt.nom_chauffeur
+             ORDER BY pt.nom_societe, immatriculation",
+            $params
+        );
+    }
+
+    /** External voyages per carrier + destination — voyages/véhicules table rows. */
+    public function countByCarrierAndDestination(string $dateFrom, string $dateTo, array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = $this->contextFilter('vp', $regionIds, $entiteIds);
+        $params = array_merge($params, [$dateFrom, $dateTo]);
+        return $this->select(
+            "SELECT vp.id_prestataire_transport,
+                    COALESCE(NULLIF(vp.immatriculation, ''), pt.immatriculation) AS immatriculation,
+                    vpd.id_destination,
+                    COUNT(DISTINCT vp.id_voyage_prestataire) AS nb_voyages
+             FROM voyage_prestataire vp
+             LEFT JOIN prestataire_transport pt ON pt.id_prestataire_transport = vp.id_prestataire_transport
+             LEFT JOIN voyage_prestataire_destination vpd ON vpd.id_voyage_prestataire = vp.id_voyage_prestataire
+             WHERE $where AND vp.date_voyage BETWEEN ? AND ?
+             GROUP BY vp.id_prestataire_transport, vp.immatriculation, pt.immatriculation, vpd.id_destination",
+            $params
+        );
+    }
+
     /** Single voyage with carrier/entite/region/type details (for the edit modal). */
     public function findById(int $id): ?array
     {

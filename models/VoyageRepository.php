@@ -125,6 +125,53 @@ class VoyageRepository extends BaseRepository
         return array_values($map);
     }
 
+    /**
+     * Counts per date + region split by voyage type (flotte vs prestataires externes),
+     * aggregated across entities — used by the evaluation view to color the two types.
+     * Returns a map date|region => [nb_flotte, dist_flotte, nb_externe, dist_externe].
+     */
+    public function countBatchByDateAndRegionsByType(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): array
+    {
+        [$phR, $pR] = db_in($regionIds);
+        [$phE, $pE] = db_in($entiteIds);
+        $params = array_merge($pR, $pE, [$dateFrom, $dateTo]);
+        $rows = $this->select(
+            "SELECT v.date_voyage, affectation_vehicule.id_region,
+                    COUNT(DISTINCT v.id_voyage) AS nb_voyages,
+                    COALESCE(SUM(dv.distance_destination), 0) AS total_dist
+             FROM voyage v
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
+             LEFT JOIN voyage_vehicule vv ON vv.id_voyage = v.id_voyage
+             LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
+             WHERE affectation_vehicule.is_deleted = 0
+             AND affectation_vehicule.id_region IN ($phR)
+             AND affectation_vehicule.id_entite IN ($phE)
+             AND v.date_voyage BETWEEN ? AND ?
+             GROUP BY v.date_voyage, affectation_vehicule.id_region",
+            $params
+        );
+
+        $map = [];
+        foreach ($rows as $r) {
+            $map[$r['date_voyage'] . '|' . $r['id_region']] = [
+                'nb_flotte' => (int)$r['nb_voyages'],
+                'dist_flotte' => (float)$r['total_dist'],
+                'nb_externe' => 0,
+                'dist_externe' => 0.0,
+            ];
+        }
+        $vpRepo = new VoyagePrestataireRepository($this->con);
+        foreach ($vpRepo->countByDateAndRegion($dateFrom, $dateTo, $regionIds, $entiteIds) as $r) {
+            $k = $r['date_voyage'] . '|' . $r['id_region'];
+            if (!isset($map[$k])) {
+                $map[$k] = ['nb_flotte' => 0, 'dist_flotte' => 0.0, 'nb_externe' => 0, 'dist_externe' => 0.0];
+            }
+            $map[$k]['nb_externe'] += (int)$r['nb_voyages'];
+            $map[$k]['dist_externe'] += (float)$r['total_dist'];
+        }
+        return $map;
+    }
+
     /** Voyage vehicles by destination with optional date range. */
     public function findVoyageVehiculesByDestination(int $destinationId, int $vehiculeId, ?string $dateFrom = null, ?string $dateTo = null): array
     {

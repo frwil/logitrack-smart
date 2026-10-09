@@ -191,7 +191,28 @@ function getTableauVoyagesVehicules()
 
     $regionIds = getContextRegions();
     $entiteIds = getContextEntities();
+    $scope = getVoyagesScope();
     $allRows = $voyageRepo->findBatchVoyagesVehicules($regionIds, $entiteIds, $dateFrom, $dateTo);
+
+    // Voyages prestataires externes : totaux + cellules par transporteur et destination.
+    $vpRepo = new VoyagePrestataireRepository($con);
+    $extCarriers = [];
+    foreach ($vpRepo->countByCarrier($dateFrom, $dateTo, $regionIds, $entiteIds) as $c) {
+        $key = $c['id_prestataire_transport'] . '|' . $c['immatriculation'];
+        $extCarriers[$key] = [
+            'societe' => $c['nom_societe'] ?? '',
+            'immatriculation' => $c['immatriculation'] ?? '',
+            'chauffeur' => $c['nom_chauffeur'] ?? '',
+            'total' => (int)$c['nb_voyages'],
+            'cells' => [],
+        ];
+    }
+    foreach ($vpRepo->countByCarrierAndDestination($dateFrom, $dateTo, $regionIds, $entiteIds) as $c) {
+        $key = $c['id_prestataire_transport'] . '|' . $c['immatriculation'];
+        if (isset($extCarriers[$key])) {
+            $extCarriers[$key]['cells'][(int)$c['id_destination']] = (int)$c['nb_voyages'];
+        }
+    }
 
     // Index: [vehicle_id][destination_id] → [voyage_ids, total_carburant]
     $byVehDest = [];
@@ -214,11 +235,15 @@ function getTableauVoyagesVehicules()
     $total_voyages = 0;
     $total_kms = 0;
     $total_cbt = 0;
+    $total_voyages_flotte = 0;
+    $total_kms_flotte = 0;
+    $total_voyages_ext = 0;
+    $total_kms_ext = 0;
     $total_voyage_col = [];
     $total_kms_col = [];
     $nbTrajets = count($destinations);
-    $nblignes = count($vehicleRows);
 
+    if ($scope !== 'externe'):
     foreach ($vehicleRows as $r):
         $vid = (int)$r['id_vehicule'];
         $vehData = $byVehDest[$vid] ?? [];
@@ -241,7 +266,7 @@ function getTableauVoyagesVehicules()
         $nbVoyagesUniques = count($voyagesArray);
         $conso = $ligneKms > 0 ? round($ligneCarb / $ligneKms * 100, 2) : 0;
 
-        $tableau .= "<tr><td>$i</td><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['n_chauffeur']) . "</td>"
+        $tableau .= "<tr><td>$i</td><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['n_chauffeur']) . " <span class='badge text-bg-primary ms-1'>Flotte</span></td>"
             . "<td><span id='total_vg_ln_$vid'>$nbVoyagesUniques</span></td>"
             . "<td><span id='total_kms_ln_$vid'>$ligneKms</span></td>"
             . "<td><span id='total_cbt_ln_$vid'>$ligneCarb</span></td>"
@@ -267,7 +292,49 @@ function getTableauVoyagesVehicules()
         $total_voyages += $nbVoyagesUniques;
         $total_kms += $ligneKms;
         $total_cbt += $ligneCarb;
+        $total_voyages_flotte += $nbVoyagesUniques;
+        $total_kms_flotte += $ligneKms;
     endforeach;
+    endif;
+
+    // Lignes prestataires externes : une ligne par transporteur (société + immatriculation).
+    if ($scope !== 'flotte'):
+    foreach ($extCarriers as $carrier):
+        $ligneKms = 0;
+        foreach ($carrier['cells'] as $did => $cnt) {
+            $ligneKms += ($destMap[$did]['distance'] ?? 0) * $cnt;
+        }
+        $label = h($carrier['societe']) . ' — ' . h($carrier['immatriculation']);
+        if ($carrier['chauffeur'] !== '') $label .= ' — ' . h($carrier['chauffeur']);
+        $tableau .= "<tr><td>$i</td><td>$label <span class='badge text-bg-warning ms-1'>Externe</span></td>"
+            . "<td><span id='total_vg_ln_ext_$i'>" . $carrier['total'] . "</span></td>"
+            . "<td><span id='total_kms_ln_ext_$i'>$ligneKms</span></td>"
+            . "<td>—</td><td>—</td>";
+
+        for ($j = 0; $j < $nbTrajets; $j++):
+            $did = (int)$destinations[$j]['id_destination'];
+            $cnt = $carrier['cells'][$did] ?? 0;
+            $tableau .= "<td " . ($cnt > 0 ? "style='background-color:#fd7e14;color:white'>$cnt" : " class='text-bg-info' style='background-color:#0dcaf0;'>") . "</td>";
+
+            $kms = $cnt > 0 ? ($destMap[$did]['distance'] ?? 0) * $cnt : 0;
+            if (!isset($total_voyage_col[$i])) $total_voyage_col[$i] = [];
+            if (!isset($total_voyage_col[$i][$j])) $total_voyage_col[$i][$j] = 0;
+            $total_voyage_col[$i][$j] += $cnt;
+            if (!isset($total_kms_col[$i])) $total_kms_col[$i] = [];
+            if (!isset($total_kms_col[$i][$j])) $total_kms_col[$i][$j] = 0;
+            $total_kms_col[$i][$j] += $kms;
+        endfor;
+
+        $tableau .= "</tr>";
+        $i++;
+        $total_voyages += $carrier['total'];
+        $total_kms += $ligneKms;
+        $total_voyages_ext += $carrier['total'];
+        $total_kms_ext += $ligneKms;
+    endforeach;
+    endif;
+
+    $nblignes = $i - 1;
 
     $tfoot = "";
     if ($nbTrajets > 0):
@@ -281,14 +348,15 @@ function getTableauVoyagesVehicules()
                 $total_k[$c] += $total_kms_col[$r + 1][$c] ?? 0;
             }
         }
-        $tfoot = "<tr style='font-weight:bold'><td colspan=2 class='text-bg-dark'>Total</td><td class='text-bg-dark'>{$total_voyages}</td><td class='text-bg-dark'>{$total_kms}</td><td class='text-bg-dark'>{$total_cbt}</td><td class='text-bg-dark'>" . round($total_cbt / ($total_kms > 0 ? $total_kms : 1) * 100, 2) . "</td>";
+        $tfoot = "<tr style='font-weight:bold'><td colspan=2 class='text-bg-dark'>Total</td><td class='text-bg-dark'>" . getVoyagesTypeBadges($total_voyages_flotte, $total_voyages_ext, $scope) . "</td><td class='text-bg-dark'>" . getVoyagesTypeBadges($total_kms_flotte, $total_kms_ext, $scope) . "</td><td class='text-bg-dark'>" . ($scope === 'externe' ? '—' : $total_cbt) . "</td><td class='text-bg-dark'>" . ($scope === 'externe' ? '—' : round($total_cbt / ($total_kms > 0 ? $total_kms : 1) * 100, 2)) . "</td>";
         for ($c = 0; $c < $nbTrajets; $c++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . (int)$total_col[$c] . "</td>";
         $tfoot .= "</tr>";
-        $tfoot .= "<tr style='font-weight:bold'><td colspan=2 class='text-bg-dark'>Total</td><td class='text-bg-dark'>{$total_voyages}</td><td class='text-bg-dark'>{$total_kms}</td><td></td><td></td>";
+        $tfoot .= "<tr style='font-weight:bold'><td colspan=2 class='text-bg-dark'>Total</td><td class='text-bg-dark'>" . getVoyagesTypeBadges($total_voyages_flotte, $total_voyages_ext, $scope) . "</td><td class='text-bg-dark'>" . getVoyagesTypeBadges($total_kms_flotte, $total_kms_ext, $scope) . "</td><td></td><td></td>";
         for ($c = 0; $c < $nbTrajets; $c++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . (int)$total_k[$c] . "</td>";
         $tfoot .= "</tr>";
     endif;
     $tableau .= "</tbody><tfoot>$tfoot</tfoot></table>";
+    $tableau .= getVoyagesTypeLegend($scope);
     // La période est fournie par la barre de filtres en haut de page (POST date-f/date-t).
     return $tableau;
 }
@@ -325,6 +393,7 @@ function getTableauVoyagesPeriodes()
 
     $regionIds = getContextRegions();
     $entiteIds = getContextEntities();
+    $scope = getVoyagesScope();
     $allRows = $voyageRepo->findBatchVoyagesVehicules($regionIds, $entiteIds, $dateFrom, $dateTo);
 
     // Index: [date][destination_id] → [voyage_ids, total_carburant]
@@ -336,6 +405,18 @@ function getTableauVoyagesPeriodes()
         if (!isset($byDateDest[$dt][$did])) $byDateDest[$dt][$did] = ['ids' => [], 'carb' => 0];
         $byDateDest[$dt][$did]['ids'][] = (int)$row['id_voyage'];
         $byDateDest[$dt][$did]['carb'] += (float)$row['qte_carburant'];
+    }
+
+    // Voyages prestataires externes : totaux par date et par date + destination.
+    $vpRepo = new VoyagePrestataireRepository($con);
+    $extByDate = [];
+    foreach ($vpRepo->countByDate($dateFrom, $dateTo, $regionIds, $entiteIds) as $row) {
+        $extByDate[$row['date']] = (int)$row['nb'];
+    }
+    $extByDateDest = [];
+    foreach ($vpRepo->countByDateAndDestination($dateFrom, $dateTo, $regionIds, $entiteIds) as $row) {
+        if ($row['id_destination'] === null) continue;
+        $extByDateDest[$row['date_voyage']][(int)$row['id_destination']] = (int)$row['nb_voyages'];
     }
 
     $tableau = "<table class='table table-striped'><thead><tr><th>#</th><th>Date</th><th># Voyages</th><th># Kms</th><th>Carburant (en L)</th><th>Conso. 100km</th>";
@@ -350,13 +431,18 @@ function getTableauVoyagesPeriodes()
     $total_voyages = 0;
     $total_kms = 0;
     $total_cbt = 0;
+    $total_voyages_flotte = 0;
+    $total_kms_flotte = 0;
+    $total_voyages_ext = 0;
+    $total_kms_ext = 0;
     $total_voyage_col = [];
     $total_kms_col = [];
+    $total_voyage_ext_col = [];
+    $total_kms_ext_col = [];
 
     foreach ($dates as $idx => $dateStr):
         $dateData = $byDateDest[$dateStr] ?? [];
         $displayDate = $dateCols[$idx];
-        $dateId = date('dmY', strtotime($dateStr));
 
         $ligneVoyages = 0;
         $ligneKms = 0;
@@ -375,26 +461,43 @@ function getTableauVoyagesPeriodes()
         }
         $nbVoyagesUniques = count($voyagesArray);
         $conso = $ligneKms > 0 ? round($ligneCarb / $ligneKms * 100, 2) : 0;
+        $nbVoyagesExt = $extByDate[$dateStr] ?? 0;
+        $ligneKmsExt = 0;
+        foreach ($extByDateDest[$dateStr] ?? [] as $did => $cntE) {
+            $ligneKmsExt += ($destMap[$did]['distance'] ?? 0) * $cntE;
+        }
 
         $tableau .= "<tr><td>$i</td><td>$displayDate</td>"
-            . "<td><span id='total_vg_ln_$dateId'>$nbVoyagesUniques</span></td>"
-            . "<td><span id='total_kms_ln_$dateId'>$ligneKms</span></td>"
-            . "<td><span id='total_cbt_ln_$dateId'>$ligneCarb</span></td>"
-            . "<td><span id='total_cbt_100_ln_$dateId'>$conso</span></td>";
+            . "<td>" . getVoyagesTypeBadges($nbVoyagesUniques, $nbVoyagesExt, $scope) . "</td>"
+            . "<td>" . getVoyagesTypeBadges($ligneKms, $ligneKmsExt, $scope) . "</td>"
+            . "<td>" . ($scope === 'externe' ? '—' : $ligneCarb) . "</td>"
+            . "<td>" . ($scope === 'externe' ? '—' : $conso) . "</td>";
 
         for ($j = 0; $j < $nbTrajets; $j++):
             $did = (int)$destinations[$j]['id_destination'];
             $cell = $dateData[$did] ?? null;
             $cnt = $cell ? count(array_unique($cell['ids'])) : 0;
-            $tableau .= "<td " . ($cnt > 0 ? "class='text-bg-success' style='background-color:#198754;color:white'>$cnt" : " class='text-bg-info' style='background-color:#0dcaf0;'>") . "</td>";
+            $cntE = $extByDateDest[$dateStr][$did] ?? 0;
+            if ($cnt === 0 && $cntE === 0) {
+                $tableau .= "<td class='text-bg-info' style='background-color:#0dcaf0;'></td>";
+            } else {
+                $tableau .= "<td>" . getVoyagesTypeBadges($cnt, $cntE, $scope) . "</td>";
+            }
 
             $kms = $cnt > 0 ? ($destMap[$did]['distance'] ?? 0) * $cnt : 0;
+            $kmsE = $cntE > 0 ? ($destMap[$did]['distance'] ?? 0) * $cntE : 0;
             if (!isset($total_voyage_col[$i])) $total_voyage_col[$i] = [];
             if (!isset($total_voyage_col[$i][$j])) $total_voyage_col[$i][$j] = 0;
             $total_voyage_col[$i][$j] += $cnt;
             if (!isset($total_kms_col[$i])) $total_kms_col[$i] = [];
             if (!isset($total_kms_col[$i][$j])) $total_kms_col[$i][$j] = 0;
             $total_kms_col[$i][$j] += $kms;
+            if (!isset($total_voyage_ext_col[$i])) $total_voyage_ext_col[$i] = [];
+            if (!isset($total_voyage_ext_col[$i][$j])) $total_voyage_ext_col[$i][$j] = 0;
+            $total_voyage_ext_col[$i][$j] += $cntE;
+            if (!isset($total_kms_ext_col[$i])) $total_kms_ext_col[$i] = [];
+            if (!isset($total_kms_ext_col[$i][$j])) $total_kms_ext_col[$i][$j] = 0;
+            $total_kms_ext_col[$i][$j] += $kmsE;
         endfor;
 
         $tableau .= "</tr>";
@@ -402,28 +505,39 @@ function getTableauVoyagesPeriodes()
         $total_voyages += $nbVoyagesUniques;
         $total_kms += $ligneKms;
         $total_cbt += $ligneCarb;
+        $total_voyages_flotte += $nbVoyagesUniques;
+        $total_kms_flotte += $ligneKms;
+        $total_voyages_ext += $nbVoyagesExt;
+        $total_kms_ext += $ligneKmsExt;
     endforeach;
 
     $tfoot = "";
     if ($nbTrajets > 0):
         $total_col = [];
         $total_k = [];
+        $total_ext_col = [];
+        $total_ext_k = [];
         for ($r = 0; $r < $nblignes; $r++) {
             for ($c = 0; $c < $nbTrajets; $c++) {
                 if (!isset($total_col[$c])) $total_col[$c] = 0;
                 if (!isset($total_k[$c])) $total_k[$c] = 0;
                 $total_col[$c] += $total_voyage_col[$r + 1][$c] ?? 0;
                 $total_k[$c] += $total_kms_col[$r + 1][$c] ?? 0;
+                if (!isset($total_ext_col[$c])) $total_ext_col[$c] = 0;
+                if (!isset($total_ext_k[$c])) $total_ext_k[$c] = 0;
+                $total_ext_col[$c] += $total_voyage_ext_col[$r + 1][$c] ?? 0;
+                $total_ext_k[$c] += $total_kms_ext_col[$r + 1][$c] ?? 0;
             }
         }
-        $tfoot = "<tr style='font-weight:bold'><td colspan=2 class='text-bg-dark'>Total</td><td class='text-bg-dark'>{$total_voyages}</td><td class='text-bg-dark'>{$total_kms}</td><td class='text-bg-dark'>{$total_cbt}</td><td class='text-bg-dark'>" . round($total_cbt / ($total_kms > 0 ? $total_kms : 1) * 100, 2) . "</td>";
-        for ($c = 0; $c < $nbTrajets; $c++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . (int)$total_col[$c] . "</td>";
+        $tfoot = "<tr style='font-weight:bold'><td colspan=2 class='text-bg-dark'>Total</td><td class='text-bg-dark'>" . getVoyagesTypeBadges($total_voyages_flotte, $total_voyages_ext, $scope) . "</td><td class='text-bg-dark'>" . getVoyagesTypeBadges($total_kms_flotte, $total_kms_ext, $scope) . "</td><td class='text-bg-dark'>" . ($scope === 'externe' ? '—' : $total_cbt) . "</td><td class='text-bg-dark'>" . ($scope === 'externe' ? '—' : round($total_cbt / ($total_kms > 0 ? $total_kms : 1) * 100, 2)) . "</td>";
+        for ($c = 0; $c < $nbTrajets; $c++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . getVoyagesTypeBadges((int)$total_col[$c], (int)$total_ext_col[$c], $scope) . "</td>";
         $tfoot .= "</tr>";
-        $tfoot .= "<tr style='font-weight:bold'><td colspan=2 class='text-bg-dark'>Total</td><td class='text-bg-dark'>{$total_voyages}</td><td class='text-bg-dark'>{$total_kms}</td><td></td><td></td>";
-        for ($c = 0; $c < $nbTrajets; $c++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . (int)$total_k[$c] . "</td>";
+        $tfoot .= "<tr style='font-weight:bold'><td colspan=2 class='text-bg-dark'>Total</td><td class='text-bg-dark'>" . getVoyagesTypeBadges($total_voyages_flotte, $total_voyages_ext, $scope) . "</td><td class='text-bg-dark'>" . getVoyagesTypeBadges($total_kms_flotte, $total_kms_ext, $scope) . "</td><td></td><td></td>";
+        for ($c = 0; $c < $nbTrajets; $c++) $tfoot .= "<td class='text-bg-dark dt-type-numeric'>" . getVoyagesTypeBadges((int)$total_k[$c], (int)$total_ext_k[$c], $scope) . "</td>";
         $tfoot .= "</tr>";
     endif;
     $tableau .= "</tbody><tfoot>$tfoot</tfoot></table>";
+    $tableau .= getVoyagesTypeLegend($scope);
     // La période est fournie par la barre de filtres en haut de page (POST date-f/date-t).
     return $tableau;
 }
@@ -448,6 +562,7 @@ function getTableauEvaluationVoyages()
 
     $regionIds = getContextRegions();
     $entiteIds = getContextEntities();
+    $scope = getVoyagesScope();
     $regionRepo = new RegionRepository($con);
     $objectifRepo = new ObjectifRepository($con);
     $voyageRepo = new VoyageRepository($con);
@@ -455,7 +570,7 @@ function getTableauEvaluationVoyages()
 
     // 2 batch queries instead of D×R×2
     $allObjectifs = $objectifRepo->findByDateRangeAndRegions($dateFrom, $dateTo, $regionIds, $entiteIds);
-    $allCounts = $voyageRepo->countBatchByDateAndRegions($regionIds, $entiteIds, $dateFrom, $dateTo);
+    $cntByDateRegion = $voyageRepo->countBatchByDateAndRegionsByType($regionIds, $entiteIds, $dateFrom, $dateTo);
 
     // Index objectifs by [date][region] (aggregate across entities)
     $objByDateRegion = [];
@@ -465,17 +580,6 @@ function getTableauEvaluationVoyages()
             $objByDateRegion[$o['date_objectif_periode']][$rid] = 0;
         }
         $objByDateRegion[$o['date_objectif_periode']][$rid] += (int)$o['objectif'];
-    }
-
-    // Index counts by [date][region] (aggregate across entities)
-    $cntByDateRegion = [];
-    foreach ($allCounts as $c) {
-        $rid = (int)$c['id_region'];
-        if (!isset($cntByDateRegion[$c['date_voyage']][$rid])) {
-            $cntByDateRegion[$c['date_voyage']][$rid] = ['nb' => 0, 'dist' => 0.0];
-        }
-        $cntByDateRegion[$c['date_voyage']][$rid]['nb'] += (int)$c['nb_voyages'];
-        $cntByDateRegion[$c['date_voyage']][$rid]['dist'] += (float)$c['total_dist'];
     }
 
     $tableau = "<table class='table table-striped no-datatable' id='table-evaluation'><thead><tr><th rowspan=2>Date</th>";
@@ -501,17 +605,21 @@ function getTableauEvaluationVoyages()
             $tableau .= "<td>" . ($plan ? h((string)$plan) : '0') . "</td>";
             $total_plan += $plan;
 
-            $cnt = $cntByDateRegion[$dateStr][$regionId] ?? null;
-            $real = $cnt ? $cnt['nb'] : 0;
-            $dist = $cnt ? $cnt['dist'] : 0;
-            $tableau .= "<td>$real</td>";
+            $cnt = $cntByDateRegion[$dateStr . '|' . $regionId] ?? null;
+            $nbF = $cnt['nb_flotte'] ?? 0;
+            $nbE = $cnt['nb_externe'] ?? 0;
+            $distF = $cnt['dist_flotte'] ?? 0.0;
+            $distE = $cnt['dist_externe'] ?? 0.0;
+            $real = $scope === 'flotte' ? $nbF : ($scope === 'externe' ? $nbE : $nbF + $nbE);
+            $dist = $scope === 'flotte' ? $distF : ($scope === 'externe' ? $distE : $distF + $distE);
+            $tableau .= "<td>" . getVoyagesTypeBadges($nbF, $nbE, $scope) . "</td>";
             $total_real += $real;
             $total_distances += $dist;
 
             $score = round($plan > 0 ? $real / $plan * 100 : 0, 1);
             $tableau .= "<td " . ($score < 100 ? 'class="text-bg-danger"' : 'class="text-bg-success"') . ">$score%</td>";
             $tableau .= "<td>" . ($plan - $real) . "</td>";
-            $tableau .= "<td class='border-end'>$dist</td>";
+            $tableau .= "<td class='border-end'>" . getVoyagesTypeBadges($distF, $distE, $scope) . "</td>";
         endforeach;
         $total_score = round($total_plan == 0 ? 0 : $total_real / $total_plan * 100, 1);
         $total_gap = $total_plan - $total_real;
@@ -519,6 +627,7 @@ function getTableauEvaluationVoyages()
         $tableau .= "</tr>";
     endforeach;
     $tableau .= "</tbody></table>";
+    $tableau .= getVoyagesTypeLegend($scope);
     // La période est fournie par la barre de filtres en haut de page (POST date-f/date-t).
     return $tableau;
 }
@@ -753,6 +862,29 @@ function getVoyagesScope()
 {
     $scope = $_POST['scope'] ?? ($_GET['scope'] ?? 'tout');
     return in_array($scope, ['tout', 'flotte', 'externe', 'comparaison'], true) ? $scope : 'tout';
+}
+
+/**
+ * Badges colorés des voyages par type selon la portée de la barre de filtres :
+ * bleu = flotte, jaune = prestataires externes. « tout »/« comparaison » : les deux.
+ */
+function getVoyagesTypeBadges(int|float $nbFlotte, int|float $nbExterne, string $scope): string
+{
+    if ($scope === 'flotte') {
+        return '<span class="badge text-bg-primary" title="Voyages flotte">' . $nbFlotte . '</span>';
+    }
+    if ($scope === 'externe') {
+        return '<span class="badge text-bg-warning" title="Voyages prestataires externes">' . $nbExterne . '</span>';
+    }
+    return '<span class="badge text-bg-primary" title="Voyages flotte">' . $nbFlotte . '</span>'
+        . ' <span class="badge text-bg-warning" title="Voyages prestataires externes">' . $nbExterne . '</span>';
+}
+
+/** Légende des badges flotte / externes (affichée quand les deux types sont visibles). */
+function getVoyagesTypeLegend(string $scope): string
+{
+    if ($scope === 'flotte' || $scope === 'externe') return '';
+    return "<div class='mt-2 small'><span class='badge text-bg-primary'>Flotte</span> <span class='badge text-bg-warning'>Prestataires externes</span></div>";
 }
 
 /**
