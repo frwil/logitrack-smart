@@ -637,6 +637,8 @@ function getTableauEvaluationVoyages()
         $total_plan = 0;
         $total_real = 0;
         $total_distances = 0;
+        $dayNbF = 0;
+        $dayNbE = 0;
         $tableau .= "<tr><td>" . $dateCols[$idx] . "</td>";
         foreach ($reg as $r):
             $regionId = (int)$r['id_region'];
@@ -647,11 +649,13 @@ function getTableauEvaluationVoyages()
             $cnt = $cntByDateRegion[$dateStr . '|' . $regionId] ?? null;
             $nbF = $cnt['nb_flotte'] ?? 0;
             $nbE = $cnt['nb_externe'] ?? 0;
+            $dayNbF += $nbF;
+            $dayNbE += $nbE;
             $distF = $cnt['dist_flotte'] ?? 0.0;
             $distE = $cnt['dist_externe'] ?? 0.0;
             $real = $scope === 'flotte' ? $nbF : ($scope === 'externe' ? $nbE : $nbF + $nbE);
             $dist = $scope === 'flotte' ? $distF : ($scope === 'externe' ? $distE : $distF + $distE);
-            $tableau .= "<td>" . getVoyagesTypeBadges($nbF, $nbE, $scope) . "</td>";
+            $tableau .= "<td>" . getVoyagesTypeBadges($nbF, $nbE, $scope) . getVoyagesTypeSplit($nbF, $nbE, $scope) . "</td>";
             $total_real += $real;
             $total_distances += $dist;
 
@@ -667,7 +671,7 @@ function getTableauEvaluationVoyages()
         endforeach;
         $total_score = round($total_plan == 0 ? 0 : $total_real / $total_plan * 100, 1);
         $total_gap = $total_real - $total_plan;
-        $tableau .= "<td style='font-weight:bold'>$total_plan</td><td style='font-weight:bold'>$total_real</td><td style='font-weight:bold' class='text-bg-" . ($total_score >= 100 ? 'success' : 'danger') . "'>$total_score%</td><td style='font-weight:bold'>$total_gap</td><td style='font-weight:bold'>$total_distances</td>";
+        $tableau .= "<td style='font-weight:bold'>$total_plan</td><td style='font-weight:bold'>" . getVoyagesTypeBadges($dayNbF, $dayNbE, $scope) . getVoyagesTypeSplit($dayNbF, $dayNbE, $scope) . "</td><td style='font-weight:bold' class='text-bg-" . ($total_score >= 100 ? 'success' : 'danger') . "'>$total_score%</td><td style='font-weight:bold'>$total_gap</td><td style='font-weight:bold'>$total_distances</td>";
         $tableau .= "</tr>";
     endforeach;
 
@@ -690,7 +694,7 @@ function getTableauEvaluationVoyages()
         $grandDist += $dist;
         $score = round($plan > 0 ? $real / $plan * 100 : 0, 1);
         $tableau .= "<td class='text-bg-dark'>$plan</td>"
-            . "<td class='text-bg-dark'>" . getVoyagesTypeBadges($nbF, $nbE, $scope) . "</td>"
+            . "<td class='text-bg-dark'>" . getVoyagesTypeBadges($nbF, $nbE, $scope) . getVoyagesTypeSplit($nbF, $nbE, $scope) . "</td>"
             . "<td class='text-bg-" . ($score >= 100 ? 'success' : 'danger') . "'>$score%</td>"
             . "<td class='text-bg-dark'>" . ($real - $plan) . "</td>"
             . "<td class='text-bg-dark border-end'>" . getVoyagesTypeBadges($distF, $distE, $scope) . "</td>";
@@ -702,7 +706,63 @@ function getTableauEvaluationVoyages()
     $tableau .= "</tbody></table>";
     $tableau .= getVoyagesTypeLegend($scope);
     // La période est fournie par la barre de filtres en haut de page (POST date-f/date-t).
-    return $tableau . getRecapVoyagesPrestataires();
+    return $tableau . getCamembertEvaluationVoyages($reg, $dateFrom, $dateTo) . getRecapVoyagesPrestataires();
+}
+
+/**
+ * Camembert de l'évaluation des voyages : part de la flotte vs part de chaque
+ * transporteur externe. Filtres : région (toutes = national, sinon une région
+ * du contexte) et type d'évaluation (# voyages, km, km moyen, qtés, type de chargement).
+ */
+function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string $dateTo): string
+{
+    $periodLabel = ' (du ' . date('d/m/Y', strtotime($dateFrom)) . ' au ' . date('d/m/Y', strtotime($dateTo)) . ')';
+    $html = '<div class="lt-card mt-3 mb-3"><div class="lt-card-header"><h2 class="lt-card-title">'
+        . 'Répartition flotte / transporteurs externes' . $periodLabel . '</h2></div>';
+    $html .= '<div class="row g-2 px-3 pb-2">';
+    $html .= '<div class="col-md-4"><label class="form-label small text-muted mb-1" for="camembert-eval-region">Région</label>'
+        . '<select id="camembert-eval-region" class="form-select">'
+        . '<option value="all">Toutes les régions (national)</option>';
+    foreach ($regions as $r) {
+        $html .= '<option value="' . (int)$r['id_region'] . '">' . h($r['nom_region']) . '</option>';
+    }
+    $html .= '</select></div>';
+    $html .= '<div class="col-md-4"><label class="form-label small text-muted mb-1" for="camembert-eval-metric">Type d\'évaluation</label>'
+        . '<select id="camembert-eval-metric" class="form-select">'
+        . '<option value="nb"># voyages</option>'
+        . '<option value="km">Km parcourus</option>'
+        . '<option value="km_moyen">Km moyen / voyage</option>'
+        . '<option value="qte">Qtés chargées</option>'
+        . '<option value="type">Type de chargement</option>'
+        . '</select></div>';
+    $html .= '</div>';
+    $html .= '<div id="chart-camembert-eval" style="height: 420px;"></div></div>';
+    $html .= '<script>
+    (function() {
+        var dateFromEval = ' . json_encode($dateFrom) . ';
+        var dateToEval = ' . json_encode($dateTo) . ';
+        function drawCamembertEval() {
+            var region = $("#camembert-eval-region").val();
+            var metric = $("#camembert-eval-metric").val();
+            $.ajax({type:"post", data:"load-camembert-evaluation=1&dateFrom=" + dateFromEval + "&dateTo=" + dateToEval + "&region=" + encodeURIComponent(region) + "&metric=" + encodeURIComponent(metric), dataType:"json"})
+            .done(function(e) {
+                var el = document.getElementById("chart-camembert-eval");
+                var rows = (e.data || []).filter(function(r) { return r.value > 0; });
+                if (!rows.length) { el.innerHTML = "<div class=\"text-center text-muted p-4\">Aucune donnée sur la période</div>"; return; }
+                var dt = new google.visualization.DataTable();
+                dt.addColumn("string", "Part");
+                dt.addColumn("number", "Valeur");
+                rows.forEach(function(r) { dt.addRow([r.label, Math.round(r.value * 100) / 100]); });
+                var c = new google.visualization.PieChart(el);
+                c.draw(dt, {pieHole: 0.35, legend: {position: "bottom"}, chartArea: {width: "90%", height: "75%"}, colors: ["#5D54A4", "#E67E22", "#E74C3C", "#2ECC71", "#3498DB", "#F1C40F", "#9B59B6", "#1ABC9C"]});
+            });
+        }
+        google.charts.load("current", {packages: ["corechart"]});
+        google.charts.setOnLoadCallback(drawCamembertEval);
+        $("#camembert-eval-region, #camembert-eval-metric").on("change", drawCamembertEval);
+    })();
+    </script>';
+    return $html;
 }
 ?>
 <?php include('modalNewVoyage.php'); ?>
@@ -951,6 +1011,20 @@ function getVoyagesTypeBadges(int|float $nbFlotte, int|float $nbExterne, string 
     }
     return '<span class="badge text-bg-primary" title="Voyages flotte">' . $nbFlotte . '</span>'
         . ' <span class="badge text-bg-warning" title="Voyages prestataires externes">' . $nbExterne . '</span>';
+}
+
+/**
+ * Parts (en %) de la flotte et des externes dans le total réalisé — la somme fait 100 %.
+ * (À distinguer du taux de réalisation vs objectif des cartes du tableau de bord.)
+ */
+function getVoyagesTypeSplit(int|float $nbFlotte, int|float $nbExterne, string $scope): string
+{
+    if ($scope === 'flotte' || $scope === 'externe') return '';
+    $total = $nbFlotte + $nbExterne;
+    if ($total <= 0) return '';
+    $pctF = round($nbFlotte / $total * 100, 1);
+    $pctE = round($nbExterne / $total * 100, 1);
+    return '<div class="small text-muted">Flotte : ' . $pctF . ' % · Externes : ' . $pctE . ' %</div>';
 }
 
 /** Légende des badges flotte / externes (affichée quand les deux types sont visibles). */

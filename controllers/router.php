@@ -100,6 +100,7 @@ $routes = [
     'load-top-destinations'   => [$voyageCtrl, 'topDestinations'],
     'load-conso-per-vehicle'  => [$voyageCtrl, 'consoPerVehicle'],
     'load-vehicules-inactifs' => [$voyageCtrl, 'vehiculesInactifs'],
+    'load-camembert-evaluation' => [$voyageCtrl, 'camembertEvaluation'],
 
     // Maintenance — Vidange
     'c-vd-s'              => [$maintenanceCtrl, 'fetchVidange'],

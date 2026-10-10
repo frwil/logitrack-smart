@@ -172,6 +172,104 @@ class VoyageRepository extends BaseRepository
         return $map;
     }
 
+    /**
+     * Données du camembert de l'évaluation des voyages :
+     * agrégats flotte + par transporteur externe + par type de chargement.
+     * Les quantités flotte sont sommées sans le join destinations (sinon multipliées).
+     */
+    public function camembertEvaluation(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): array
+    {
+        // db_context_filter référence affectation_vehicule sans alias.
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $paramsAll = array_merge($params, [$dateFrom, $dateTo]);
+
+        $fleet = $this->selectOne(
+            "SELECT COUNT(DISTINCT v.id_voyage) AS nb,
+                    COALESCE(SUM(dv.distance_destination), 0) AS km
+             FROM voyage v
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
+             LEFT JOIN voyage_vehicule vv ON vv.id_voyage = v.id_voyage
+             LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
+             WHERE affectation_vehicule.is_deleted = 0 AND $where AND v.date_voyage BETWEEN ? AND ?",
+            $paramsAll
+        );
+        $fleetQte = $this->selectOne(
+            "SELECT COALESCE(SUM(v.qte_chargement), 0) AS qte
+             FROM voyage v
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
+             WHERE affectation_vehicule.is_deleted = 0 AND $where AND v.date_voyage BETWEEN ? AND ?",
+            $paramsAll
+        );
+
+        // Transporteurs externes : nb + km par société, quantités agrégées depuis recapBySociete.
+        $vpRepo = new VoyagePrestataireRepository($this->con);
+        $carriers = [];
+        foreach ($vpRepo->recapBySociete($dateFrom, $dateTo, $regionIds, $entiteIds) as $r) {
+            $qte = 0.0;
+            foreach ($r['quantites'] as $q) {
+                $qte += (float)$q['total_qte'];
+            }
+            $carriers[] = [
+                'id_prestataire_transport' => (int)$r['id_prestataire_transport'],
+                'nom_societe' => $r['nom_societe'],
+                'nb' => (int)$r['nb_voyages'],
+                'km' => (float)$r['total_km'],
+                'qte' => $qte,
+            ];
+        }
+
+        // Type de chargement : nb voyages flotte + externes par type.
+        $types = [];
+        foreach ($this->select(
+            "SELECT tcv.id_type_chargement, tcv.lib_type_chargement,
+                    COUNT(DISTINCT v.id_voyage) AS nb
+             FROM voyage v
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
+             LEFT JOIN type_chargement_voyage tcv ON tcv.id_type_chargement = v.id_type_chargement
+             WHERE affectation_vehicule.is_deleted = 0 AND $where AND v.date_voyage BETWEEN ? AND ?
+             GROUP BY tcv.id_type_chargement, tcv.lib_type_chargement",
+            $paramsAll
+        ) as $r) {
+            $types[(int)$r['id_type_chargement']] = [
+                'id_type_chargement' => (int)$r['id_type_chargement'],
+                'lib_type_chargement' => $r['lib_type_chargement'],
+                'nb' => (int)$r['nb'],
+            ];
+        }
+        [$vpWhere, $vpParams] = $vpRepo->contextFilter('vp', $regionIds, $entiteIds);
+        $vpParams = array_merge($vpParams, [$dateFrom, $dateTo]);
+        foreach ($this->select(
+            "SELECT tcv.id_type_chargement, tcv.lib_type_chargement,
+                    COUNT(DISTINCT vp.id_voyage_prestataire) AS nb
+             FROM voyage_prestataire vp
+             LEFT JOIN type_chargement_voyage tcv ON tcv.id_type_chargement = vp.id_type_chargement
+             WHERE $vpWhere AND vp.date_voyage BETWEEN ? AND ?
+             GROUP BY tcv.id_type_chargement, tcv.lib_type_chargement",
+            $vpParams
+        ) as $r) {
+            $tid = (int)$r['id_type_chargement'];
+            if (isset($types[$tid])) {
+                $types[$tid]['nb'] += (int)$r['nb'];
+            } else {
+                $types[$tid] = [
+                    'id_type_chargement' => $tid,
+                    'lib_type_chargement' => $r['lib_type_chargement'],
+                    'nb' => (int)$r['nb'],
+                ];
+            }
+        }
+
+        return [
+            'flotte' => [
+                'nb' => (int)($fleet['nb'] ?? 0),
+                'km' => (float)($fleet['km'] ?? 0),
+                'qte' => (float)($fleetQte['qte'] ?? 0),
+            ],
+            'carriers' => $carriers,
+            'types' => array_values($types),
+        ];
+    }
+
     /** Voyage vehicles by destination with optional date range. */
     public function findVoyageVehiculesByDestination(int $destinationId, int $vehiculeId, ?string $dateFrom = null, ?string $dateTo = null): array
     {

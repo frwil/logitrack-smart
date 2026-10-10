@@ -135,4 +135,53 @@ class VoyageController extends BaseController
         $data = $this->voyageRepo->vehiculesInactifs($days, $regionIds, $entiteIds);
         $this->json(['data' => $data]);
     }
+
+    /**
+     * Camembert de l'évaluation des voyages : part de la flotte vs part de chaque
+     * transporteur externe, selon une métrique (nb, km, km moyen, qtés, type de chargement).
+     */
+    public function camembertEvaluation(): never
+    {
+        $regionIds = getContextRegions();
+        $entiteIds = getContextEntities();
+        // Filtre région du camembert : jamais en dehors des régions du contexte utilisateur.
+        $region = $this->post('region');
+        if ($region !== null && $region !== '' && $region !== 'all') {
+            $rid = (int)$region;
+            if ($rid > 0 && in_array($rid, array_map('intval', $regionIds), true)) {
+                $regionIds = [$rid];
+            }
+        }
+        $metric = $this->post('metric') ?: 'nb';
+        if (!in_array($metric, ['nb', 'km', 'km_moyen', 'qte', 'type'], true)) $metric = 'nb';
+        $dateFrom = $this->post('dateFrom') ?: date('Y-m-01');
+        $dateTo = $this->post('dateTo') ?: date('Y-m-t');
+
+        $agg = $this->voyageRepo->camembertEvaluation($regionIds, $entiteIds, $dateFrom, $dateTo);
+        $data = [];
+        if ($metric === 'type') {
+            foreach ($agg['types'] as $t) {
+                if ($t['nb'] > 0) $data[] = ['label' => $t['lib_type_chargement'], 'value' => $t['nb']];
+            }
+        } else {
+            $f = $agg['flotte'];
+            if ($metric === 'nb') {
+                $data[] = ['label' => 'Flotte', 'value' => $f['nb']];
+            } elseif ($metric === 'km') {
+                $data[] = ['label' => 'Flotte', 'value' => $f['km']];
+            } elseif ($metric === 'km_moyen') {
+                $data[] = ['label' => 'Flotte', 'value' => $f['nb'] > 0 ? $f['km'] / $f['nb'] : 0];
+            } else {
+                $data[] = ['label' => 'Flotte', 'value' => $f['qte']];
+            }
+            foreach ($agg['carriers'] as $c) {
+                if ($metric === 'nb') $v = $c['nb'];
+                elseif ($metric === 'km') $v = $c['km'];
+                elseif ($metric === 'km_moyen') $v = $c['nb'] > 0 ? $c['km'] / $c['nb'] : 0;
+                else $v = $c['qte'];
+                if ($v > 0) $data[] = ['label' => $c['nom_societe'], 'value' => $v];
+            }
+        }
+        $this->json(['data' => $data]);
+    }
 }
