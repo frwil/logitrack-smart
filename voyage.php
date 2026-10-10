@@ -1024,7 +1024,11 @@ function getVoyagesTypeSplit(int|float $nbFlotte, int|float $nbExterne, string $
     if ($total <= 0) return '';
     $pctF = round($nbFlotte / $total * 100, 1);
     $pctE = round($nbExterne / $total * 100, 1);
-    return '<div class="small text-muted">Flotte : ' . $pctF . ' % · Externes : ' . $pctE . ' %</div>';
+    // Mêmes jeux de couleurs que les badges flotte / externes du tableau.
+    return '<div class="small">'
+        . '<span class="badge text-bg-primary" title="Part de la flotte dans le réalisé">Flotte : ' . $pctF . ' %</span> '
+        . '<span class="badge text-bg-warning" title="Part des externes dans le réalisé">Externes : ' . $pctE . ' %</span>'
+        . '</div>';
 }
 
 /** Légende des badges flotte / externes (affichée quand les deux types sont visibles). */
