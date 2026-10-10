@@ -827,17 +827,18 @@ class VoyageRepository extends BaseRepository
             return ($b['f_nb'] + $b['e_nb']) <=> ($a['f_nb'] + $a['e_nb']);
         });
         $result = [];
-        foreach ($map as $k => $m) {
+        foreach ($map as $m) {
             if (count($result) >= $limit) break;
+            // usort() a réindexé les clés : le libellé est conservé dans la valeur, pas dans la clé.
             if ($scope === 'comparaison') {
                 $result[] = [
-                    'lib_destination' => $k,
+                    'lib_destination' => $m['lib_destination'],
                     'nb_voyages_flotte' => $m['f_nb'], 'total_km_flotte' => $m['f_km'],
                     'nb_voyages_externe' => $m['e_nb'], 'total_km_externe' => $m['e_km'],
                 ];
             } else {
                 $result[] = [
-                    'lib_destination' => $k,
+                    'lib_destination' => $m['lib_destination'],
                     'nb_voyages' => $m['f_nb'] + $m['e_nb'],
                     'total_km' => $m['f_km'] + $m['e_km'],
                 ];
@@ -917,7 +918,8 @@ class VoyageRepository extends BaseRepository
              LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
              WHERE affectation_vehicule.is_deleted = 0 AND affectation_vehicule.is_ferme = 0 AND $where
              GROUP BY veh.id_vehicule, veh.immatriculation_vehicule, ch.nom_chauffeur",
-            array_merge($params, [$dateFrom, $dateTo])
+            // Les dates du BETWEEN sont dans la clause ON du JOIN (avant le WHERE dans le SQL) : elles se lient en premier.
+            array_merge([$dateFrom, $dateTo], $params)
         );
 
         $totalKm = 0; $totalCarb = 0;

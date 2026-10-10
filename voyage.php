@@ -1297,7 +1297,7 @@ function getScoreActivite()
             <td><span class="text-' . $color . ' fw-bold">' . $etat . '</span></td></tr>';
     }
     $html .= '</tbody></table></div>';
-    $html .= '<script>$("#table-score-activite").DataTable({order:[[8,"asc"]], pageLength:25, destroy:true});</script>';
+    $html .= '<script>$("#table-score-activite").DataTable({order:[[8,"desc"]], pageLength:25, destroy:true});</script>';
     return $html;
 }
 

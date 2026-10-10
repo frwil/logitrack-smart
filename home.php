@@ -290,6 +290,7 @@ if (!$renderPartial):
                     <div class="lt-page-title">Tableau de bord voyages</div>
                     <hr>
                     <?php echo getDashboardChartsVoyages(); ?>
+                    <?php echo getRecapVoyagesPrestataires(); ?>
                     <?php if (getVoyagesScope() !== 'externe'): ?>
                         <?php echo getAnomaliesVoyages(); ?>
                         <?php echo getScoreActivite(); ?>
