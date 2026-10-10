@@ -657,7 +657,7 @@ function getTableauEvaluationVoyages()
 
             $score = round($plan > 0 ? $real / $plan * 100 : 0, 1);
             $tableau .= "<td " . ($score < 100 ? 'class="text-bg-danger"' : 'class="text-bg-success"') . ">$score%</td>";
-            $tableau .= "<td>" . ($plan - $real) . "</td>";
+            $tableau .= "<td>" . ($real - $plan) . "</td>";
             $tableau .= "<td class='border-end'>" . getVoyagesTypeBadges($distF, $distE, $scope) . "</td>";
             $totPlanReg[$regionId] = ($totPlanReg[$regionId] ?? 0) + $plan;
             $totNbF[$regionId] = ($totNbF[$regionId] ?? 0) + $nbF;
@@ -666,7 +666,7 @@ function getTableauEvaluationVoyages()
             $totDistE[$regionId] = ($totDistE[$regionId] ?? 0) + $distE;
         endforeach;
         $total_score = round($total_plan == 0 ? 0 : $total_real / $total_plan * 100, 1);
-        $total_gap = $total_plan - $total_real;
+        $total_gap = $total_real - $total_plan;
         $tableau .= "<td style='font-weight:bold'>$total_plan</td><td style='font-weight:bold'>$total_real</td><td style='font-weight:bold' class='text-bg-" . ($total_score >= 100 ? 'success' : 'danger') . "'>$total_score%</td><td style='font-weight:bold'>$total_gap</td><td style='font-weight:bold'>$total_distances</td>";
         $tableau .= "</tr>";
     endforeach;
@@ -692,11 +692,11 @@ function getTableauEvaluationVoyages()
         $tableau .= "<td class='text-bg-dark'>$plan</td>"
             . "<td class='text-bg-dark'>" . getVoyagesTypeBadges($nbF, $nbE, $scope) . "</td>"
             . "<td class='text-bg-" . ($score >= 100 ? 'success' : 'danger') . "'>$score%</td>"
-            . "<td class='text-bg-dark'>" . ($plan - $real) . "</td>"
+            . "<td class='text-bg-dark'>" . ($real - $plan) . "</td>"
             . "<td class='text-bg-dark border-end'>" . getVoyagesTypeBadges($distF, $distE, $scope) . "</td>";
     endforeach;
     $total_score = round($grandPlan == 0 ? 0 : $grandReal / $grandPlan * 100, 1);
-    $total_gap = $grandPlan - $grandReal;
+    $total_gap = $grandReal - $grandPlan;
     $tableau .= "<td class='text-bg-dark'>$grandPlan</td><td class='text-bg-dark'>$grandReal</td><td class='text-bg-" . ($total_score >= 100 ? 'success' : 'danger') . "'>$total_score%</td><td class='text-bg-dark'>$total_gap</td><td class='text-bg-dark'>$grandDist</td>";
     $tableau .= "</tr>";
     $tableau .= "</tbody></table>";
