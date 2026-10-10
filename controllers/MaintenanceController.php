@@ -460,6 +460,51 @@ class MaintenanceController extends BaseController
         }
     }
 
+    /**
+     * Clôture d'un bon de réparation : montant payé + date effective de sortie
+     * + observations, saisis au moment de la clôture (et non à l'enregistrement).
+     * Les autres champs du bon sont conservés tels quels.
+     */
+    public function cloturerBonReparation(): never
+    {
+        $this->requireMaintenanceSubRight('updBonsReparation');
+        $id = (int)$this->post('id-br-close');
+        $bon = $this->maintenanceRepo->findBonReparationById($id);
+        if (!$bon) $this->jsonError('Bon de réparation introuvable', 404);
+
+        if (!$this->post('date-fin-br-close')) {
+            $this->jsonError('La date effective de sortie est obligatoire pour clôturer le bon');
+        }
+        $montantPaye = $this->post('montant-paye-br-close');
+        if (!is_numeric($montantPaye) || (float)$montantPaye < 0) {
+            $this->jsonError('Le montant payé doit être renseigné (nombre positif ou nul)');
+        }
+
+        try {
+            $this->maintenanceRepo->transactional(function () use ($bon, $montantPaye) {
+                $this->maintenanceRepo->updateBonReparation(
+                    (int)$bon['id_bon_reparation'],
+                    $bon['num_bon_reparation'],
+                    (int)$bon['id_affectation_vehicule'],
+                    $bon['date_entree'],
+                    $bon['diagnostic'],
+                    $bon['type_execution'],
+                    ($bon['id_prestataire'] !== null && $bon['id_prestataire'] !== '') ? (int)$bon['id_prestataire'] : null,
+                    (float)$bon['montant_reparation'],
+                    (float)$montantPaye,
+                    $bon['destination_bon'],
+                    $bon['date_justification'],
+                    $bon['date_prevue_sortie'],
+                    $this->post('date-fin-br-close'),
+                    $this->post('observation-br-close') ?: ''
+                );
+            });
+            $this->json();
+        } catch (\mysqli_sql_exception $e) {
+            $this->jsonError('Erreur lors de la clôture — ' . $e->getMessage());
+        }
+    }
+
     public function createBonReparation(): never
     {
         $this->requireMaintenanceSubRight('saveBonsReparation');
@@ -478,7 +523,8 @@ class MaintenanceController extends BaseController
             $this->jsonError("La date d'entrée est obligatoire");
         }
         try {
-            // Bon ouvert : pas de montant payé ni de date de sortie à la création
+            // Bon ouvert : pas de montant payé ni de date de sortie à la création ;
+            // les observations sont renseignées à la clôture (ou via la modification).
             $this->maintenanceRepo->transactional(function () use ($typeExecution, $prestataireId) {
                 $this->maintenanceRepo->insertBonReparation(
                     $this->post('num-br'),
@@ -491,7 +537,7 @@ class MaintenanceController extends BaseController
                     $this->post('destination-br'),
                     $this->post('date-justif-br'),
                     $this->post('date-prevue-br'),
-                    $this->post('observation-br')
+                    ''
                 );
             });
             $this->json();

@@ -94,12 +94,6 @@
                             <label for="date-prevue-br">Date prévue sortie</label>
                         </div>
                     </div>
-                    <div class="col-6">
-                        <div class="form-floating mb-3">
-                            <textarea class="form-control" id="observation-br" name="observation-br"></textarea>
-                            <label for="observation-br">Observations</label>
-                        </div>
-                    </div>
                 </form>
             </div>
             <div class="modal-footer">

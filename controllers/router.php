@@ -132,6 +132,7 @@ $routes = [
     // Maintenance — Bon de réparation
     'c-br-s'              => [$maintenanceCtrl, 'fetchBonReparation'],
     'id-upd-br'           => [$maintenanceCtrl, 'updateBonReparation'],
+    'close-br'            => [$maintenanceCtrl, 'cloturerBonReparation'],
     'del-br-id'           => [$maintenanceCtrl, 'deleteBonReparation'],
     'num-br'              => [$maintenanceCtrl, 'createBonReparation'],
     'load-cc-br'          => [$maintenanceCtrl, 'fetchAllCentresCouts'],
