@@ -730,7 +730,7 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
     $html .= '</select></div>';
     $html .= '<div class="col-md-4"><label class="form-label small text-muted mb-1" for="camembert-eval-metric">Type d\'évaluation</label>'
         . '<select id="camembert-eval-metric" class="form-select">'
-        . '<option value="nb"># voyages</option>'
+        . '<option value="nb"># livraisons</option>'
         . '<option value="km">Km parcourus</option>'
         . '<option value="km_moyen">Km moyen / voyage</option>'
         . '<option value="qte">Qtés chargées</option>'
