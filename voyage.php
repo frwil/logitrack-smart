@@ -571,7 +571,7 @@ function getTableauVoyagesPeriodes()
     $tableau .= "</tbody><tfoot>$tfoot</tfoot></table>";
     $tableau .= getVoyagesTypeLegend($scope);
     // La période est fournie par la barre de filtres en haut de page (POST date-f/date-t).
-    return $tableau;
+    return $tableau . getRecapVoyagesPrestataires();
 }
 
 function getTableauEvaluationVoyages()
