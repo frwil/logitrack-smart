@@ -626,6 +626,13 @@ function getTableauEvaluationVoyages()
     endfor;
     $tableau .= "</tr></thead><tbody>";
 
+    // Totaux par région pour la ligne Total finale.
+    $totPlanReg = [];
+    $totNbF = [];
+    $totNbE = [];
+    $totDistF = [];
+    $totDistE = [];
+
     foreach ($dates as $idx => $dateStr):
         $total_plan = 0;
         $total_real = 0;
@@ -652,16 +659,50 @@ function getTableauEvaluationVoyages()
             $tableau .= "<td " . ($score < 100 ? 'class="text-bg-danger"' : 'class="text-bg-success"') . ">$score%</td>";
             $tableau .= "<td>" . ($plan - $real) . "</td>";
             $tableau .= "<td class='border-end'>" . getVoyagesTypeBadges($distF, $distE, $scope) . "</td>";
+            $totPlanReg[$regionId] = ($totPlanReg[$regionId] ?? 0) + $plan;
+            $totNbF[$regionId] = ($totNbF[$regionId] ?? 0) + $nbF;
+            $totNbE[$regionId] = ($totNbE[$regionId] ?? 0) + $nbE;
+            $totDistF[$regionId] = ($totDistF[$regionId] ?? 0) + $distF;
+            $totDistE[$regionId] = ($totDistE[$regionId] ?? 0) + $distE;
         endforeach;
         $total_score = round($total_plan == 0 ? 0 : $total_real / $total_plan * 100, 1);
         $total_gap = $total_plan - $total_real;
         $tableau .= "<td style='font-weight:bold'>$total_plan</td><td style='font-weight:bold'>$total_real</td><td style='font-weight:bold' class='text-bg-" . ($total_score >= 100 ? 'success' : 'danger') . "'>$total_score%</td><td style='font-weight:bold'>$total_gap</td><td style='font-weight:bold'>$total_distances</td>";
         $tableau .= "</tr>";
     endforeach;
+
+    // Ligne Total finale : mêmes cellules que les lignes journalières, cumulées sur la période.
+    $grandPlan = 0;
+    $grandReal = 0;
+    $grandDist = 0;
+    $tableau .= "<tr style='font-weight:bold'><td class='text-bg-dark'>Total</td>";
+    foreach ($reg as $r):
+        $regionId = (int)$r['id_region'];
+        $plan = $totPlanReg[$regionId] ?? 0;
+        $nbF = $totNbF[$regionId] ?? 0;
+        $nbE = $totNbE[$regionId] ?? 0;
+        $distF = $totDistF[$regionId] ?? 0.0;
+        $distE = $totDistE[$regionId] ?? 0.0;
+        $real = $scope === 'flotte' ? $nbF : ($scope === 'externe' ? $nbE : $nbF + $nbE);
+        $dist = $scope === 'flotte' ? $distF : ($scope === 'externe' ? $distE : $distF + $distE);
+        $grandPlan += $plan;
+        $grandReal += $real;
+        $grandDist += $dist;
+        $score = round($plan > 0 ? $real / $plan * 100 : 0, 1);
+        $tableau .= "<td class='text-bg-dark'>$plan</td>"
+            . "<td class='text-bg-dark'>" . getVoyagesTypeBadges($nbF, $nbE, $scope) . "</td>"
+            . "<td class='text-bg-" . ($score >= 100 ? 'success' : 'danger') . "'>$score%</td>"
+            . "<td class='text-bg-dark'>" . ($plan - $real) . "</td>"
+            . "<td class='text-bg-dark border-end'>" . getVoyagesTypeBadges($distF, $distE, $scope) . "</td>";
+    endforeach;
+    $total_score = round($grandPlan == 0 ? 0 : $grandReal / $grandPlan * 100, 1);
+    $total_gap = $grandPlan - $grandReal;
+    $tableau .= "<td class='text-bg-dark'>$grandPlan</td><td class='text-bg-dark'>$grandReal</td><td class='text-bg-" . ($total_score >= 100 ? 'success' : 'danger') . "'>$total_score%</td><td class='text-bg-dark'>$total_gap</td><td class='text-bg-dark'>$grandDist</td>";
+    $tableau .= "</tr>";
     $tableau .= "</tbody></table>";
     $tableau .= getVoyagesTypeLegend($scope);
     // La période est fournie par la barre de filtres en haut de page (POST date-f/date-t).
-    return $tableau;
+    return $tableau . getRecapVoyagesPrestataires();
 }
 ?>
 <?php include('modalNewVoyage.php'); ?>
