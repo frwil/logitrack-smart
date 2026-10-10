@@ -614,7 +614,8 @@ function getTableauEvaluationVoyages()
         $objByDateRegion[$o['date_objectif_periode']][$rid] += (int)$o['objectif'];
     }
 
-    $tableau = "<table class='table table-striped no-datatable' id='table-evaluation'><thead><tr><th rowspan=2>Date</th>";
+    // table-responsive : défilement horizontal quand il y a beaucoup de régions.
+    $tableau = "<div class='table-responsive'><table class='table table-striped no-datatable' id='table-evaluation'><thead><tr><th rowspan=2>Date</th>";
     $nb_regions = count($reg);
     foreach ($reg as $r):
         $tableau .= "<th colspan='5' style='text-align:center'>" . h($r['nom_region']) . "</th>";
@@ -703,7 +704,7 @@ function getTableauEvaluationVoyages()
     $total_gap = $grandReal - $grandPlan;
     $tableau .= "<td class='text-bg-dark'>$grandPlan</td><td class='text-bg-dark'>$grandReal</td><td class='text-bg-" . ($total_score >= 100 ? 'success' : 'danger') . "'>$total_score%</td><td class='text-bg-dark'>$total_gap</td><td class='text-bg-dark'>$grandDist</td>";
     $tableau .= "</tr>";
-    $tableau .= "</tbody></table>";
+    $tableau .= "</tbody></table></div>";
     $tableau .= getVoyagesTypeLegend($scope);
     // La période est fournie par la barre de filtres en haut de page (POST date-f/date-t).
     return $tableau . getCamembertEvaluationVoyages($reg, $dateFrom, $dateTo) . getRecapVoyagesPrestataires();
@@ -1024,10 +1025,11 @@ function getVoyagesTypeSplit(int|float $nbFlotte, int|float $nbExterne, string $
     if ($total <= 0) return '';
     $pctF = round($nbFlotte / $total * 100, 1);
     $pctE = round($nbExterne / $total * 100, 1);
-    // Mêmes jeux de couleurs que les badges flotte / externes du tableau.
+    // Mêmes jeux de couleurs que les badges du tableau ; la couleur suffit à identifier
+    // la flotte (bleu) et les externes (orange), le libellé reste en infobulle.
     return '<div class="small">'
-        . '<span class="badge text-bg-primary" title="Part de la flotte dans le réalisé">Flotte : ' . $pctF . ' %</span> '
-        . '<span class="badge text-bg-warning" title="Part des externes dans le réalisé">Externes : ' . $pctE . ' %</span>'
+        . '<span class="badge text-bg-primary" title="Part de la flotte dans le réalisé">' . $pctF . ' %</span> '
+        . '<span class="badge text-bg-warning" title="Part des externes dans le réalisé">' . $pctE . ' %</span>'
         . '</div>';
 }
 
