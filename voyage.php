@@ -135,7 +135,39 @@ function getTableauVoyagesPrestataires()
     // Pas de ligne factice quand la liste est vide : DataTables affiche son
     // propre message d'état vide (sinon la ligne est comptée comme une entrée).
     $tableau .= "</tbody></table>";
-    return $tableau;
+    return $tableau . getRecapVoyagesPrestataires();
+}
+function getRecapVoyagesPrestataires()
+{
+    global $con;
+    $dateFrom = isset($_POST['date-f']) ? date('Y-m-d', strtotime($_POST['date-f'])) : date('Y-m-01');
+    $dateTo   = isset($_POST['date-t']) ? date('Y-m-d', strtotime($_POST['date-t'])) : date('Y-m-t');
+
+    $vpRepo = new VoyagePrestataireRepository($con);
+    $rows = $vpRepo->recapBySociete($dateFrom, $dateTo, getContextRegions(), getContextEntities());
+
+    $html = "<h3 class='h5 mt-4'>Récap par prestataire</h3>";
+    $html .= "<table id='table-recap-prestataires' class='table table-striped'><thead><tr><th>Société</th><th># Voyages</th><th>Km parcourus</th><th>Km moyen / voyage</th><th>Quantités chargées</th></tr></thead><tbody>";
+
+    $totalVoyages = 0;
+    $totalKm = 0;
+    foreach ($rows as $r):
+        $nb = (int)$r['nb_voyages'];
+        $km = (float)$r['total_km'];
+        $totalVoyages += $nb;
+        $totalKm += $km;
+        $qteHtml = '';
+        foreach ($r['quantites'] as $q):
+            $val = rtrim(rtrim(number_format((float)$q['total_qte'], 2, ',', ' '), '0'), ',');
+            $unite = $q['unite_mesure'] ?? '';
+            $qteHtml .= h($q['lib_type_chargement']) . ' : <strong>' . $val . '</strong>' . ($unite !== '' ? ' ' . h($unite) : '') . '<br>';
+        endforeach;
+        if ($qteHtml === '') $qteHtml = '—';
+        $html .= "<tr><td>" . ($r['nom_societe'] ? h($r['nom_societe']) : '—') . "</td><td>$nb</td><td>" . number_format($km, 0, ',', ' ') . "</td><td>" . ($nb > 0 ? number_format($km / $nb, 1, ',', '') : '—') . "</td><td>$qteHtml</td></tr>";
+    endforeach;
+
+    $html .= "</tbody><tfoot><tr style='font-weight:bold'><td class='text-bg-dark'>Total</td><td class='text-bg-dark'>$totalVoyages</td><td class='text-bg-dark'>" . number_format($totalKm, 0, ',', ' ') . "</td><td class='text-bg-dark'>" . ($totalVoyages > 0 ? number_format($totalKm / $totalVoyages, 1, ',', '') : '—') . "</td><td class='text-bg-dark'></td></tr></tfoot></table>";
+    return $html;
 }
 function getTableauPrestatairesTransport()
 {

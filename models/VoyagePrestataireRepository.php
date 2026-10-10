@@ -142,6 +142,49 @@ class VoyagePrestataireRepository extends BaseRepository
         );
     }
 
+    /**
+     * Récap par société de transport (prestataire) sur une période :
+     * nb voyages, km totaux des destinations liées, quantités chargées par type de chargement.
+     */
+    public function recapBySociete(string $dateFrom, string $dateTo, array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = $this->contextFilter('vp', $regionIds, $entiteIds);
+        $params = array_merge($params, [$dateFrom, $dateTo]);
+        $rows = $this->select(
+            "SELECT vp.id_prestataire_transport, pt.nom_societe,
+                    COUNT(DISTINCT vp.id_voyage_prestataire) AS nb_voyages,
+                    COALESCE(SUM(dv.distance_destination), 0) AS total_km
+             FROM voyage_prestataire vp
+             LEFT JOIN prestataire_transport pt ON pt.id_prestataire_transport = vp.id_prestataire_transport
+             LEFT JOIN voyage_prestataire_destination vpd ON vpd.id_voyage_prestataire = vp.id_voyage_prestataire
+             LEFT JOIN destination_voyage dv ON dv.id_destination = vpd.id_destination
+             WHERE $where AND vp.date_voyage BETWEEN ? AND ?
+             GROUP BY vp.id_prestataire_transport, pt.nom_societe
+             ORDER BY pt.nom_societe",
+            $params
+        );
+
+        // Quantités chargées par prestataire + type de chargement (unités hétérogènes).
+        $qtes = $this->select(
+            "SELECT vp.id_prestataire_transport,
+                    tcv.id_type_chargement, tcv.lib_type_chargement, tcv.unite_mesure,
+                    SUM(vp.qte_chargement) AS total_qte
+             FROM voyage_prestataire vp
+             LEFT JOIN type_chargement_voyage tcv ON tcv.id_type_chargement = vp.id_type_chargement
+             WHERE $where AND vp.date_voyage BETWEEN ? AND ?
+             GROUP BY vp.id_prestataire_transport, tcv.id_type_chargement, tcv.lib_type_chargement, tcv.unite_mesure",
+            $params
+        );
+        $qtesById = [];
+        foreach ($qtes as $q) {
+            $qtesById[(int)$q['id_prestataire_transport']][] = $q;
+        }
+        foreach ($rows as &$r) {
+            $r['quantites'] = $qtesById[(int)$r['id_prestataire_transport']] ?? [];
+        }
+        return $rows;
+    }
+
     /** Single voyage with carrier/entite/region/type details (for the edit modal). */
     public function findById(int $id): ?array
     {
