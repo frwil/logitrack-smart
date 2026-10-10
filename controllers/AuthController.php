@@ -89,16 +89,15 @@ class AuthController extends BaseController
         $user['entite-sel'] = array_map('intval', $entiteIds);
         $user['entite-sel-names'] = $entiteNames;
         if ($isSuperadmin) {
-            // Superadmin gets all module rights automatically
-            $user['users-rights'] = [
-                ['users_rights_objet' => 'vehicules', 'users_rights_valeur' => 'view,save,upd,del,print'],
-                ['users_rights_objet' => 'voyages', 'users_rights_valeur' => 'view,save,upd,del,report,savetrajet,viewtrajet,updtrajet,deltrajet'],
-                ['users_rights_objet' => 'affectationVehicules', 'users_rights_valeur' => 'view,save,upd,del,print'],
-                ['users_rights_objet' => 'maintenances', 'users_rights_valeur' => 'view,save,upd,del,print,updPrestataire,viewCentreCout,viewPrestataire,viewVidange,delPrestataire,updCentreCout,delCentreCout,viewBonsReparation,savePrestataire,saveBonsReparation,updBonsReparation,delBonsReparation,viewReleveKms,saveReleveKms,saveCentreCout,delVidange,updVidange,historyVidange,viewExercice,saveExercice,updExercice,delExercice,viewLigneBudgetaire,saveLigneBudgetaire,updLigneBudgetaire,delLigneBudgetaire,linkBudget'],
-                ['users_rights_objet' => 'users', 'users_rights_valeur' => 'view,save,upd,del'],
-                ['users_rights_objet' => 'config', 'users_rights_valeur' => 'view,save,upd,del,backup,viewPermis,savePermis,updPermis,delPermis,viewDocs,saveDocs,updDocs,delDocs,viewFolders,saveFolders,updFolders,delFolders'],
-                ['users_rights_objet' => 'report', 'users_rights_valeur' => 'view'],
-            ];
+            // Superadmin : TOUS les droits du catalogue (source unique de vérité).
+            // Tout droit ajouté au catalogue est ainsi automatiquement accordé à l'admin,
+            // y compris en base pour que la grille des droits reste cohérente.
+            $catalog = RightsCatalog::rightsMap();
+            $user['users-rights'] = [];
+            foreach ($catalog as $objet => $valeur) {
+                $user['users-rights'][] = ['users_rights_objet' => $objet, 'users_rights_valeur' => $valeur];
+            }
+            $this->userRepo->replaceUserRights((int)$user['id_user'], $catalog);
         } else {
             $user['users-rights'] = $this->userRepo->findRights((int)$user['id_user']);
         }

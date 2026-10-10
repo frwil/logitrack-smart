@@ -168,69 +168,32 @@ function getTableauUsers()
                                 </thead>
                                 <tbody>
                                     <?php
-                                    $knownObjects = [
-                                        'vehicules' => 'Véhicules',
-                                        'voyages' => 'Voyages',
-                                        'affectationVehicules' => 'Affectations',
-                                        'maintenances' => 'Maintenance',
-                                        'users' => 'Utilisateurs',
-                                        'config' => 'Configuration',
-                                        'report' => 'Rapports',
-                                    ];
-                                    $permKeys = ['view', 'save', 'upd', 'del'];
-
-                                    // Maintenance sub-module rights
-                                    $maintenanceSubs = [
-                                        ['Relevés kilométriques', 'viewReleveKms', 'saveReleveKms', '', ''],
-                                        ['Suivi vidanges',        'viewVidange',    'saveVidange',    'updVidange',    'delVidange'],
-                                        ['Prestataires',          'viewPrestataire', 'savePrestataire', 'updPrestataire', 'delPrestataire'],
-                                        ['Centre de coûts',       'viewCentreCout',  'saveCentreCout',  'updCentreCout',  'delCentreCout'],
-                                        ['Bons de réparation',    'viewBonsReparation', 'saveBonsReparation', 'updBonsReparation', 'delBonsReparation'],
-                                        ['Exercices budgétaires', 'viewExercice', 'saveExercice', 'updExercice', 'delExercice'],
-                                        ['Lignes budgétaires',    'viewLigneBudgetaire', 'saveLigneBudgetaire', 'updLigneBudgetaire', 'delLigneBudgetaire'],
-                                        ['Bons — Lier budget',    'linkBudget', '', '', ''],
-                                    ];
-                                    // Voyages specific action rights
-                                    $voyagesSubs = [
-                                        ['Rapports',             'report',    '',         '', ''],
-                                        ['Trajets',              'viewtrajet', 'savetrajet', 'updtrajet', 'deltrajet'],
-                                        ['Prestataires de transport', 'viewPrestataireTransport', 'savePrestataireTransport', 'updPrestataireTransport', 'delPrestataireTransport'],
-                                    ];
-                                    // Config specific action rights
-                                    $configSubs = [
-                                        ['Sauvegarde DB',        'backup',    '',         '', ''],
-                                        ['Permis de conduire',   'viewPermis', 'savePermis', 'updPermis', 'delPermis'],
-                                        ['Documents',            'viewDocs',   'saveDocs',   'updDocs',   'delDocs'],
-                                        ['Dossiers véhicules',   'viewFolders','saveFolders','updFolders','delFolders'],
-                                    ];
+                                    $permKeys = RightsCatalog::BASE_RIGHTS;
 
                                     if (!function_exists('renderRightsRow')): function renderRightsRow(string $objKey, string $label, array $perms): void {
+                                        $nonEmpty = array_values(array_filter($perms, fn($p) => $p !== ''));
                                         echo '<tr><td>' . h($label) . '</td>';
-                                        foreach ($perms as $pk):
-                                            echo '<td class="text-center">';
-                                            if ($pk):
-                                                echo '<input type="checkbox" class="right-cb form-check-input" data-object="' . $objKey . '" data-perm="' . $pk . '" value="' . $pk . '">';
-                                            endif;
-                                            echo '</td>';
-                                        endforeach;
+                                        if (count($nonEmpty) === 1):
+                                            // Une seule case sur cette ligne : l'étaler sur les 4 colonnes
+                                            // pour ne pas laisser croire qu'elle relève de la colonne « Voir ».
+                                            echo '<td class="text-center" colspan="4"><input type="checkbox" class="right-cb form-check-input" data-object="' . $objKey . '" data-perm="' . $nonEmpty[0] . '" value="' . $nonEmpty[0] . '"></td>';
+                                        else:
+                                            foreach ($perms as $pk):
+                                                echo '<td class="text-center">';
+                                                if ($pk):
+                                                    echo '<input type="checkbox" class="right-cb form-check-input" data-object="' . $objKey . '" data-perm="' . $pk . '" value="' . $pk . '">';
+                                                endif;
+                                                echo '</td>';
+                                            endforeach;
+                                        endif;
                                         echo '</tr>';
                                     } endif;
 
-                                    foreach ($knownObjects as $objKey => $objLabel):
-                                        renderRightsRow($objKey, $objLabel, $permKeys);
-                                        if ($objKey === 'voyages'):
-                                            foreach ($voyagesSubs as $sub):
-                                                renderRightsRow('voyages', '↳ ' . $sub[0], [$sub[1], $sub[2], $sub[3], $sub[4]]);
-                                            endforeach;
-                                        elseif ($objKey === 'maintenances'):
-                                            foreach ($maintenanceSubs as $sub):
-                                                renderRightsRow('maintenances', '↳ ' . $sub[0], [$sub[1], $sub[2], $sub[3], $sub[4]]);
-                                            endforeach;
-                                        elseif ($objKey === 'config'):
-                                            foreach ($configSubs as $sub):
-                                                renderRightsRow('config', '↳ ' . $sub[0], [$sub[1], $sub[2], $sub[3], $sub[4]]);
-                                            endforeach;
-                                        endif;
+                                    foreach (RightsCatalog::modules() as $objKey => $def):
+                                        renderRightsRow($objKey, $def['label'], $permKeys);
+                                        foreach ($def['subs'] as $sub):
+                                            renderRightsRow($objKey, '↳ ' . $sub[0], array_slice($sub, 1));
+                                        endforeach;
                                     endforeach; ?>
                                 </tbody>
                             </table>
