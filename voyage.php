@@ -61,6 +61,7 @@
         $total_kms = 0;
         $total_chargement = 0;
         $total_carburant = 0;
+        $seenVoyagesTot = []; // carburant et qté au niveau du voyage : comptés une seule fois par voyage
 
         foreach ($dates as $d):
             $voyages = $byVehicle[$vid][$d] ?? [];
@@ -69,6 +70,7 @@
                 $cell .= "</ul></td>";
             }
             $cpte = 0;
+            $seenCellV = [];
             foreach ($voyages as $r1):
                 $vgHash = $r1['id_voyage'];
                 $affHash = $r1['id_affectation'];
@@ -77,15 +79,21 @@
                 if ($hasUpd) $btns .= "<button class='btn btn-light btn-sm' onclick='updvg(\"$vgHash\",\"$affHash\")'><i class='fa fa-pencil-alt'></i></button>";
                 if ($hasDel) $btns .= "<button class='btn btn-danger btn-sm' onclick='delvg(\"$vgHash\")'><i class='fa fa-times'></i></button>";
                 $scelle = !empty($r1['numero_scelle']) ? " <span class='badge text-bg-warning'>🔒 " . h($r1['numero_scelle']) . "</span>" : '';
+                // Carburant et qté affichés sur la 1re ligne (trajet) du voyage uniquement.
+                $first = !isset($seenCellV[$r1['id_voyage']]);
+                if ($first) $seenCellV[$r1['id_voyage']] = true;
                 $cell .= "<li class='list-group-item'>" . $sep
-                    . h($r1['lib_destination']) . $scelle . " - " . h($r1['distance_destination']) . "km - "
-                    . h($r1['qte_carburant']) . "L - " . h($r1['qte_chargement'])
+                    . h($r1['lib_destination']) . $scelle . " - " . h($r1['distance_destination']) . "km"
+                    . ($first ? " - " . h($r1['qte_carburant']) . "L - " . h($r1['qte_chargement']) : '')
                     . " (" . h($r1['lib_type_chargement']) . ") "
                     . "<div class='btn-group'>$btns</div></li>";
-                $total_voyages++;
                 $total_kms += $r1['distance_destination'];
-                $total_carburant += $r1['qte_carburant'];
-                $total_chargement += $r1['qte_chargement'];
+                if (!isset($seenVoyagesTot[$r1['id_voyage']])) {
+                    $total_voyages++;
+                    $total_carburant += $r1['qte_carburant'];
+                    $total_chargement += $r1['qte_chargement'];
+                    $seenVoyagesTot[$r1['id_voyage']] = true;
+                }
                 $cpte++;
             endforeach;
             if (!empty($voyages)) $cell .= "</ul></td>";
@@ -246,15 +254,18 @@ function getTableauVoyagesVehicules()
         }
     }
 
-    // Index: [vehicle_id][destination_id] → [voyage_ids, total_carburant]
+    // Index: [vehicle_id][destination_id] → [voyage_ids uniques, total_carburant compté une fois par voyage]
     $byVehDest = [];
     foreach ($allRows as $row) {
         $vid = (int)$row['id_vehicule'];
         $did = (int)$row['id_destination'];
         if (!isset($byVehDest[$vid])) $byVehDest[$vid] = [];
-        if (!isset($byVehDest[$vid][$did])) $byVehDest[$vid][$did] = ['ids' => [], 'carb' => 0];
-        $byVehDest[$vid][$did]['ids'][] = (int)$row['id_voyage'];
-        $byVehDest[$vid][$did]['carb'] += (float)$row['qte_carburant'];
+        if (!isset($byVehDest[$vid][$did])) $byVehDest[$vid][$did] = ['ids' => [], 'carb' => 0, 'seen' => []];
+        if (!isset($byVehDest[$vid][$did]['seen'][$row['id_voyage']])) {
+            $byVehDest[$vid][$did]['ids'][] = (int)$row['id_voyage'];
+            $byVehDest[$vid][$did]['carb'] += (float)$row['qte_carburant'];
+            $byVehDest[$vid][$did]['seen'][$row['id_voyage']] = true;
+        }
     }
 
     $tableau = "<table class='table table-striped'><thead><tr><th>#</th><th>Immatriculation</th><th># Voyages</th><th># Kms</th><th>Carburant (en L)</th><th>Conso. 100km</th>";
@@ -428,15 +439,18 @@ function getTableauVoyagesPeriodes()
     $scope = getVoyagesScope();
     $allRows = $voyageRepo->findBatchVoyagesVehicules($regionIds, $entiteIds, $dateFrom, $dateTo);
 
-    // Index: [date][destination_id] → [voyage_ids, total_carburant]
+    // Index: [date][destination_id] → [voyage_ids uniques, total_carburant compté une fois par voyage]
     $byDateDest = [];
     foreach ($allRows as $row) {
         $dt = $row['date_voyage'];
         $did = (int)$row['id_destination'];
         if (!isset($byDateDest[$dt])) $byDateDest[$dt] = [];
-        if (!isset($byDateDest[$dt][$did])) $byDateDest[$dt][$did] = ['ids' => [], 'carb' => 0];
-        $byDateDest[$dt][$did]['ids'][] = (int)$row['id_voyage'];
-        $byDateDest[$dt][$did]['carb'] += (float)$row['qte_carburant'];
+        if (!isset($byDateDest[$dt][$did])) $byDateDest[$dt][$did] = ['ids' => [], 'carb' => 0, 'seen' => []];
+        if (!isset($byDateDest[$dt][$did]['seen'][$row['id_voyage']])) {
+            $byDateDest[$dt][$did]['ids'][] = (int)$row['id_voyage'];
+            $byDateDest[$dt][$did]['carb'] += (float)$row['qte_carburant'];
+            $byDateDest[$dt][$did]['seen'][$row['id_voyage']] = true;
+        }
     }
 
     // Voyages prestataires externes : totaux par date et par date + destination.

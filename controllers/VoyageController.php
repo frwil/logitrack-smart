@@ -124,6 +124,8 @@ class VoyageController extends BaseController
         $dateFrom = $this->post('dateFrom') ?: date('Y-m-01');
         $dateTo = $this->post('dateTo') ?: date('Y-m-t');
         $rows = $this->voyageRepo->consoPerVehicle($regionIds, $entiteIds, $dateFrom, $dateTo);
+        // Carburant compté une seule fois par voyage (sans jointure trajets).
+        $fuelByVid = $this->voyageRepo->fuelPerVehicle($regionIds, $entiteIds, $dateFrom, $dateTo);
 
         // Statistiques de groupe (modèle + carburant + puissance) — même logique que le Tab 3 du reporting.
         $consoMinKm = 50; // km minimum sur la période pour entrer dans les statistiques de groupe
@@ -132,7 +134,7 @@ class VoyageController extends BaseController
         foreach ($rows as $r) {
             $immat = $r['immatriculation_vehicule'];
             $km = (float)$r['total_km'];
-            $l = (float)$r['total_carburant'];
+            $l = $fuelByVid[(int)$r['id_vehicule']] ?? 0.0;
             $gk = (int)$r['id_modele_vehicule'] . '|' . ($r['type_carburant'] ?? '') . '|' . (int)$r['puissance_vehicule'];
             $veh[$immat] = [
                 'gk'        => $gk,

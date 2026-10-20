@@ -56,7 +56,11 @@ foreach ($vehicules as $row) {
     $vid = (int)$row['id_vehicule'];
     $voyagesV = $byVeh3[$vid] ?? [];
     $km = 0; $l = 0;
-    foreach ($voyagesV as $v) { $km += (float)$v['distance_destination']; $l += (float)$v['qte_carburant']; }
+    $seenV = []; // le carburant est au niveau du voyage : compté une seule fois, pas une fois par trajet
+    foreach ($voyagesV as $v) {
+        $km += (float)$v['distance_destination'];
+        if (!isset($seenV[$v['id_voyage']])) { $l += (float)$v['qte_carburant']; $seenV[$v['id_voyage']] = true; }
+    }
     $totKm3 += $km; $totL3 += $l;
     $rec = [
         'immat'     => $row['immatriculation_vehicule'],
@@ -65,7 +69,7 @@ foreach ($vehicules as $row) {
         'carburant' => $row['type_carburant'] ?? '',
         'puissance' => (int)$row['puissance_vehicule'],
         'nominal'   => (float)$row['capacite_consommation_vehicule'],
-        'cnt'       => count($voyagesV),
+        'cnt'       => count($seenV),
         'km'        => $km,
         'l'         => $l,
         'l100'      => $km > 0 ? ($l / $km) * 100 : null,
@@ -203,15 +207,19 @@ function fmtDec1(float $v): string {
           foreach ($vehicules as $row) {
               $vid = (int)$row['id_vehicule'];
               $voyages = $byVeh1[$vid] ?? [];
-              $cnt = count($voyages);
               $sumC = []; $sumK = []; $sumL = [];
+              $seenV = []; // qté et carburant au niveau du voyage : comptés une seule fois par voyage
               foreach ($voyages as $r2) {
                   $tc = (int)$r2['id_type_chargement'];
                   if (!isset($sumC[$tc])) { $sumC[$tc] = 0; $sumK[$tc] = 0; $sumL[$tc] = 0; }
-                  $sumC[$tc] += $r2['qte_chargement'];
                   $sumK[$tc] += $r2['distance_destination'];
-                  $sumL[$tc] += $r2['qte_carburant'];
+                  if (!isset($seenV[$r2['id_voyage']])) {
+                      $sumC[$tc] += $r2['qte_chargement'];
+                      $sumL[$tc] += $r2['qte_carburant'];
+                      $seenV[$r2['id_voyage']] = true;
+                  }
               }
+              $cnt = count($seenV);
               $summaries = [];
               foreach ($voyages as $r2) {
                   $tc = (int)$r2['id_type_chargement'];
@@ -219,12 +227,16 @@ function fmtDec1(float $v): string {
                       $summaries[$tc] = h($row['immatriculation_vehicule']) . " - " . h($r2['lib_type_chargement']) . " (" . $sumC[$tc] . " - " . $sumK[$tc] . "kms - " . $sumL[$tc] . "L)";
                   }
               }
+              $shownV = [];
               foreach ($voyages as $r2) {
                   $tc = (int)$r2['id_type_chargement'];
+                  // Qté et carburant affichés sur la 1re ligne (trajet) du voyage uniquement.
+                  $first = !isset($shownV[$r2['id_voyage']]);
+                  if ($first) $shownV[$r2['id_voyage']] = true;
                   $t1 .= "<tr><td>" . h($row['immatriculation_vehicule']) . " ($cnt voyages)</td>";
                   $t1 .= "<td>" . ($r2['date_voyage'] ? date('d/m/Y', strtotime($r2['date_voyage'])) : '') . "</td>";
-                  $t1 .= "<td>" . $summaries[$tc] . "</td><td>" . h($r2['qte_chargement']) . "</td>";
-                  $t1 .= "<td>" . h($r2['distance_destination']) . "</td><td>" . h($r2['qte_carburant']) . "</td></tr>";
+                  $t1 .= "<td>" . $summaries[$tc] . "</td><td>" . ($first ? h($r2['qte_chargement']) : '') . "</td>";
+                  $t1 .= "<td>" . h($r2['distance_destination']) . "</td><td>" . ($first ? h($r2['qte_carburant']) : '') . "</td></tr>";
               }
               if ($cnt == 0) $t1 .= "<tr><td>" . h($row['immatriculation_vehicule']) . " (0)</td><td></td><td>Aucun voyage</td><td></td><td></td><td></td></tr>";
           }
@@ -263,10 +275,12 @@ function fmtDec1(float $v): string {
               foreach ($byTC as $tc => $voyages) {
                   $unite = $tcByUnite[$tc] ?? '';
                   $capacite = $capByUnite[$unite] ?? 0;
-                  $cnt = count($voyages);
                   $totalQte = 0; $tMax = 0; $tMin = $capacite > 0 ? PHP_FLOAT_MAX : 0;
+                  $seenTCV = []; // qté au niveau du voyage : comptée une seule fois par voyage
                   $tcLabel = h($voyages[0]['lib_type_chargement']);
                   foreach ($voyages as $v) {
+                      if (isset($seenTCV[$v['id_voyage']])) continue;
+                      $seenTCV[$v['id_voyage']] = true;
                       $qte = (float)$v['qte_chargement'];
                       $totalQte += $qte;
                       if ($capacite > 0) {
@@ -275,6 +289,7 @@ function fmtDec1(float $v): string {
                           if ($taux < $tMin) $tMin = $taux;
                       }
                   }
+                  $cnt = count($seenTCV);
                   if ($capacite <= 0) { $tMin = 0; $tMax = 0; }
                   $tMoyen = $capacite > 0 ? ($totalQte / ($cnt * $capacite)) * 100 : 0;
                   $capDisplay = $capacite > 0 ? (h($capacite) . ' ' . h($unite)) : '<span class="text-warning">Non définie</span>';
@@ -478,7 +493,7 @@ function fmtDec1(float $v): string {
           foreach ($vehicules as $row) {
               $vid = (int)$row['id_vehicule'];
               $voyages = $byVeh5[$vid] ?? [];
-              $cnt = count($voyages);
+              $cnt = count(array_unique(array_column($voyages, 'id_voyage')));
               $activeDays = [];
               foreach ($voyages as $v) {
                   if ($v['date_voyage']) $activeDays[$v['date_voyage']] = true;
@@ -513,13 +528,17 @@ function fmtDec1(float $v): string {
           <?php
           $t6 = '';
           $destinations = [];
+          $seenDestV = []; // qté et carburant au niveau du voyage : comptés une fois, sur la 1re destination du voyage
           foreach ($allVoyages6 as $v) {
               $dest = $v['lib_destination'] ?? 'Inconnue';
               if (!isset($destinations[$dest])) $destinations[$dest] = ['count' => 0, 'qte' => 0, 'km' => 0, 'l' => 0];
-              $destinations[$dest]['count']++;
-              $destinations[$dest]['qte'] += (float)$v['qte_chargement'];
               $destinations[$dest]['km']  += (float)$v['distance_destination'];
-              $destinations[$dest]['l']   += (float)$v['qte_carburant'];
+              if (!isset($seenDestV[$v['id_voyage']])) {
+                  $destinations[$dest]['count']++;
+                  $destinations[$dest]['qte'] += (float)$v['qte_chargement'];
+                  $destinations[$dest]['l']   += (float)$v['qte_carburant'];
+                  $seenDestV[$v['id_voyage']] = true;
+              }
           }
           uasort($destinations, fn($a, $b) => $b['qte'] <=> $a['qte']);
           foreach ($destinations as $dest => $d) {
@@ -551,14 +570,18 @@ function fmtDec1(float $v): string {
           <?php
           $t7 = '';
           $byMonth = [];
+          $seenSynV = []; // qté et carburant au niveau du voyage : comptés une seule fois par voyage
           foreach ($allVoyages7 as $v) {
               $mois = substr($v['date_voyage'] ?? '', 0, 7);
               if (!$mois) continue;
               if (!isset($byMonth[$mois])) $byMonth[$mois] = ['count' => 0, 'km' => 0, 'l' => 0, 'qte' => 0];
-              $byMonth[$mois]['count']++;
-              $byMonth[$mois]['km']  += (float)$v['distance_destination'];
-              $byMonth[$mois]['l']   += (float)$v['qte_carburant'];
-              $byMonth[$mois]['qte'] += (float)$v['qte_chargement'];
+              $byMonth[$mois]['km'] += (float)$v['distance_destination'];
+              if (!isset($seenSynV[$v['id_voyage']])) {
+                  $byMonth[$mois]['count']++;
+                  $byMonth[$mois]['l']   += (float)$v['qte_carburant'];
+                  $byMonth[$mois]['qte'] += (float)$v['qte_chargement'];
+                  $seenSynV[$v['id_voyage']] = true;
+              }
           }
           ksort($byMonth);
           foreach ($byMonth as $mois => $d) {

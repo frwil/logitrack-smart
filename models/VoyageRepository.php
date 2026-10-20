@@ -421,7 +421,8 @@ class VoyageRepository extends BaseRepository
         [$where, $ctxParams] = db_context_filter($regionIds, $entiteIds);
         $params = array_merge([$dateFrom, $dateTo], $ctxParams);
         return $this->select(
-            "SELECT affectation_vehicule.id_vehicule,
+            "SELECT voyage.id_voyage,
+                    affectation_vehicule.id_vehicule,
                     vehicule.immatriculation_vehicule,
                     voyage.date_voyage,
                     type_chargement_voyage.lib_type_chargement,
@@ -945,17 +946,22 @@ class VoyageRepository extends BaseRepository
         return $result;
     }
 
+    /**
+     * Km par véhicule sur une période (contexte filtré) + attributs de segmentation.
+     * NB : le carburant n'est PAS agrégé ici — jointure trajets exclue pour la conso,
+     * voir fuelPerVehicle() (le carburant est au niveau du voyage et doit être compté une seule fois).
+     */
     public function consoPerVehicle(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
         return $this->select(
-            "SELECT veh.immatriculation_vehicule,
+            "SELECT veh.id_vehicule,
+                    veh.immatriculation_vehicule,
                     veh.id_modele_vehicule,
                     veh.type_carburant,
                     veh.puissance_vehicule,
                     marque_vehicule.nom_marque,
                     modele_vehicule.nom_modele_vehicule,
-                    SUM(v.qte_carburant) AS total_carburant,
                     SUM(dv.distance_destination) AS total_km
              FROM voyage v
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
@@ -970,6 +976,31 @@ class VoyageRepository extends BaseRepository
              ORDER BY total_km DESC",
             array_merge($params, [$dateFrom, $dateTo])
         );
+    }
+
+    /**
+     * Carburant total par véhicule sur une période (contexte filtré).
+     * Sans jointure voyage_vehicule : le carburant est au niveau du voyage et ne doit
+     * être compté qu'une fois, même si le voyage comporte plusieurs trajets.
+     * Retourne un tableau associatif id_vehicule => total_carburant.
+     */
+    public function fuelPerVehicle(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $rows = $this->select(
+            "SELECT affectation_vehicule.id_vehicule, SUM(v.qte_carburant) AS total_carburant
+             FROM voyage v
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             AND v.date_voyage BETWEEN ? AND ?
+             GROUP BY affectation_vehicule.id_vehicule",
+            array_merge($params, [$dateFrom, $dateTo])
+        );
+        $map = [];
+        foreach ($rows as $r) {
+            $map[(int)$r['id_vehicule']] = (float)$r['total_carburant'];
+        }
+        return $map;
     }
 
     public function vehiculesInactifs(int $days, array $regionIds, array $entiteIds): array
@@ -1014,7 +1045,12 @@ class VoyageRepository extends BaseRepository
                     COALESCE(ch.nom_chauffeur, '—') AS nom_chauffeur,
                     COUNT(DISTINCT v.date_voyage) AS jours_avec_voyage,
                     COALESCE(SUM(dv.distance_destination), 0) AS total_km,
-                    COALESCE(SUM(v.qte_carburant), 0) AS total_carburant
+                    COALESCE((
+                        SELECT SUM(v2.qte_carburant)
+                        FROM voyage v2
+                        WHERE v2.id_affectation = affectation_vehicule.id_affectation
+                          AND v2.date_voyage BETWEEN ? AND ?
+                    ), 0) AS total_carburant
              FROM affectation_vehicule
              LEFT JOIN vehicule veh ON veh.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN chauffeur ch ON ch.id_chauffeur = affectation_vehicule.id_chauffeur
@@ -1023,8 +1059,8 @@ class VoyageRepository extends BaseRepository
              LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
              WHERE affectation_vehicule.is_deleted = 0 AND affectation_vehicule.is_ferme = 0 AND $where
              GROUP BY veh.id_vehicule, veh.immatriculation_vehicule, ch.nom_chauffeur",
-            // Les dates du BETWEEN sont dans la clause ON du JOIN (avant le WHERE dans le SQL) : elles se lient en premier.
-            array_merge([$dateFrom, $dateTo], $params)
+            // Ordre de liaison des placeholders : sous-requête carburant (SELECT) d'abord, puis ON du JOIN, puis WHERE.
+            array_merge([$dateFrom, $dateTo, $dateFrom, $dateTo], $params)
         );
 
         $totalKm = 0; $totalCarb = 0;
