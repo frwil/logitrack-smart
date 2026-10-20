@@ -1294,13 +1294,13 @@ function getDashboardChartsVoyages()
             . ($isCustom ? $periodLabel : ' (mois en cours)') . '</h2></div>';
         $html .= '<div id="chart-conso-z" style="height: 400px;"></div></div></div>';
         $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Analyse par groupe — écart-type et CV</h2></div>';
-        $html .= '<div class="table-responsive"><table id="table-conso-groupes" class="table table-striped mb-0"><thead><tr>'
+        $html .= '<div class="table-responsive"><table id="table-conso-groupes" class="table table-striped no-datatable mb-0"><thead><tr>'
             . '<th>Groupe</th><th>Nb véhicules</th><th>Moyenne L/100km</th><th>Écart-type (σ)</th><th>CV</th><th>Min</th><th>Max</th><th>À surveiller</th>'
             . '</tr></thead><tbody></tbody></table></div>';
         $html .= '<div class="px-3 pb-2 small text-muted">CV : &lt; 10 % homogène · 10–15 % dispersé · &gt; 15 % fortes disparités.</div>';
         $html .= '</div></div>';
         $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Jauge virtuelle carburant</h2></div>';
-        $html .= '<div class="table-responsive"><table id="table-jauge" class="table table-striped mb-0"><thead><tr>'
+        $html .= '<div class="table-responsive"><table id="table-jauge" class="table table-striped no-datatable mb-0"><thead><tr>'
             . '<th>Véhicule</th><th>Réservoir (L)</th><th>Dernier plein</th><th>Conso mesurée (plein à plein)</th><th>Depuis le plein : km</th><th>Carburant ajouté (L)</th><th>Niveau estimé</th>'
             . '</tr></thead><tbody></tbody></table></div>';
         $html .= '<div class="px-3 pb-2 small text-muted">Niveau estimé = réservoir + carburant ajouté − conso estimée (km × conso moyenne mesurée). Chaque plein complet recalibre la jauge ; sans plein complet ni capacité de réservoir renseignée, la jauge reste indéterminée.</div>';
@@ -1383,6 +1383,7 @@ function getDashboardChartsVoyages()
                     if (!alerts) alerts = g.n > 1 ? "—" : "<span class=\"text-muted\">Groupe insuffisant (1 véhicule)</span>";
                     tbody.innerHTML += "<tr><td>" + escH(g.label) + "</td><td>" + g.n + "</td><td>" + f1(g.mean) + "</td><td>" + (g.n > 1 ? f1(g.sd) : "—") + "</td><td><span class=\"badge " + cvCls + "\">" + Math.round(g.cv) + " %</span></td><td>" + (g.n > 1 ? f1(g.min) : "") + "</td><td>" + (g.n > 1 ? f1(g.max) : "") + "</td><td>" + alerts + "</td></tr>";
                 });
+                $("#table-conso-groupes").DataTable({order:[], pageLength:25, destroy:true});
             }
             var rows = e.data || [];
             if (!rows.length) {
@@ -1461,6 +1462,7 @@ function getDashboardChartsVoyages()
                 }
                 tbody.append("<tr><td><strong>" + r.immat + "</strong></td><td>" + (r.capacite > 0 ? r.capacite : "—") + "</td><td>" + fmtD(r.dernier_plein) + "</td><td>" + conso + "</td><td>" + (r.nb_pleins > 0 ? r.km_depuis : "—") + "</td><td>" + (r.nb_pleins > 0 ? r.ajout_depuis : "—") + "</td><td>" + niveau + "</td></tr>");
             });
+            $("#table-jauge").DataTable({order:[], pageLength:25, destroy:true});
         });
         $.ajax({type:"post", data:"load-vehicules-inactifs=1&days=7", dataType:"json"})
         .done(function(e) {
