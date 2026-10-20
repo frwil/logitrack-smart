@@ -146,7 +146,7 @@ function getRecapVoyagesPrestataires()
     $vpRepo = new VoyagePrestataireRepository($con);
     $rows = $vpRepo->recapBySociete($dateFrom, $dateTo, getContextRegions(), getContextEntities());
 
-    $html = "<h3 class='h5 mt-4'>Récap par prestataire</h3>";
+    $html = '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title">Récap par prestataire</h2></div>';
     $html .= "<table id='table-recap-prestataires' class='table table-striped'><thead><tr><th>Société</th><th># Voyages</th><th>Km parcourus</th><th>Km moyen / voyage</th><th>Quantités chargées</th></tr></thead><tbody>";
 
     $totalVoyages = 0;
@@ -166,7 +166,7 @@ function getRecapVoyagesPrestataires()
         $html .= "<tr><td>" . ($r['nom_societe'] ? h($r['nom_societe']) : '—') . "</td><td>$nb</td><td>" . number_format($km, 0, ',', ' ') . "</td><td>" . ($nb > 0 ? number_format($km / $nb, 1, ',', '') : '—') . "</td><td>$qteHtml</td></tr>";
     endforeach;
 
-    $html .= "</tbody><tfoot><tr style='font-weight:bold'><td class='text-bg-dark'>Total</td><td class='text-bg-dark'>$totalVoyages</td><td class='text-bg-dark'>" . number_format($totalKm, 0, ',', ' ') . "</td><td class='text-bg-dark'>" . ($totalVoyages > 0 ? number_format($totalKm / $totalVoyages, 1, ',', '') : '—') . "</td><td class='text-bg-dark'></td></tr></tfoot></table>";
+    $html .= "</tbody><tfoot><tr style='font-weight:bold'><td class='text-bg-dark'>Total</td><td class='text-bg-dark'>$totalVoyages</td><td class='text-bg-dark'>" . number_format($totalKm, 0, ',', ' ') . "</td><td class='text-bg-dark'>" . ($totalVoyages > 0 ? number_format($totalKm / $totalVoyages, 1, ',', '') : '—') . "</td><td class='text-bg-dark'></td></tr></tfoot></table></div>";
     return $html;
 }
 function getTableauPrestatairesTransport()
