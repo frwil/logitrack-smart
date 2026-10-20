@@ -1244,7 +1244,7 @@ function getDashboardChartsVoyages()
         $html .= '<div class="table-responsive"><table id="table-conso-groupes" class="table table-striped mb-0"><thead><tr>'
             . '<th>Groupe</th><th>Nb véhicules</th><th>Moyenne L/100km</th><th>Écart-type (σ)</th><th>CV</th><th>Min</th><th>Max</th><th>À surveiller</th>'
             . '</tr></thead><tbody></tbody></table></div>';
-        $html .= '<div class="px-3 pb-2 small text-muted">Barres : <span class="text-success">vert</span> = normal, <span class="text-warning">orange</span> = ≥ 2σ (hors norme), <span class="text-danger">rouge</span> = ≥ 3σ (anomalie), gris = non calculable. CV : &lt; 10 % homogène · 10–15 % dispersé · &gt; 15 % fortes disparités.</div>';
+        $html .= '<div class="px-3 pb-2 small text-muted">CV : &lt; 10 % homogène · 10–15 % dispersé · &gt; 15 % fortes disparités.</div>';
         $html .= '</div></div>';
     }
     $html .= '</div>';
@@ -1337,6 +1337,11 @@ function getDashboardChartsVoyages()
             dt.addColumn("number", "Conso L/100km");
             dt.addColumn({type:"string", role:"style"});
             dt.addColumn({type:"string", role:"tooltip", p:{html:true}});
+            // Séries vides : uniquement pour la légende des couleurs des barres
+            dt.addColumn("number", "Normal (< 2σ)");
+            dt.addColumn("number", "Hors norme (≥ 2σ)");
+            dt.addColumn("number", "Anomalie (≥ 3σ)");
+            dt.addColumn("number", "Non calculable");
             // Écart au groupe (σ) avec seuils 2σ / 3σ
             var dtZ = new google.visualization.DataTable();
             dtZ.addColumn("string", "Véhicule");
@@ -1352,12 +1357,12 @@ function getDashboardChartsVoyages()
                     + "<br>Km : " + Math.round(r.total_km) + " · L : " + escH(r.total_carburant)
                     + "<br>Conso : <b>" + f1(conso) + " L/100km</b>"
                     + (z === null ? "<br><i>Écart non calculable (km &lt; seuil, carburant non renseigné ou groupe insuffisant)</i>" : "<br>Écart au groupe : <b>" + (z >= 0 ? "+" : "") + f1(z) + "σ</b>");
-                dt.addRow([r.immatriculation_vehicule, conso, "color: " + color, tip]);
+                dt.addRow([r.immatriculation_vehicule, conso, "color: " + color, tip, null, null, null, null]);
                 dtZ.addRow([r.immatriculation_vehicule, z, 2, 3, "color: " + color]);
             });
             dt.sort([{column:1, desc:true}]);
             var c = new google.visualization.ColumnChart(document.getElementById("chart-conso"));
-            c.draw(dt, {title:"Conso L/100km (couleur = écart au groupe)' . ($isCustom ? $periodLabel : ' (mois en cours)') . '", legend:"none", chartArea:{width:"80%", height:"70%"}, tooltip:{isHtml:true}});
+            c.draw(dt, {title:"Conso L/100km (couleur = écart au groupe)' . ($isCustom ? $periodLabel : ' (mois en cours)') . '", legend:{position:"bottom"}, colors:["#2ECC71","#2ECC71","#F39C12","#E74C3C","#BDC3C7"], chartArea:{width:"80%", height:"65%"}, tooltip:{isHtml:true}});
             dtZ.sort([{column:1, desc:true}]);
             var cZ = new google.visualization.ComboChart(document.getElementById("chart-conso-z"));
             cZ.draw(dtZ, {title:"Écart au groupe (σ)' . ($isCustom ? $periodLabel : ' (mois en cours)') . '", legend:{position:"bottom"}, seriesType:"bars", series:{1:{type:"line", color:"#F39C12", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}, 2:{type:"line", color:"#E74C3C", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}}, chartArea:{width:"80%", height:"65%"}, vAxis:{title:"σ"}});
