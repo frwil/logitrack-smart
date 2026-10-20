@@ -46,6 +46,65 @@ foreach ($allVoyages3 as $v) {
     $byVeh3[$vid][] = $v;
 }
 
+// — Tab 3 : statistiques de groupe (dispersion des consommations) —
+// Regroupement « même modèle, même motorisation » approximé sans migration : modèle + carburant + puissance.
+$consoMinKm = 50; // km minimum sur la période pour entrer dans les statistiques de groupe
+$vehConso3 = [];
+$groups3 = [];
+$totKm3 = 0; $totL3 = 0;
+foreach ($vehicules as $row) {
+    $vid = (int)$row['id_vehicule'];
+    $voyagesV = $byVeh3[$vid] ?? [];
+    $km = 0; $l = 0;
+    foreach ($voyagesV as $v) { $km += (float)$v['distance_destination']; $l += (float)$v['qte_carburant']; }
+    $totKm3 += $km; $totL3 += $l;
+    $rec = [
+        'immat'     => $row['immatriculation_vehicule'],
+        'marque'    => $row['nom_marque'] ?? '',
+        'modele'    => $row['nom_modele_vehicule'] ?? '',
+        'carburant' => $row['type_carburant'] ?? '',
+        'puissance' => (int)$row['puissance_vehicule'],
+        'nominal'   => (float)$row['capacite_consommation_vehicule'],
+        'cnt'       => count($voyagesV),
+        'km'        => $km,
+        'l'         => $l,
+        'l100'      => $km > 0 ? ($l / $km) * 100 : null,
+        'gk'        => (int)$row['id_modele_vehicule'] . '|' . ($row['type_carburant'] ?? '') . '|' . (int)$row['puissance_vehicule'],
+    ];
+    $vehConso3[$vid] = $rec;
+    if ($rec['l100'] !== null && $km >= $consoMinKm && $l > 0) {
+        if (!isset($groups3[$rec['gk']])) $groups3[$rec['gk']] = ['vehicles' => [], 'marques' => [], 'first' => $vid];
+        $groups3[$rec['gk']]['vehicles'][$vid] = $rec['l100'];
+        $groups3[$rec['gk']]['marques'][$rec['marque']] = true;
+    }
+}
+// Moyenne, écart-type (population : on décrit la flotte observée, pas un échantillon), CV et z-score par groupe.
+$zByVid3 = [];
+foreach ($groups3 as $gk => &$g) {
+    $vals = array_values($g['vehicles']);
+    $g['n'] = count($vals);
+    $g['mean'] = array_sum($vals) / $g['n'];
+    $sumSq = 0;
+    foreach ($vals as $v) $sumSq += ($v - $g['mean']) ** 2;
+    $g['sd'] = $g['n'] > 1 ? sqrt($sumSq / $g['n']) : 0;
+    $g['cv'] = $g['mean'] > 0 ? ($g['sd'] / $g['mean']) * 100 : 0;
+    $g['min'] = min($vals);
+    $g['max'] = max($vals);
+    $fv = $vehConso3[$g['first']];
+    $marques = array_filter(array_keys($g['marques']));
+    $g['label'] = ($marques ? implode('/', array_map('h', $marques)) . ' ' : '') . h($fv['modele']) . ' · ' . h($fv['carburant']) . ($fv['puissance'] > 0 ? ' · ' . $fv['puissance'] . ' ch' : '');
+    if ($g['n'] > 1 && $g['sd'] > 0) {
+        foreach ($g['vehicles'] as $vid => $l100) $zByVid3[$vid] = ($l100 - $g['mean']) / $g['sd'];
+    }
+}
+unset($g);
+// Compteurs d'alertes pour le bandeau de synthèse.
+$nAnom3 = 0; $nHors3 = 0; $nCvHigh3 = 0; $nGroupsOk3 = 0;
+foreach ($zByVid3 as $z) { if ($z >= 3) $nAnom3++; elseif ($z >= 2) $nHors3++; }
+foreach ($groups3 as $g) {
+    if ($g['n'] > 1) { $nGroupsOk3++; if ($g['cv'] > 15) $nCvHigh3++; }
+}
+
 // — Tab 4 (Coût au km) — wider default: maintenance records are sparse
 $d4 = $_POST['date_debut_ck'] ?? date('Y-m-01', strtotime('-12 months'));
 $f4 = $_POST['date_fin_ck']   ?? date('Y-m-t');
@@ -82,6 +141,18 @@ function dateField(string $name, string $default): string {
 function badge(float $pct): string {
     $c = $pct >= 80 ? 'bg-success' : ($pct >= 50 ? 'bg-warning text-dark' : 'bg-danger');
     return "<span class='badge $c'>" . round($pct) . "%</span>";
+}
+
+/** Libellé de groupe véhicule (marque modèle · carburant · puissance) — approximation « même modèle, même motorisation ». */
+function vehGroupeLabel(array $v): string {
+    $out = ($v['marque'] !== '' ? h($v['marque']) . ' ' : '') . h($v['modele']) . ' · ' . h($v['carburant']);
+    if ($v['puissance'] > 0) $out .= ' · ' . $v['puissance'] . ' ch';
+    return $out;
+}
+
+/** Format décimal à 1 chiffre (virgule française). */
+function fmtDec1(float $v): string {
+    return number_format($v, 1, ',', '');
 }
 ?>
 <div class="container mt-4">
@@ -230,43 +301,110 @@ function badge(float $pct): string {
         <button type="submit" class="btn btn-primary">Générer le rapport</button>
       </form>
       <hr>
-      <table id="table_conso" class="table table-striped table-bordered no-datatable" style="width:100%">
-        <thead><tr><th>Véhicule</th><th>Nb voyages</th><th>Total km</th><th>Total L</th><th>L/100km réel</th><th>Nominal (L/100km)</th><th>Écart</th></tr></thead>
+      <?php
+      // Bandeau de synthèse : anomalies statistiques et dispersion par groupe.
+      if ($totKm3 <= 0) {
+          echo "<div class='alert alert-secondary py-2 mb-3'>Aucune donnée de consommation sur la période sélectionnée.</div>";
+      } elseif ($nAnom3 > 0 || $nHors3 > 0 || $nCvHigh3 > 0) {
+          $msgs = [];
+          if ($nAnom3 > 0)   $msgs[] = "$nAnom3 véhicule(s) en <strong>anomalie statistique (&ge; 3&sigma;)</strong>";
+          if ($nHors3 > 0)   $msgs[] = "$nHors3 véhicule(s) <strong>hors norme (&ge; 2&sigma;)</strong>";
+          if ($nCvHigh3 > 0) $msgs[] = "$nCvHigh3 groupe(s) à <strong>fortes disparités (CV &gt; 15 %)</strong>";
+          $cls = $nAnom3 > 0 ? 'alert-danger' : 'alert-warning';
+          echo "<div class='alert $cls py-2 mb-3'>" . implode(' &middot; ', $msgs) . " &mdash; investiguer : fraude éventuelle (siphonnage, carte partagée), problème mécanique, comportement conducteur ou segmentation trop large.</div>";
+      } elseif ($nGroupsOk3 === 0) {
+          echo "<div class='alert alert-secondary py-2 mb-3'>Données insuffisantes pour les statistiques de groupe : chaque véhicule doit avoir parcouru au moins $consoMinKm km sur la période et les groupes doivent compter au moins 2 véhicules.</div>";
+      } else {
+          echo "<div class='alert alert-success py-2 mb-3'>Aucun véhicule au-delà de 2&sigma; et aucun groupe à CV &gt; 15 % : flotte homogène et sous contrôle.</div>";
+      }
+      ?>
+      <table id="table_conso_groupes" class="table table-striped table-bordered no-datatable" style="width:100%">
+        <thead><tr><th>Groupe (modèle · carburant · puissance)</th><th>Nb véhicules</th><th>Moyenne L/100km</th><th>Écart-type (σ)</th><th>CV</th><th>Min</th><th>Max</th><th>Véhicules à surveiller</th></tr></thead>
+        <tbody>
+          <?php
+          $tg = '';
+          foreach ($groups3 as $g) {
+              if ($g['n'] > 1) {
+                  $cvCls = $g['cv'] < 10 ? 'bg-success' : ($g['cv'] > 15 ? 'bg-danger' : 'bg-warning text-dark');
+                  $cvTitle = $g['cv'] < 10 ? 'Flotte homogène (CV < 10 %)' : ($g['cv'] > 15 ? 'Fortes disparités (CV > 15 %)' : 'Dispersé (CV 10–15 %)');
+                  $cvBadge = "<span class='badge $cvCls' title='" . h($cvTitle) . "'>" . round($g['cv']) . " %</span>";
+                  $alerts = '';
+                  foreach ($g['vehicles'] as $vid => $l100) {
+                      $z = $zByVid3[$vid] ?? null;
+                      if ($z !== null && $z >= 2) {
+                          $zTxt = '+' . number_format($z, 1, ',', '') . 'σ';
+                          $zCls = $z >= 3 ? 'bg-danger' : 'bg-warning text-dark';
+                          $alerts .= "<span class='badge $zCls me-1'>" . h($vehConso3[$vid]['immat']) . " ($zTxt)</span>";
+                      }
+                  }
+                  if ($alerts === '') $alerts = '—';
+                  $tg .= "<tr><td>" . $g['label'] . "</td><td>" . $g['n'] . "</td>";
+                  $tg .= "<td data-order='" . round($g['mean'], 1) . "'>" . fmtDec1($g['mean']) . "</td>";
+                  $tg .= "<td data-order='" . round($g['sd'], 1) . "'>" . fmtDec1($g['sd']) . "</td>";
+                  $tg .= "<td data-order='" . round($g['cv'], 1) . "'>$cvBadge</td>";
+                  $tg .= "<td>" . fmtDec1($g['min']) . "</td><td>" . fmtDec1($g['max']) . "</td><td>$alerts</td></tr>";
+              } else {
+                  $tg .= "<tr><td>" . $g['label'] . "</td><td>1</td><td>" . fmtDec1($g['mean']) . "</td><td>—</td><td data-order='-1'><span class='text-muted'>—</span></td><td></td><td></td><td><span class='text-muted'>Groupe insuffisant (1 véhicule)</span></td></tr>";
+              }
+          }
+          if ($tg === '') $tg .= "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
+          echo $tg;
+          ?>
+        </tbody>
+      </table>
+      <table id="table_conso" class="table table-striped table-bordered no-datatable mt-4" style="width:100%">
+        <thead><tr><th>Véhicule</th><th>Groupe</th><th>Nb voyages</th><th>Total km</th><th>Total L</th><th>L/100km réel</th><th>Nominal (L/100km)</th><th>Écart</th><th>Écart au groupe (σ)</th></tr></thead>
         <tbody>
           <?php
           $t3 = '';
-          $totKm3 = 0; $totL3 = 0;
           foreach ($vehicules as $row) {
               $vid = (int)$row['id_vehicule'];
-              $consoNominale = (float)$row['capacite_consommation_vehicule'];
-              $voyages = $byVeh3[$vid] ?? [];
-              $cnt = count($voyages);
-              $km = 0; $l = 0;
-              foreach ($voyages as $v) { $km += $v['distance_destination']; $l += $v['qte_carburant']; }
-              $totKm3 += $km; $totL3 += $l;
-              if ($cnt == 0) {
-                  $t3 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
+              $rec = $vehConso3[$vid];
+              $label = vehGroupeLabel($rec);
+              if ($rec['cnt'] == 0) {
+                  $t3 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td>$label</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
                   continue;
               }
-              $l100 = $km > 0 ? round(($l / $km) * 100, 1) : 0;
-              if ($consoNominale > 0) {
-                  $ecart = round((($l100 - $consoNominale) / $consoNominale) * 100);
+              $l100 = $rec['l100'] !== null ? round($rec['l100'], 1) : 0;
+              if ($rec['nominal'] > 0) {
+                  $ecart = round((($l100 - $rec['nominal']) / $rec['nominal']) * 100);
                   $cls = $ecart <= 5 ? 'bg-success' : ($ecart <= 20 ? 'bg-warning text-dark' : 'bg-danger');
                   $ecartStr = "<span class='badge $cls'>" . ($ecart > 0 ? '+' : '') . "$ecart%</span>";
               } else {
                   $ecartStr = '—';
               }
-              $t3 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td>$cnt</td><td>" . h($km) . "</td><td>" . h($l) . "</td>";
-              $t3 .= "<td>$l100</td><td>" . ($consoNominale > 0 ? h($consoNominale) : '—') . "</td><td>$ecartStr</td></tr>";
+              // Position par rapport au groupe : z = (L/100km − moyenne du groupe) / σ
+              if (isset($zByVid3[$vid])) {
+                  $z = $zByVid3[$vid];
+                  $zTxt = ($z >= 0 ? '+' : '') . number_format($z, 1, ',', '') . 'σ';
+                  $zOrder = (string)round($z, 2);
+                  if ($z >= 3)      $zStr = "<span class='badge bg-danger' title='Anomalie statistique (&ge; 3σ) : vérifier siphonnage, carte carburant partagée, injecteurs…'>$zTxt</span>";
+                  elseif ($z >= 2)  $zStr = "<span class='badge bg-warning text-dark' title='Hors norme (&ge; 2σ) : surveiller'>$zTxt</span>";
+                  else              $zStr = "<span class='text-muted'>$zTxt</span>";
+              } else {
+                  if ($rec['l'] <= 0)             $zWhy = 'Carburant non renseigné sur la période';
+                  elseif ($rec['km'] < $consoMinKm) $zWhy = "Kilométrage insuffisant (&lt; $consoMinKm km)";
+                  else                            $zWhy = 'Groupe insuffisant ou écart-type nul';
+                  $zStr = "<span class='text-muted' title='Non calculable : " . h($zWhy) . "'>—</span>";
+                  $zOrder = '';
+              }
+              $t3 .= "<tr><td>" . h($row['immatriculation_vehicule']) . "</td><td>$label</td><td>" . $rec['cnt'] . "</td><td>" . h($rec['km']) . "</td><td>" . h($rec['l']) . "</td>";
+              $t3 .= "<td>$l100</td><td>" . ($rec['nominal'] > 0 ? h($rec['nominal']) : '—') . "</td><td>$ecartStr</td>";
+              $t3 .= "<td" . ($zOrder !== '' ? " data-order='$zOrder'" : '') . ">$zStr</td></tr>";
           }
           if ($totKm3 > 0) {
               $avg100 = round(($totL3 / $totKm3) * 100, 1);
-              $t3 .= "<tr class='table-dark fw-bold'><td>MOYENNE GLOBALE</td><td></td><td>" . h($totKm3) . "</td><td>" . h($totL3) . "</td><td>$avg100</td><td></td><td></td></tr>";
+              $t3 .= "<tr class='table-dark fw-bold'><td>MOYENNE GLOBALE</td><td></td><td></td><td>" . h($totKm3) . "</td><td>" . h($totL3) . "</td><td>$avg100</td><td></td><td></td><td></td></tr>";
           }
           echo $t3;
           ?>
         </tbody>
       </table>
+      <div class="small text-muted mt-2">
+        <p class="mb-1"><strong>Regroupement :</strong> modèle + carburant + puissance (approximation « même modèle, même motorisation »). Véhicules ayant parcouru moins de <?php echo $consoMinKm; ?> km sur la période ou sans carburant renseigné : exclus des statistiques de groupe (L/100km non significatif).</p>
+        <p class="mb-1"><strong>Coefficient de variation (CV) :</strong> écart-type ÷ moyenne. <span class="badge bg-success">&lt; 10 %</span> flotte homogène · <span class="badge bg-warning text-dark">10–15 %</span> dispersé · <span class="badge bg-danger">&gt; 15 %</span> fortes disparités — affiner la segmentation (parcours, charge) ou investiguer les pratiques.</p>
+        <p class="mb-0"><strong>Anomalies :</strong> badge <span class="badge bg-warning text-dark">≥ 2σ</span> hors norme, <span class="badge bg-danger">≥ 3σ</span> anomalie (vol de carburant, carte partagée, problème mécanique). Attention : avec peu de véhicules dans un groupe, un écart extrême gonfle σ et peut masquer l'anomalie.</p>
+      </div>
     </div>
 
 <!-- ============ TAB 4 : Coût au km ============ -->
@@ -462,7 +600,8 @@ function badge(float $pct): string {
       order: [[5, "desc"]], rowGroup: { dataSrc: 0 },
       columnDefs: [{ targets: 0, visible: false }]
     },
-    table_conso:       { language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[4, "asc"]] },
+    table_conso_groupes: { language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[4, "desc"]] },
+    table_conso:       { language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[5, "asc"]] },
     table_coutkm:      { language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[3, "desc"]] },
     table_immobilisation: { language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[5, "asc"]] },
     table_destinations:  { language: dtLang, ordering: true, dom: 'Bfrtip', buttons: ['excel'], order: [[1, "desc"]] },
