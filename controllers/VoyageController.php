@@ -123,8 +123,85 @@ class VoyageController extends BaseController
         $entiteIds = getContextEntities();
         $dateFrom = $this->post('dateFrom') ?: date('Y-m-01');
         $dateTo = $this->post('dateTo') ?: date('Y-m-t');
-        $data = $this->voyageRepo->consoPerVehicle($regionIds, $entiteIds, $dateFrom, $dateTo);
-        $this->json(['data' => $data]);
+        $rows = $this->voyageRepo->consoPerVehicle($regionIds, $entiteIds, $dateFrom, $dateTo);
+
+        // Statistiques de groupe (modèle + carburant + puissance) — même logique que le Tab 3 du reporting.
+        $consoMinKm = 50; // km minimum sur la période pour entrer dans les statistiques de groupe
+        $veh = [];
+        $groups = [];
+        foreach ($rows as $r) {
+            $immat = $r['immatriculation_vehicule'];
+            $km = (float)$r['total_km'];
+            $l = (float)$r['total_carburant'];
+            $gk = (int)$r['id_modele_vehicule'] . '|' . ($r['type_carburant'] ?? '') . '|' . (int)$r['puissance_vehicule'];
+            $veh[$immat] = [
+                'gk'        => $gk,
+                'marque'    => $r['nom_marque'] ?? '',
+                'modele'    => $r['nom_modele_vehicule'] ?? '',
+                'carburant' => $r['type_carburant'] ?? '',
+                'puissance' => (int)$r['puissance_vehicule'],
+                'km'        => $km,
+                'l'         => $l,
+                'l100'      => $km > 0 ? ($l / $km) * 100 : null,
+            ];
+            // Garde qualité de données : carburant non renseigné (l <= 0) ou km insuffisants → hors statistiques de groupe.
+            if ($km >= $consoMinKm && $l > 0) {
+                if (!isset($groups[$gk])) $groups[$gk] = ['vals' => [], 'marques' => []];
+                $groups[$gk]['vals'][$immat] = $veh[$immat]['l100'];
+                $groups[$gk]['marques'][$veh[$immat]['marque']] = true;
+            }
+        }
+        $groupRows = [];
+        $zByImmat = [];
+        foreach ($groups as $gk => $g) {
+            $vals = array_values($g['vals']);
+            $n = count($vals);
+            $mean = array_sum($vals) / $n;
+            $sumSq = 0;
+            foreach ($vals as $v) $sumSq += ($v - $mean) ** 2;
+            // Écart-type « population » : on décrit la flotte observée, pas un échantillon.
+            $sd = $n > 1 ? sqrt($sumSq / $n) : 0;
+            $cv = $mean > 0 ? ($sd / $mean) * 100 : 0;
+            $alerts = [];
+            if ($n > 1 && $sd > 0) {
+                foreach ($g['vals'] as $immat => $l100) {
+                    $z = ($l100 - $mean) / $sd;
+                    $zByImmat[$immat] = $z;
+                    if ($z >= 2) $alerts[] = ['immat' => $immat, 'z' => $z];
+                }
+            }
+            $first = $veh[key($g['vals'])];
+            $marques = array_filter(array_keys($g['marques']));
+            // Modèle non renseigné en base : groupe « fourre-tout » hétérogène, on l'assume mais on le dit.
+            $groupRows[] = [
+                'label'  => $first['modele'] === ''
+                    ? 'Modèle non renseigné'
+                    : (($marques ? implode('/', $marques) . ' ' : '') . $first['modele'] . ' · ' . $first['carburant']
+                        . ($first['puissance'] > 0 ? ' · ' . $first['puissance'] . ' ch' : '')),
+                'n'      => $n,
+                'mean'   => round($mean, 1),
+                'sd'     => round($sd, 1),
+                'cv'     => round($cv, 1),
+                'min'    => round(min($vals), 1),
+                'max'    => round(max($vals), 1),
+                'alerts' => $alerts,
+            ];
+        }
+        $data = [];
+        foreach ($veh as $immat => $v) {
+            if ($v['l100'] === null) continue; // km = 0 : rien à afficher
+            $data[] = [
+                'immatriculation_vehicule' => $immat,
+                'group' => $v['modele'] === ''
+                    ? 'Modèle non renseigné'
+                    : (($v['marque'] !== '' ? $v['marque'] . ' ' : '') . $v['modele'] . ' · ' . $v['carburant']
+                        . ($v['puissance'] > 0 ? ' · ' . $v['puissance'] . ' ch' : '')),
+                'total_km'        => $v['km'],
+                'total_carburant' => $v['l'],
+                'z'               => $zByImmat[$immat] ?? null,
+            ];
+        }
+        $this->json(['data' => $data, 'groups' => $groupRows, 'min_km' => $consoMinKm]);
     }
 
     public function vehiculesInactifs(): never

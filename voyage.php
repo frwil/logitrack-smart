@@ -1234,9 +1234,18 @@ function getDashboardChartsVoyages()
         . ($scope === 'comparaison' ? 'Top destinations (flotte vs externes)' : 'Top destinations') . $periodLabel . '</h2></div>';
     $html .= '<div id="chart-top-dest" style="height: 350px;"></div></div></div>';
     if ($scope !== 'externe') {
-        $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Consommation par véhicule'
+        $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Consommation par véhicule'
             . ($isCustom ? $periodLabel : ' (mois en cours)') . '</h2></div>';
         $html .= '<div id="chart-conso" style="height: 400px;"></div></div></div>';
+        $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Écart au groupe (σ)'
+            . ($isCustom ? $periodLabel : ' (mois en cours)') . '</h2></div>';
+        $html .= '<div id="chart-conso-z" style="height: 400px;"></div></div></div>';
+        $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Analyse par groupe — écart-type et CV</h2></div>';
+        $html .= '<div class="table-responsive"><table id="table-conso-groupes" class="table table-striped mb-0"><thead><tr>'
+            . '<th>Groupe</th><th>Nb véhicules</th><th>Moyenne L/100km</th><th>Écart-type (σ)</th><th>CV</th><th>Min</th><th>Max</th><th>À surveiller</th>'
+            . '</tr></thead><tbody></tbody></table></div>';
+        $html .= '<div class="px-3 pb-2 small text-muted">Barres : <span class="text-success">vert</span> = normal, <span class="text-warning">orange</span> = ≥ 2σ (hors norme), <span class="text-danger">rouge</span> = ≥ 3σ (anomalie), gris = non calculable. CV : &lt; 10 % homogène · 10–15 % dispersé · &gt; 15 % fortes disparités.</div>';
+        $html .= '</div></div>';
     }
     $html .= '</div>';
 
@@ -1295,17 +1304,63 @@ function getDashboardChartsVoyages()
         $html .= '
         $.ajax({type:"post", data:"load-conso-per-vehicle=1" + rangeStats, dataType:"json"})
         .done(function(e) {
-            if (!e.data || !e.data.length) return;
+            function escH(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function(c) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+            var f1 = function(x) { return x.toFixed(1).replace(".", ","); };
+            // Tableau des groupes : moyenne, écart-type, CV, véhicules à surveiller
+            var tbody = document.querySelector("#table-conso-groupes tbody");
+            if (tbody) {
+                var gs = e.groups || [];
+                tbody.innerHTML = "";
+                if (!gs.length) {
+                    tbody.innerHTML = "<tr><td colspan=\"8\" class=\"text-center text-muted\">Données insuffisantes : aucun véhicule avec km ≥ " + escH(e.min_km) + " et carburant renseigné sur la période</td></tr>";
+                }
+                gs.forEach(function(g) {
+                    var cvCls = g.cv < 10 ? "bg-success" : (g.cv > 15 ? "bg-danger" : "bg-warning text-dark");
+                    var alerts = "";
+                    (g.alerts || []).forEach(function(a) {
+                        var zCls = a.z >= 3 ? "bg-danger" : "bg-warning text-dark";
+                        alerts += "<span class=\"badge " + zCls + " me-1\">" + escH(a.immat) + " (+" + f1(a.z) + "σ)</span>";
+                    });
+                    if (!alerts) alerts = g.n > 1 ? "—" : "<span class=\"text-muted\">Groupe insuffisant (1 véhicule)</span>";
+                    tbody.innerHTML += "<tr><td>" + escH(g.label) + "</td><td>" + g.n + "</td><td>" + f1(g.mean) + "</td><td>" + (g.n > 1 ? f1(g.sd) : "—") + "</td><td><span class=\"badge " + cvCls + "\">" + Math.round(g.cv) + " %</span></td><td>" + (g.n > 1 ? f1(g.min) : "") + "</td><td>" + (g.n > 1 ? f1(g.max) : "") + "</td><td>" + alerts + "</td></tr>";
+                });
+            }
+            var rows = e.data || [];
+            if (!rows.length) {
+                document.getElementById("chart-conso").innerHTML = "<div class=\"p-4 text-center text-muted\">Aucune donnée sur la période</div>";
+                document.getElementById("chart-conso-z").innerHTML = "<div class=\"p-4 text-center text-muted\">Aucune donnée sur la période</div>";
+                return;
+            }
+            // Conso L/100km : barres colorées selon écart au groupe
             var dt = new google.visualization.DataTable();
             dt.addColumn("string", "Véhicule");
             dt.addColumn("number", "Conso L/100km");
-            e.data.forEach(function(r) {
+            dt.addColumn({type:"string", role:"style"});
+            dt.addColumn({type:"string", role:"tooltip", p:{html:true}});
+            // Écart au groupe (σ) avec seuils 2σ / 3σ
+            var dtZ = new google.visualization.DataTable();
+            dtZ.addColumn("string", "Véhicule");
+            dtZ.addColumn("number", "Écart au groupe (σ)");
+            dtZ.addColumn("number", "Seuil 2σ");
+            dtZ.addColumn("number", "Seuil 3σ");
+            dtZ.addColumn({type:"string", role:"style"});
+            rows.forEach(function(r) {
                 var conso = r.total_km > 0 ? parseFloat(r.total_carburant) / parseFloat(r.total_km) * 100 : 0;
-                dt.addRow([r.immatriculation_vehicule, conso]);
+                var z = (r.z === null || r.z === undefined) ? null : parseFloat(r.z);
+                var color = z === null ? "#BDC3C7" : (z >= 3 ? "#E74C3C" : (z >= 2 ? "#F39C12" : "#2ECC71"));
+                var tip = "<b>" + escH(r.immatriculation_vehicule) + "</b><br>" + escH(r.group)
+                    + "<br>Km : " + Math.round(r.total_km) + " · L : " + escH(r.total_carburant)
+                    + "<br>Conso : <b>" + f1(conso) + " L/100km</b>"
+                    + (z === null ? "<br><i>Écart non calculable (km &lt; seuil, carburant non renseigné ou groupe insuffisant)</i>" : "<br>Écart au groupe : <b>" + (z >= 0 ? "+" : "") + f1(z) + "σ</b>");
+                dt.addRow([r.immatriculation_vehicule, conso, "color: " + color, tip]);
+                dtZ.addRow([r.immatriculation_vehicule, z, 2, 3, "color: " + color]);
             });
             dt.sort([{column:1, desc:true}]);
             var c = new google.visualization.ColumnChart(document.getElementById("chart-conso"));
-            c.draw(dt, {title:"Conso L/100km' . ($isCustom ? $periodLabel : ' (mois en cours)') . '", legend:"none", colors:["#E67E22"], chartArea:{width:"80%", height:"70%"}});
+            c.draw(dt, {title:"Conso L/100km (couleur = écart au groupe)' . ($isCustom ? $periodLabel : ' (mois en cours)') . '", legend:"none", chartArea:{width:"80%", height:"70%"}, tooltip:{isHtml:true}});
+            dtZ.sort([{column:1, desc:true}]);
+            var cZ = new google.visualization.ComboChart(document.getElementById("chart-conso-z"));
+            cZ.draw(dtZ, {title:"Écart au groupe (σ)' . ($isCustom ? $periodLabel : ' (mois en cours)') . '", legend:"none", seriesType:"bars", series:{1:{type:"line", color:"#F39C12", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}, 2:{type:"line", color:"#E74C3C", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}}, chartArea:{width:"80%", height:"70%"}, vAxis:{title:"σ"}});
         });
         $.ajax({type:"post", data:"load-vehicules-inactifs=1&days=7", dataType:"json"})
         .done(function(e) {

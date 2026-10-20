@@ -950,16 +950,23 @@ class VoyageRepository extends BaseRepository
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
         return $this->select(
             "SELECT veh.immatriculation_vehicule,
+                    veh.id_modele_vehicule,
+                    veh.type_carburant,
+                    veh.puissance_vehicule,
+                    marque_vehicule.nom_marque,
+                    modele_vehicule.nom_modele_vehicule,
                     SUM(v.qte_carburant) AS total_carburant,
                     SUM(dv.distance_destination) AS total_km
              FROM voyage v
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
              LEFT JOIN vehicule veh ON veh.id_vehicule = affectation_vehicule.id_vehicule
+             LEFT JOIN marque_vehicule ON marque_vehicule.id_marque = veh.id_marque
+             LEFT JOIN modele_vehicule ON modele_vehicule.id_modele_vehicule = veh.id_modele_vehicule
              LEFT JOIN voyage_vehicule vv ON vv.id_voyage = v.id_voyage
              LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
              WHERE affectation_vehicule.is_deleted = 0 AND $where
              AND v.date_voyage BETWEEN ? AND ?
-             GROUP BY veh.id_vehicule, veh.immatriculation_vehicule
+             GROUP BY veh.id_vehicule, veh.immatriculation_vehicule, veh.id_modele_vehicule, veh.type_carburant, veh.puissance_vehicule, marque_vehicule.nom_marque, modele_vehicule.nom_modele_vehicule
              ORDER BY total_km DESC",
             array_merge($params, [$dateFrom, $dateTo])
         );

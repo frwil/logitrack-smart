@@ -92,7 +92,10 @@ foreach ($groups3 as $gk => &$g) {
     $g['max'] = max($vals);
     $fv = $vehConso3[$g['first']];
     $marques = array_filter(array_keys($g['marques']));
-    $g['label'] = ($marques ? implode('/', array_map('h', $marques)) . ' ' : '') . h($fv['modele']) . ' · ' . h($fv['carburant']) . ($fv['puissance'] > 0 ? ' · ' . $fv['puissance'] . ' ch' : '');
+    // Modèle non renseigné en base : groupe « fourre-tout » hétérogène, on l'assume mais on le dit.
+    $g['label'] = $fv['modele'] === ''
+        ? 'Modèle non renseigné'
+        : (($marques ? implode('/', array_map('h', $marques)) . ' ' : '') . h($fv['modele']) . ' · ' . h($fv['carburant']) . ($fv['puissance'] > 0 ? ' · ' . $fv['puissance'] . ' ch' : ''));
     if ($g['n'] > 1 && $g['sd'] > 0) {
         foreach ($g['vehicles'] as $vid => $l100) $zByVid3[$vid] = ($l100 - $g['mean']) / $g['sd'];
     }
