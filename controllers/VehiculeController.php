@@ -68,7 +68,8 @@ class VehiculeController extends BaseController
                     $this->post('dexpir-vh-upd') ?: null,
                     (int)$this->post('capacite-vh-upd'),
                     (int)$this->post('nbplace-vh-upd'),
-                    $this->post('tcarb-vh-upd')
+                    $this->post('tcarb-vh-upd'),
+                    max(0, (int)$this->post('capacite-reservoir-vh-upd'))
                 );
                 $this->vehiculeRepo->upsertPermis($immat, (int)$this->post('qualif-permis-upd'));
                 $this->syncCapacites($immat);
@@ -99,7 +100,8 @@ class VehiculeController extends BaseController
                     (int)$this->post('marque-vh'),
                     (int)$this->post('modele-vh'),
                     $immat,
-                    (int)$this->post('capacite-vh')
+                    (int)$this->post('capacite-vh'),
+                    max(0, (int)$this->post('capacite-reservoir-vh'))
                 );
                 $this->vehiculeRepo->insertPermis($immat, (int)$this->post('qualif-permis'));
                 $this->syncCapacites($immat);

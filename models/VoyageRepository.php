@@ -1036,6 +1036,170 @@ class VoyageRepository extends BaseRepository
         $this->exec("UPDATE voyage SET qte_carburant = ? WHERE id_voyage = ?", [$total, $idVoyage]);
     }
 
+    /**
+     * Jauge virtuelle carburant : état estimé du réservoir de chaque véhicule actif du contexte,
+     * simulé chronologiquement sur TOUT l'historique (pas de filtre de période : c'est l'état actuel).
+     *
+     * Principe :
+     * - un événement « plein complet » recalibre la jauge : niveau = capacité du réservoir ;
+     * - entre deux pleins complets, la consommation mesurée (méthode plein à plein) vaut
+     *   carburant ajouté (partiels + plein qui clôt) sur les km du tronçon ;
+     * - le niveau actuel estimé = capacité + ajouté depuis le dernier plein − conso estimée
+     *   (km depuis × conso moyenne mesurée des tronçons ; sinon conso globale du véhicule).
+     *
+     * Limites assumées : les km d'un voyage sont attribués au tronçon en cours AVANT ses
+     * carburations (un plein clôt le tronçon qui inclut les km de son voyage) ; le premier
+     * plein complet ne clôt aucun tronçon (pas de référence avant lui) et ouvre la jauge ;
+     * sans tronçon mesuré ni historique exploitable, la jauge reste « inconnue ».
+     */
+    public function fuelGaugeByContext(array $regionIds, array $entiteIds): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+
+        $vehicles = $this->select(
+            "SELECT veh.id_vehicule, veh.immatriculation_vehicule, veh.capacite_reservoir
+             FROM affectation_vehicule
+             LEFT JOIN vehicule veh ON veh.id_vehicule = affectation_vehicule.id_vehicule
+             WHERE affectation_vehicule.is_deleted = 0 AND veh.id_vehicule IS NOT NULL AND $where
+             GROUP BY veh.id_vehicule, veh.immatriculation_vehicule, veh.capacite_reservoir
+             ORDER BY veh.immatriculation_vehicule",
+            $params
+        );
+
+        // Voyages chronologiques : carburant une seule fois par voyage, km = somme des trajets.
+        $voyages = $this->select(
+            "SELECT v.id_voyage, affectation_vehicule.id_vehicule, v.date_voyage, v.qte_carburant,
+                    COALESCE(SUM(dv.distance_destination), 0) AS total_km
+             FROM voyage v
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
+             LEFT JOIN voyage_vehicule vv ON vv.id_voyage = v.id_voyage
+             LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             GROUP BY v.id_voyage, affectation_vehicule.id_vehicule, v.date_voyage, v.qte_carburant
+             ORDER BY affectation_vehicule.id_vehicule, v.date_voyage, v.id_voyage",
+            $params
+        );
+
+        // Carburations ordonnées par véhicule, date du voyage puis id d'événement.
+        $events = $this->select(
+            "SELECT v.id_voyage, affectation_vehicule.id_vehicule, v.date_voyage,
+                    cv.qte_carburant, cv.plein_complet
+             FROM carburant_voyage cv
+             LEFT JOIN voyage v ON v.id_voyage = cv.id_voyage
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             ORDER BY affectation_vehicule.id_vehicule, v.date_voyage, v.id_voyage, cv.id_carburant",
+            $params
+        );
+        $eventsByVoyage = [];
+        foreach ($events as $ev) {
+            $eventsByVoyage[(int)$ev['id_voyage']][] = $ev;
+        }
+
+        $rows = [];
+        foreach ($vehicles as $veh) {
+            $vid = (int)$veh['id_vehicule'];
+            $capacity = (float)$veh['capacite_reservoir'];
+
+            $stretches = [];      // tronçons plein à plein mesurés : ['date','km','l','l100']
+            $lastFull = null;     // date du dernier plein complet
+            $nbPleins = 0;        // nombre de pleins complets
+            $pendingKm = 0.0;     // km du tronçon ouvert
+            $pendingL = 0.0;      // carburant ajouté (partiels) sur le tronçon ouvert
+            $kmSinceFull = 0.0;   // km depuis le dernier plein
+            $addedSinceFull = 0.0; // carburant ajouté (partiels) depuis le dernier plein
+            $totalKm = 0.0;       // km totaux du véhicule (fallback conso globale)
+            $totalL = 0.0;        // carburant total du véhicule (fallback conso globale)
+
+            foreach ($voyages as $v) {
+                if ((int)$v['id_vehicule'] !== $vid) continue;
+                $km = (float)$v['total_km'];
+                $pendingKm += $km;
+                $kmSinceFull += $km;
+                $totalKm += $km;
+                $totalL += (float)$v['qte_carburant'];
+                foreach ($eventsByVoyage[(int)$v['id_voyage']] ?? [] as $ev) {
+                    $qte = (float)$ev['qte_carburant'];
+                    if ((int)$ev['plein_complet']) {
+                        if ($nbPleins === 0) {
+                            // Premier plein complet : ouvre la jauge (niveau = capacité), mais ne
+                            // clôt aucun tronçon : pas de référence plein à plein avant lui.
+                            $lastFull = $v['date_voyage'];
+                            $nbPleins = 1;
+                            $pendingKm = 0.0;
+                            $pendingL = 0.0;
+                            $kmSinceFull = 0.0;
+                            $addedSinceFull = 0.0;
+                            continue;
+                        }
+                        // Tronçon clos : consommation mesurée = partiels du tronçon + ce plein.
+                        if ($pendingKm > 0) {
+                            $stretches[] = [
+                                'date' => $v['date_voyage'],
+                                'km'   => $pendingKm,
+                                'l'    => $pendingL + $qte,
+                                'l100' => ($pendingL + $qte) / $pendingKm * 100,
+                            ];
+                        }
+                        $lastFull = $v['date_voyage'];
+                        $nbPleins++;
+                        $pendingKm = 0.0;
+                        $pendingL = 0.0;
+                        $kmSinceFull = 0.0;
+                        $addedSinceFull = 0.0;
+                    } else {
+                        $pendingL += $qte;
+                        $addedSinceFull += $qte;
+                    }
+                }
+            }
+
+            // Conso de référence : moyenne des tronçons mesurés, sinon conso globale du véhicule.
+            $avgL100 = null;
+            if ($stretches) {
+                $avgL100 = array_sum(array_column($stretches, 'l100')) / count($stretches);
+            } elseif ($totalKm > 0 && $totalL > 0) {
+                $avgL100 = $totalL / $totalKm * 100;
+            }
+
+            $statut = 'ok';
+            $niveau = null;
+            if ($nbPleins === 0) {
+                $statut = 'aucun_plein';
+            } elseif ($capacity <= 0) {
+                $statut = 'capacite_manquante';
+            } elseif ($avgL100 === null) {
+                $statut = 'conso_inconnue';
+            } else {
+                // Niveau estimé = capacité + ajouté depuis le plein − conso estimée, borné [0, capacité].
+                $niveau = $capacity + $addedSinceFull - ($kmSinceFull / 100 * $avgL100);
+                $niveau = max(0, min($capacity, $niveau));
+            }
+
+            $rows[] = [
+                'immat'          => $veh['immatriculation_vehicule'],
+                'capacite'       => (float)$capacity,
+                'dernier_plein'  => $lastFull,
+                'nb_pleins'      => $nbPleins,
+                'troncon_l100'   => $stretches ? round(end($stretches)['l100'], 1) : null,
+                'avg_l100'       => $avgL100 !== null ? round($avgL100, 1) : null,
+                'km_depuis'      => round($kmSinceFull),
+                'ajout_depuis'   => round($addedSinceFull),
+                'niveau'         => $niveau !== null ? round($niveau) : null,
+                'pct'            => $niveau !== null && $capacity > 0 ? round($niveau / $capacity * 100) : null,
+                'statut'         => $statut,
+            ];
+        }
+        // Affichage : niveaux les plus bas en premier, jauges indéterminées à la fin.
+        usort($rows, function (array $a, array $b) {
+            if ($a['pct'] === null && $b['pct'] !== null) return 1;
+            if ($b['pct'] === null && $a['pct'] !== null) return -1;
+            if ($a['pct'] !== null && $b['pct'] !== null) return $a['pct'] <=> $b['pct'];
+            return strcmp($a['immat'], $b['immat']);
+        });
+        return $rows;
+    }
+
     public function vehiculesInactifs(int $days, array $regionIds, array $entiteIds): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);

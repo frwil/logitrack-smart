@@ -1299,6 +1299,12 @@ function getDashboardChartsVoyages()
             . '</tr></thead><tbody></tbody></table></div>';
         $html .= '<div class="px-3 pb-2 small text-muted">CV : &lt; 10 % homogène · 10–15 % dispersé · &gt; 15 % fortes disparités.</div>';
         $html .= '</div></div>';
+        $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Jauge virtuelle carburant</h2></div>';
+        $html .= '<div class="table-responsive"><table id="table-jauge" class="table table-striped mb-0"><thead><tr>'
+            . '<th>Véhicule</th><th>Réservoir (L)</th><th>Dernier plein</th><th>Conso mesurée (plein à plein)</th><th>Depuis le plein : km</th><th>Carburant ajouté (L)</th><th>Niveau estimé</th>'
+            . '</tr></thead><tbody></tbody></table></div>';
+        $html .= '<div class="px-3 pb-2 small text-muted">Niveau estimé = réservoir + carburant ajouté − conso estimée (km × conso moyenne mesurée). Chaque plein complet recalibre la jauge ; sans plein complet ni capacité de réservoir renseignée, la jauge reste indéterminée.</div>';
+        $html .= '</div></div>';
     }
     $html .= '</div>';
 
@@ -1419,6 +1425,42 @@ function getDashboardChartsVoyages()
             dtZ.sort([{column:1, desc:true}]);
             var cZ = new google.visualization.ComboChart(document.getElementById("chart-conso-z"));
             cZ.draw(dtZ, {title:"Écart au groupe (σ)' . ($isCustom ? $periodLabel : ' (mois en cours)') . '", legend:{position:"bottom"}, seriesType:"bars", series:{1:{type:"line", color:"#F39C12", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}, 2:{type:"line", color:"#E74C3C", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}}, chartArea:{width:"80%", height:"65%"}, vAxis:{title:"σ"}});
+        });
+        $.ajax({type:"post", data:"load-jauge-virtuelle=1", dataType:"json"})
+        .done(function(e) {
+            var tbody = $("#table-jauge tbody");
+            tbody.empty();
+            var rows = e.data || [];
+            if (!rows.length) { tbody.append("<tr><td colspan=\"7\" class=\"text-center text-muted\">Aucun véhicule dans le contexte</td></tr>"); return; }
+            var fmtD = function(d) { if (!d) return "—"; var p = d.split("-"); return p[2] + "/" + p[1] + "/" + p[0]; };
+            var f1 = function(x) { return x.toFixed(1).replace(".", ","); };
+            rows.forEach(function(r) {
+                var conso;
+                if (r.troncon_l100 !== null) {
+                    conso = f1(r.troncon_l100) + " L/100km";
+                    if (r.avg_l100 !== null && Math.abs(r.avg_l100 - r.troncon_l100) > 0.05) {
+                        conso += " <span class=\"text-muted small\">(moy. " + f1(r.avg_l100) + ")</span>";
+                    }
+                } else if (r.avg_l100 !== null) {
+                    conso = "<span class=\"text-muted\">réf. historique " + f1(r.avg_l100) + " L/100km</span>";
+                } else {
+                    conso = "—";
+                }
+                var niveau;
+                if (r.statut === "ok") {
+                    var pct = r.pct;
+                    var cls = pct <= 25 ? "bg-danger" : (pct <= 50 ? "bg-warning" : "bg-success");
+                    niveau = "<div class=\"progress\" style=\"height: 18px; min-width: 160px;\"><div class=\"progress-bar " + cls + "\" role=\"progressbar\" style=\"width: " + pct + "%\">" + pct + " %</div></div>"
+                        + "<span class=\"small\">" + r.niveau + " L sur " + r.capacite + " L</span>";
+                } else if (r.statut === "aucun_plein") {
+                    niveau = "<span class=\"badge bg-secondary\">En attente du premier plein complet</span>";
+                } else if (r.statut === "capacite_manquante") {
+                    niveau = "<span class=\"badge bg-warning text-dark\">Capacité du réservoir non renseignée</span>";
+                } else {
+                    niveau = "<span class=\"badge bg-secondary\">Conso de référence indisponible</span>";
+                }
+                tbody.append("<tr><td><strong>" + r.immat + "</strong></td><td>" + (r.capacite > 0 ? r.capacite : "—") + "</td><td>" + fmtD(r.dernier_plein) + "</td><td>" + conso + "</td><td>" + (r.nb_pleins > 0 ? r.km_depuis : "—") + "</td><td>" + (r.nb_pleins > 0 ? r.ajout_depuis : "—") + "</td><td>" + niveau + "</td></tr>");
+            });
         });
         $.ajax({type:"post", data:"load-vehicules-inactifs=1&days=7", dataType:"json"})
         .done(function(e) {

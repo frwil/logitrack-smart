@@ -4,10 +4,10 @@
     global $rights_vehicule;
     $repo = new VehiculeRepository($con);
     $rows = $repo->findActiveWithDetailsByContext(getContextRegions(), getContextEntities());
-    $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Immatriculation</th><th>Marque</th><th>Modèle</th><th>Chassis</th><th>1ère utilisation</th><th>Expir. carte grise</th><th>Nb. places</th><th>Carburant</th><th>Puissance</th><th>Capacité</th><th></th></tr></thead><tbody>";
+    $tableau = "<table class='table table-striped responsive'><thead><tr><th>#</th><th>Immatriculation</th><th>Marque</th><th>Modèle</th><th>Chassis</th><th>1ère utilisation</th><th>Expir. carte grise</th><th>Nb. places</th><th>Carburant</th><th>Puissance</th><th>Capacité</th><th>Réservoir (L)</th><th></th></tr></thead><tbody>";
     $i = 1;
     foreach ($rows as $r):
-        $tableau .= "<tr><td>$i</td><td>" . h($r['immatriculation_vehicule']) . "</td><td>" . h($r['nom_marque']) . "</td><td>" . h($r['nom_modele_vehicule']) . "</td><td>" . h($r['chassis_vehicule']) . "</td><td>" . ($r['premiere_utilisation'] ? date('d M Y', strtotime($r['premiere_utilisation'])) : '') . "</td><td>" . ($r['expiration_carte_grise'] ? date('d M Y', strtotime($r['expiration_carte_grise'])) : '') . "</td><td>" . h($r['nb_place']) . "</td><td>" . h($r['type_carburant']) . "</td><td>" . h($r['puissance_vehicule']) . " CV</td><td>" . h($r['capacite_consommation_vehicule']) . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_vehicule) ? "<button class='btn btn-primary' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-vh' data-bs-immat='" . h($r['immatriculation_vehicule']) . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array('del', $rights_vehicule) ? "<button class='btn btn-danger' title='Supprimer' onclick='delVehicule(\"" . h($r['immatriculation_vehicule']) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
+        $tableau .= "<tr><td>$i</td><td>" . h($r['immatriculation_vehicule']) . "</td><td>" . h($r['nom_marque']) . "</td><td>" . h($r['nom_modele_vehicule']) . "</td><td>" . h($r['chassis_vehicule']) . "</td><td>" . ($r['premiere_utilisation'] ? date('d M Y', strtotime($r['premiere_utilisation'])) : '') . "</td><td>" . ($r['expiration_carte_grise'] ? date('d M Y', strtotime($r['expiration_carte_grise'])) : '') . "</td><td>" . h($r['nb_place']) . "</td><td>" . h($r['type_carburant']) . "</td><td>" . h($r['puissance_vehicule']) . " CV</td><td>" . h($r['capacite_consommation_vehicule']) . "</td><td>" . ($r['capacite_reservoir'] > 0 ? h($r['capacite_reservoir']) : '—') . "</td><td><div class='btn-group'>" . (in_array('upd', $rights_vehicule) ? "<button class='btn btn-primary' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-vh' data-bs-immat='" . h($r['immatriculation_vehicule']) . "'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array('del', $rights_vehicule) ? "<button class='btn btn-danger' title='Supprimer' onclick='delVehicule(\"" . h($r['immatriculation_vehicule']) . "\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         $i++;
     endforeach;
     $tableau .= "</tbody></table>";
@@ -98,6 +98,11 @@
                                 <option value="GASOIL">Gasoil</option>
                                 <option value="SUPER">Super</option>
                             </select>
+                        </div>
+                        <div class="form-floating mb-3 col-6">
+                            <input type="number" id="capacite-reservoir-vh-upd" name="capacite-reservoir-vh-upd" min="0" class="form-control" placeholder="ex. 400">
+                            <label for="capacite-reservoir-vh-upd">Capacité réservoir (L)</label>
+                            <div class="form-text">Pour la jauge virtuelle — laisser vide si inconnue.</div>
                         </div>
                         <hr>
                         <div class="mb-3 col-6">
@@ -230,6 +235,7 @@
                 $('#dexpir-vh-upd').val(v.expiration_carte_grise)
                 $('#puissance-vh-upd').val(v.puissance_vehicule)
                 $('#capacite-vh-upd').val(v.capacite_consommation_vehicule)
+                $('#capacite-reservoir-vh-upd').val(v.capacite_reservoir || '')
                 $('#nbplace-vh-upd').val(v.nb_place)
                 $('#tcarb-vh-upd').val(v.type_carburant)
                 // Populate capacities

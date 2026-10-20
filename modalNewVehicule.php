@@ -80,6 +80,11 @@
                                 <option value="SUPER">Super</option>
                             </select>
                         </div>
+                        <div class="form-floating mb-3 col-6">
+                            <input type="number" id="capacite-reservoir-vh" name="capacite-reservoir-vh" min="0" class="form-control" placeholder="ex. 400">
+                            <label for="capacite-reservoir-vh">Capacité réservoir (L)</label>
+                            <div class="form-text">Pour la jauge virtuelle — laisser vide si inconnue.</div>
+                        </div>
                         <hr>
                         <div class="mb-3 col-6">
                             <label for="qualif-permis">Qualification de permis</label>

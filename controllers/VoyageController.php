@@ -233,6 +233,15 @@ class VoyageController extends BaseController
         $this->json(['data' => $data]);
     }
 
+    /** Jauge virtuelle carburant : état actuel estimé du réservoir, sur tout l'historique. */
+    public function jaugeVirtuelle(): never
+    {
+        $regionIds = getContextRegions();
+        $entiteIds = getContextEntities();
+        $data = $this->voyageRepo->fuelGaugeByContext($regionIds, $entiteIds);
+        $this->json(['data' => $data]);
+    }
+
     /**
      * Camembert de l'évaluation des voyages : part de la flotte vs part de chaque
      * transporteur externe, selon une métrique (nb, km, km moyen, qtés, type de chargement).

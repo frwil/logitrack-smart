@@ -41,7 +41,8 @@ class VehiculeRepository extends BaseRepository
         ?string $expirationCarteGrise,
         int $capacite,
         int $nbPlace,
-        string $typeCarburant
+        string $typeCarburant,
+        int $capaciteReservoir = 0
     ): bool {
         return $this->exec(
             "UPDATE vehicule SET
@@ -53,9 +54,10 @@ class VehiculeRepository extends BaseRepository
              expiration_carte_grise = ?,
              capacite_consommation_vehicule = ?,
              nb_place = ?,
-             type_carburant = ?
+             type_carburant = ?,
+             capacite_reservoir = ?
              WHERE immatriculation_vehicule = ?",
-            [$puissance, $marqueId, $modeleId, $chassis, $premiereUtilisation, $expirationCarteGrise, $capacite, $nbPlace, $typeCarburant, $immat]
+            [$puissance, $marqueId, $modeleId, $chassis, $premiereUtilisation, $expirationCarteGrise, $capacite, $nbPlace, $typeCarburant, $capaciteReservoir, $immat]
         );
     }
 
@@ -104,12 +106,13 @@ class VehiculeRepository extends BaseRepository
         int $idMarque,
         int $idModele,
         string $immat,
-        int $capacite
+        int $capacite,
+        int $capaciteReservoir = 0
     ): int|string {
         return $this->insertGetId(
-            "INSERT INTO vehicule (puissance_vehicule, chassis_vehicule, premiere_utilisation, expiration_carte_grise, nb_place, type_carburant, id_marque, id_modele_vehicule, id_entite, immatriculation_vehicule, capacite_consommation_vehicule)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)",
-            [$puissance, $chassis, $dutil, $dexpir, $nbPlace, $tcarb, $idMarque, $idModele, $immat, $capacite]
+            "INSERT INTO vehicule (puissance_vehicule, chassis_vehicule, premiere_utilisation, expiration_carte_grise, nb_place, type_carburant, id_marque, id_modele_vehicule, id_entite, immatriculation_vehicule, capacite_consommation_vehicule, capacite_reservoir)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)",
+            [$puissance, $chassis, $dutil, $dexpir, $nbPlace, $tcarb, $idMarque, $idModele, $immat, $capacite, $capaciteReservoir]
         );
     }
 
