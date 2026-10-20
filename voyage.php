@@ -1360,7 +1360,7 @@ function getDashboardChartsVoyages()
             c.draw(dt, {title:"Conso L/100km (couleur = écart au groupe)' . ($isCustom ? $periodLabel : ' (mois en cours)') . '", legend:"none", chartArea:{width:"80%", height:"70%"}, tooltip:{isHtml:true}});
             dtZ.sort([{column:1, desc:true}]);
             var cZ = new google.visualization.ComboChart(document.getElementById("chart-conso-z"));
-            cZ.draw(dtZ, {title:"Écart au groupe (σ)' . ($isCustom ? $periodLabel : ' (mois en cours)') . '", legend:"none", seriesType:"bars", series:{1:{type:"line", color:"#F39C12", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}, 2:{type:"line", color:"#E74C3C", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}}, chartArea:{width:"80%", height:"70%"}, vAxis:{title:"σ"}});
+            cZ.draw(dtZ, {title:"Écart au groupe (σ)' . ($isCustom ? $periodLabel : ' (mois en cours)') . '", legend:{position:"bottom"}, seriesType:"bars", series:{1:{type:"line", color:"#F39C12", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}, 2:{type:"line", color:"#E74C3C", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}}, chartArea:{width:"80%", height:"65%"}, vAxis:{title:"σ"}});
         });
         $.ajax({type:"post", data:"load-vehicules-inactifs=1&days=7", dataType:"json"})
         .done(function(e) {
