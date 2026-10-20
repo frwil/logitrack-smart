@@ -796,6 +796,41 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
 <script>
     <?php if(in_array("upd",$rights_voyage)): ?>
     var kmUpdVoyage = 0; // km du voyage chargé dans le modal de modification (1er trajet)
+    // Carburations du voyage : liste dynamique [{qte, plein}]. Le total est stocké dans voyage.qte_carburant.
+    var updCarburants = []
+    function addCarburantUpd(qte, plein) {
+        qte = qte === undefined ? '' : qte
+        plein = plein ? 1 : 0
+        const idx = updCarburants.length
+        updCarburants.push({ qte: qte === '' ? 0 : parseFloat(qte), plein: plein })
+        const row = $('<div class="input-group input-group-sm mb-1 carb-row-upd">')
+            .append('<span class="input-group-text">L</span>')
+            .append('<input type="number" class="form-control carb-qte-upd" min="0" value="' + (qte === '' ? '' : qte) + '" placeholder="Litres">')
+            .append('<span class="input-group-text"><input type="checkbox" class="form-check-input mt-0 carb-plein-upd"' + (plein ? ' checked' : '') + '> plein</span>')
+            .append('<button type="button" class="btn btn-outline-danger" onclick="rmCarburantUpd(' + idx + ')"><i class="fa fa-times"></i></button>')
+        $('#carburant-list-upd').append(row)
+    }
+    function rmCarburantUpd(idx) {
+        updCarburants.splice(idx, 1)
+        refreshCarburantUpd()
+    }
+    function refreshCarburantUpd() {
+        $('#carburant-list-upd').empty()
+        updCarburants.forEach((c, i) => addCarburantUpd(c.qte || '', c.plein))
+    }
+    function totalCarburantUpd() {
+        var t = 0
+        $('.carb-qte-upd').each(function() { t += parseFloat($(this).val() || 0) })
+        return t
+    }
+    $('#carburant-list-upd').on('input', '.carb-qte-upd', function() {
+        const i = $(this).closest('.carb-row-upd').index()
+        if (updCarburants[i]) updCarburants[i].qte = parseFloat($(this).val() || 0)
+    })
+    $('#carburant-list-upd').on('change', '.carb-plein-upd', function() {
+        const i = $(this).closest('.carb-row-upd').index()
+        if (updCarburants[i]) updCarburants[i].plein = $(this).is(':checked') ? 1 : 0
+    })
     function updvg(id, vh) {
         showModalUpdateVoyage(id, vh)
     }
@@ -818,7 +853,10 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
                 })
             $('#cv-upd-voyage').val(v.convoyeur)
             $('#numero-scelle-upd-voyage').val(v.numero_scelle || '')
-            $('#cb-upd-voyage').val(v.qte_carburant)
+            updCarburants = []
+            ;(v.carburants || []).forEach((c) => updCarburants.push({ qte: parseFloat(c.qte_carburant) || 0, plein: parseInt(c.plein_complet) || 0 }))
+            if (!updCarburants.length) updCarburants.push({ qte: 0, plein: 0 })
+            refreshCarburantUpd()
             kmUpdVoyage = parseFloat(v.distance_destination) || 0;
             $('#tc-upd-voyage option[value="'+v.tc+'"]').prop('selected',true)
             $('#qtec-upd-voyage').val(v.qte_chargement)
@@ -847,15 +885,15 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
         }
         if (confirm("Etes-vous sûr de vouloir modifier ?")) {
             // Carburant à 0 sur un voyage avec des km : confirmation douce (anti-oubli).
-            if (parseFloat($('#cb-upd-voyage').val() || 0) <= 0 && kmUpdVoyage > 0) {
+            if (totalCarburantUpd() <= 0 && kmUpdVoyage > 0) {
                 if (!confirm("Le carburant consommé n'est pas renseigné pour ce voyage (" + kmUpdVoyage + " km).\nVoulez-vous continuer sans carburant ?")) {
-                    $('#cb-upd-voyage').focus()
+                    $('.carb-qte-upd').first().focus()
                     return false
                 }
             }
             $.ajax({
                 type: 'post',
-                data: $('#form-upd-voyage').serialize(),
+                data: $('#form-upd-voyage').serialize() + '&carburants-upd-voyage=' + JSON.stringify(updCarburants),
                 dataType: 'json'
             }).done((e) => {
                 if (e.success) {
@@ -946,9 +984,10 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="form-floating mb-3">
-                            <input type="number" id="cb-upd-voyage" name="cb-upd-voyage" class="form-control" min="0" required>
-                            <label for="cb-upd-voyage">Carburant consommé (en Litres)</label>
+                        <div class="mb-3">
+                            <label for="carburant-list-upd">Carburant consommé (en Litres)</label>
+                            <div id="carburant-list-upd"></div>
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="addCarburantUpd()"><i class="fa fa-plus"></i> Ajouter une carburation</button>
                         </div>
                     </div>
                     <div class="col-6">

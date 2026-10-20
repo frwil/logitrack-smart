@@ -24,6 +24,9 @@ class VoyageController extends BaseController
             $this->jsonError('Voyage introuvable', 404);
         }
 
+        // Carburations du voyage (1 voyage = N carburations).
+        $row['carburants'] = $this->voyageRepo->fuelEventsByVoyage($id);
+
         $this->json(['data' => $row]);
     }
 
@@ -32,15 +35,23 @@ class VoyageController extends BaseController
     {
         try {
             $this->voyageRepo->transactional(function () {
+                $carburants = json_decode($this->post('carburants-upd-voyage'), true);
+                if (!is_array($carburants)) $carburants = [];
+                $totalCarb = 0;
+                foreach ($carburants as $c) {
+                    $totalCarb += max(0, (int)($c['qte'] ?? 0));
+                }
+                $idVoyage = (int)$this->post('id-voyage');
                 $this->voyageRepo->updateById(
-                    (int)$this->post('id-voyage'),
+                    $idVoyage,
                     $this->post('date-upd-voyage'),
-                    (float)$this->post('cb-upd-voyage'),
+                    $totalCarb,
                     $this->post('cv-upd-voyage'),
                     (int)$this->post('tc-upd-voyage'),
                     (float)$this->post('qtec-upd-voyage'),
                     $this->post('numero-scelle-upd-voyage') ?: null
                 );
+                $this->voyageRepo->saveFuelEvents($idVoyage, $carburants);
             });
             $this->json();
         } catch (\Throwable $e) {
@@ -64,13 +75,19 @@ class VoyageController extends BaseController
     {
         $trajets = json_decode($this->post('trajets-voyage'), true);
         if (empty($trajets)) $this->jsonError('Aucun trajet ajouté');
+        $carburants = json_decode($this->post('carburants-voyage'), true);
+        if (!is_array($carburants)) $carburants = [];
+        $totalCarb = 0;
+        foreach ($carburants as $c) {
+            $totalCarb += max(0, (int)($c['qte'] ?? 0));
+        }
         try {
-            $this->voyageRepo->transactional(function () use ($trajets) {
+            $this->voyageRepo->transactional(function () use ($trajets, $carburants, $totalCarb) {
                 $voyageId = $this->voyageRepo->insertVoyage(
                     $this->post('titre-vg'),
                     $this->post('date-vg'),
                     (int)$this->post('id-vehicule-vg'),
-                    (float)$this->post('qtecarburant-vg'),
+                    $totalCarb,
                     $this->post('id-convoyeur-vg'),
                     (int)$this->post('typechargement-vg'),
                     (float)$this->post('qtechargement-vg'),
@@ -79,6 +96,7 @@ class VoyageController extends BaseController
                 foreach ($trajets as $destId) {
                     $this->voyageRepo->insertVoyageVehicule((int)$voyageId, (int)$destId);
                 }
+                $this->voyageRepo->saveFuelEvents((int)$voyageId, $carburants);
             });
             $this->json();
         } catch (\Throwable $e) {

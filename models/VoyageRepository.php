@@ -1003,6 +1003,39 @@ class VoyageRepository extends BaseRepository
         return $map;
     }
 
+    /** Carburations d'un voyage (1 voyage = N carburations). */
+    public function fuelEventsByVoyage(int $idVoyage): array
+    {
+        return $this->select(
+            "SELECT id_carburant, id_voyage, qte_carburant, plein_complet
+             FROM carburant_voyage
+             WHERE id_voyage = ?
+             ORDER BY id_carburant",
+            [$idVoyage]
+        );
+    }
+
+    /**
+     * Remplace les carburations d'un voyage et met à jour le total voyage.qte_carburant
+     * (somme des carburations). $events : liste de ['qte' => int, 'plein' => int(0|1)].
+     */
+    public function saveFuelEvents(int $idVoyage, array $events): void
+    {
+        $this->exec("DELETE FROM carburant_voyage WHERE id_voyage = ?", [$idVoyage]);
+        $total = 0;
+        foreach ($events as $ev) {
+            $qte = max(0, (int)($ev['qte'] ?? 0));
+            $plein = !empty($ev['plein']) ? 1 : 0;
+            if ($qte <= 0) continue;
+            $this->exec(
+                "INSERT INTO carburant_voyage (id_voyage, qte_carburant, plein_complet) VALUES (?, ?, ?)",
+                [$idVoyage, $qte, $plein]
+            );
+            $total += $qte;
+        }
+        $this->exec("UPDATE voyage SET qte_carburant = ? WHERE id_voyage = ?", [$total, $idVoyage]);
+    }
+
     public function vehiculesInactifs(int $days, array $regionIds, array $entiteIds): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);

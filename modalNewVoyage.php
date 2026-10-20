@@ -126,9 +126,10 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
                             </div>
                         </div>
                         <div class="col-6 vg-flotte-only">
-                            <div class="form-floating mb-3">
-                                <input type="number" class="form-control" id="qtecarburant-vg" value="0" name="qtecarburant-vg" required min="0">
-                                <label for="qtecarburant-vg">Carburant consommé (en Litres)</label>
+                            <div class="mb-3">
+                                <label for="carburant-list-vg">Carburant consommé (en Litres)</label>
+                                <div id="carburant-list-vg"></div>
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="addCarburantVg()"><i class="fa fa-plus"></i> Ajouter une carburation</button>
                             </div>
                         </div>
                         <div class="col-6">
@@ -322,7 +323,7 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
         $('.vg-flotte-only').toggle(!externe)
         $('.vg-ext-only').toggle(externe)
         $('#id-vehicule-vg').prop('disabled', externe)
-        $('#qtecarburant-vg').prop('disabled', externe)
+        $('#carburant-list-vg input, #carburant-list-vg button').prop('disabled', externe)
         $('#chauffeur-vg').prop('disabled', !externe)
         $('#immatriculation-vg').prop('disabled', !externe)
         // Entité / région : figés uniquement si un seul élément dans le contexte
@@ -354,6 +355,43 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
         check=await check.json()
         return check.success && check.count==1;
     }
+
+    // Carburations du voyage : liste dynamique [{qte, plein}]. Le total est stocké dans voyage.qte_carburant.
+    var carburantsVg = []
+    function addCarburantVg(qte, plein) {
+        qte = qte === undefined ? '' : qte
+        plein = plein ? 1 : 0
+        const idx = carburantsVg.length
+        carburantsVg.push({ qte: qte === '' ? 0 : parseFloat(qte), plein: plein })
+        const row = $('<div class="input-group input-group-sm mb-1 carb-row-vg">')
+            .append('<span class="input-group-text">L</span>')
+            .append('<input type="number" class="form-control carb-qte-vg" min="0" value="' + (qte === '' ? '' : qte) + '" placeholder="Litres">')
+            .append('<span class="input-group-text"><input type="checkbox" class="form-check-input mt-0 carb-plein-vg"' + (plein ? ' checked' : '') + '> plein</span>')
+            .append('<button type="button" class="btn btn-outline-danger" onclick="rmCarburantVg(' + idx + ')"><i class="fa fa-times"></i></button>')
+        $('#carburant-list-vg').append(row)
+    }
+    function rmCarburantVg(idx) {
+        carburantsVg.splice(idx, 1)
+        refreshCarburantVg()
+    }
+    function refreshCarburantVg() {
+        $('#carburant-list-vg').empty()
+        carburantsVg.forEach((c, i) => addCarburantVg(c.qte || '', c.plein))
+    }
+    function totalCarburantVg() {
+        var t = 0
+        $('.carb-qte-vg').each(function() { t += parseFloat($(this).val() || 0) })
+        return t
+    }
+    $('#carburant-list-vg').on('input', '.carb-qte-vg', function() {
+        const i = $(this).closest('.carb-row-vg').index()
+        if (carburantsVg[i]) carburantsVg[i].qte = parseFloat($(this).val() || 0)
+    })
+    $('#carburant-list-vg').on('change', '.carb-plein-vg', function() {
+        const i = $(this).closest('.carb-row-vg').index()
+        if (carburantsVg[i]) carburantsVg[i].plein = $(this).is(':checked') ? 1 : 0
+    })
+    addCarburantVg(0, 0)
 
    async function saveVoyage() {
         if ($('input[name="mode-vg"]:checked').val() === 'externe') {
@@ -397,9 +435,9 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
             return false
         }
         // Carburant à 0 sur un voyage avec des km : confirmation douce (anti-oubli).
-        if (parseFloat($('#qtecarburant-vg').val() || 0) <= 0 && totalkm > 0) {
+        if (totalCarburantVg() <= 0 && totalkm > 0) {
             if (!confirm("Le carburant consommé n'est pas renseigné pour ce voyage (" + totalkm + " km).\nVoulez-vous continuer sans carburant ?")) {
-                $('#qtecarburant-vg').focus()
+                $('.carb-qte-vg').first().focus()
                 return false
             }
         }
@@ -417,7 +455,7 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
         }
         $.ajax({
             type: 'post',
-            data: $('#form-new-voyage').serialize() + '&trajets-voyage=' + JSON.stringify(trajets),
+            data: $('#form-new-voyage').serialize() + '&trajets-voyage=' + JSON.stringify(trajets) + '&carburants-voyage=' + JSON.stringify(carburantsVg),
             dataType: 'json'
         }).done((e) => {
             if (e.success) {
@@ -425,6 +463,8 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
                 $('#modal-new-voyage').modal('hide')
                 $('#form-new-voyage *').val('')
                 trajets = []
+                carburantsVg = []
+                addCarburantVg(0, 0)
                 location.reload()
             } else {
                 showError(e.error || "Erreur lors de l'enregistrement")
