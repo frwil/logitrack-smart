@@ -781,6 +781,7 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
 <?php endif; ?>
 <script>
     <?php if(in_array("upd",$rights_voyage)): ?>
+    var kmUpdVoyage = 0; // km du voyage chargé dans le modal de modification (1er trajet)
     function updvg(id, vh) {
         showModalUpdateVoyage(id, vh)
     }
@@ -804,6 +805,7 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
             $('#cv-upd-voyage').val(v.convoyeur)
             $('#numero-scelle-upd-voyage').val(v.numero_scelle || '')
             $('#cb-upd-voyage').val(v.qte_carburant)
+            kmUpdVoyage = parseFloat(v.distance_destination) || 0;
             $('#tc-upd-voyage option[value="'+v.tc+'"]').prop('selected',true)
             $('#qtec-upd-voyage').val(v.qte_chargement)
             } else {
@@ -830,6 +832,13 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
             return false
         }
         if (confirm("Etes-vous sûr de vouloir modifier ?")) {
+            // Carburant à 0 sur un voyage avec des km : confirmation douce (anti-oubli).
+            if (parseFloat($('#cb-upd-voyage').val() || 0) <= 0 && kmUpdVoyage > 0) {
+                if (!confirm("Le carburant consommé n'est pas renseigné pour ce voyage (" + kmUpdVoyage + " km).\nVoulez-vous continuer sans carburant ?")) {
+                    $('#cb-upd-voyage').focus()
+                    return false
+                }
+            }
             $.ajax({
                 type: 'post',
                 data: $('#form-upd-voyage').serialize(),

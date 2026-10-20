@@ -396,6 +396,13 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
             }
             return false
         }
+        // Carburant à 0 sur un voyage avec des km : confirmation douce (anti-oubli).
+        if (parseFloat($('#qtecarburant-vg').val() || 0) <= 0 && totalkm > 0) {
+            if (!confirm("Le carburant consommé n'est pas renseigné pour ce voyage (" + totalkm + " km).\nVoulez-vous continuer sans carburant ?")) {
+                $('#qtecarburant-vg').focus()
+                return false
+            }
+        }
         valid=await checkReleveKms($('#id-vehicule-vg').val(),moment($('#date-vg').val()).startOf('week').format('YYYY-MM-DD'),moment($('#date-vg').val()).endOf('week').format('YYYY-MM-DD'))
         if(!valid){
             /*if(confirm("Aucun relevé de kilométrage n'a été fait pour ce véhicule cette semaine.\nVoulez-vous procéder au relevé du km ?\nVous devrez peut-être contacter votre administrateur si vous n'avez pas les droits d'acces.")){
