@@ -275,10 +275,10 @@ function getDashboardCards()
     $periodWord = $isCustom ? 'de la période' : 'du mois';
     $periodDetail = getMaintenancePeriodDetail();
 
-    $vidangeAlerts = $repo->countVidangeAlerts($regionIds, $entiteIds);
-    $activeRepairs = $repo->countActiveRepairs($regionIds, $entiteIds);
+    $vidangeAlerts = $repo->countVidangeAlerts($regionIds, $entiteIds, $dateTo);
+    $activeRepairs = $repo->countActiveRepairs($regionIds, $entiteIds, $dateTo);
     $monthlyCost = $repo->sumMonthlyCost($regionIds, $entiteIds, $dateFrom, $dateTo);
-    $immobilized = $repo->countImmobilizedVehicles($regionIds, $entiteIds);
+    $immobilized = $repo->countImmobilizedVehicles($regionIds, $entiteIds, $dateFrom, $dateTo);
 
     // Barre de filtres de période en tête de section (suit la navigation),
     // puis cartes : les indicateurs datés s'adaptent à la période choisie.
@@ -289,14 +289,14 @@ function getDashboardCards()
     $html .= '<div class="col-md-3"><div class="lt-card lt-stat-card ' . $alertClass . '">';
     $html .= '<div class="lt-stat-icon"><i class="fa fa-exclamation-triangle"></i></div>';
     $html .= '<div class="lt-stat-value">' . $vidangeAlerts['alertes'] . ' / ' . $vidangeAlerts['total'] . '</div>';
-    $html .= '<div class="lt-stat-label">Alertes vidange</div>';
+    $html .= '<div class="lt-stat-label">Alertes vidange' . $periodDetail . '</div>';
     $html .= '</div></div>';
 
     $repairClass = $activeRepairs > 0 ? 'lt-stat-warning' : 'lt-stat-success';
     $html .= '<div class="col-md-3"><div class="lt-card lt-stat-card ' . $repairClass . '">';
     $html .= '<div class="lt-stat-icon"><i class="fa fa-tools"></i></div>';
     $html .= '<div class="lt-stat-value">' . $activeRepairs . '</div>';
-    $html .= '<div class="lt-stat-label">Bons de réparation ouverts</div>';
+    $html .= '<div class="lt-stat-label">Bons de réparation ouverts' . $periodDetail . '</div>';
     $html .= '</div></div>';
 
     $html .= '<div class="col-md-3"><div class="lt-card lt-stat-card">';
@@ -310,7 +310,7 @@ function getDashboardCards()
     $html .= '<div class="col-md-3"><div class="lt-card lt-stat-card ' . $immobClass . '">';
     $html .= '<div class="lt-stat-icon"><i class="fa fa-truck"></i></div>';
     $html .= '<div class="lt-stat-value">' . $immobilized['immobilises'] . ' / ' . $immobilized['total'] . '</div>';
-    $html .= '<div class="lt-stat-label">Véhicules immobilisés</div>';
+    $html .= '<div class="lt-stat-label">Véhicules immobilisés' . $periodDetail . '</div>';
     $html .= '</div></div>';
 
     $html .= '</div>';

@@ -458,16 +458,22 @@ class MaintenanceRepository extends BaseRepository
 
     // ---- Dashboard KPI ----
 
-    public function countVidangeAlerts(array $regionIds, array $entiteIds): array
+    public function countVidangeAlerts(array $regionIds, array $entiteIds, ?string $dateTo = null): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        // État « en fin de période » : dernière vidange et dernier relevé connus à la date $dateTo (si fournie).
+        $boundVidange = $dateTo !== null ? " WHERE v2.date_vidange <= ?" : '';
+        $boundReleve = $dateTo !== null ? " WHERE date_fin_periode_releve <= ?" : '';
+        if ($dateTo !== null) {
+            $params = array_merge([$dateTo, $dateTo], $params);
+        }
         $rows = $this->select(
             "SELECT vv.km_prochaine_vidange, rkv.km_releve AS kms_actuel
              FROM vidange_vehicule vv
              JOIN affectation_vehicule ON affectation_vehicule.id_affectation = vv.id_affectation_vehicule
              INNER JOIN (
                  SELECT v2.id_affectation_vehicule, MAX(v2.date_vidange) AS max_date
-                 FROM vidange_vehicule v2 GROUP BY v2.id_affectation_vehicule
+                 FROM vidange_vehicule v2$boundVidange GROUP BY v2.id_affectation_vehicule
              ) vv_max ON vv_max.id_affectation_vehicule = vv.id_affectation_vehicule
                       AND vv_max.max_date = vv.date_vidange
              LEFT JOIN (
@@ -475,7 +481,7 @@ class MaintenanceRepository extends BaseRepository
                  FROM releve_kms_vehicule r1
                  INNER JOIN (
                      SELECT id_affectation_vehicule, MAX(date_fin_periode_releve) AS max_date
-                     FROM releve_kms_vehicule GROUP BY id_affectation_vehicule
+                     FROM releve_kms_vehicule$boundReleve GROUP BY id_affectation_vehicule
                  ) r2 ON r2.id_affectation_vehicule = r1.id_affectation_vehicule
                      AND r2.max_date = r1.date_fin_periode_releve
              ) rkv ON rkv.id_affectation_vehicule = vv.id_affectation_vehicule
@@ -494,14 +500,23 @@ class MaintenanceRepository extends BaseRepository
         return ['total' => $total, 'alertes' => $alertes];
     }
 
-    public function countActiveRepairs(array $regionIds, array $entiteIds): int
+    public function countActiveRepairs(array $regionIds, array $entiteIds, ?string $dateTo = null): int
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        // Bons ouverts en fin de période : entrés au plus tard à $dateTo et non clôturés à cette date.
+        if ($dateTo !== null) {
+            $params[] = $dateTo;
+            $params[] = $dateTo;
+            $bounds = " AND bons_reparation.date_entree <= ?
+             AND (bons_reparation.date_fin_reparation IS NULL OR bons_reparation.date_fin_reparation = '0000-00-00'
+                  OR bons_reparation.date_fin_reparation > ?)";
+        } else {
+            $bounds = " AND (bons_reparation.date_fin_reparation IS NULL OR bons_reparation.date_fin_reparation = '0000-00-00')";
+        }
         return count($this->select(
             "SELECT bons_reparation.id_bon_reparation FROM bons_reparation
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
-             WHERE affectation_vehicule.is_deleted = 0 AND $where
-             AND (date_fin_reparation IS NULL OR date_fin_reparation = '0000-00-00')",
+             WHERE affectation_vehicule.is_deleted = 0 AND $where$bounds",
             $params
         ));
     }
@@ -524,20 +539,32 @@ class MaintenanceRepository extends BaseRepository
         return (float)($row['total'] ?? 0);
     }
 
-    public function countImmobilizedVehicles(array $regionIds, array $entiteIds): array
+    public function countImmobilizedVehicles(array $regionIds, array $entiteIds, ?string $dateFrom = null, ?string $dateTo = null): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        // Véhicules immobilisés sur la période : bon chevauchant [dateFrom, dateTo] ; le statut
+        // courant EN PANNE / EN RÉPARATION n'est ajouté que si la période inclut aujourd'hui.
+        if ($dateFrom !== null && $dateTo !== null) {
+            $params = array_merge([$dateTo, $dateTo, $dateFrom], $params);
+            $immobSql = "((vehicule.statut_vehicule IN ('EN PANNE', 'EN RÉPARATION') AND CURDATE() <= ?)
+                          OR br_period.id_affectation_vehicule IS NOT NULL) AS is_immobilise";
+            $subquery = "SELECT DISTINCT br.id_affectation_vehicule
+                         FROM bons_reparation br
+                         WHERE br.date_entree <= ?
+                           AND (br.date_fin_reparation IS NULL OR br.date_fin_reparation = '0000-00-00'
+                                OR br.date_fin_reparation >= ?)";
+        } else {
+            $immobSql = "(vehicule.statut_vehicule IN ('EN PANNE', 'EN RÉPARATION')
+                          OR br_period.id_affectation_vehicule IS NOT NULL) AS is_immobilise";
+            $subquery = "SELECT DISTINCT br.id_affectation_vehicule
+                         FROM bons_reparation br
+                         WHERE br.date_fin_reparation IS NULL OR br.date_fin_reparation = '0000-00-00'";
+        }
         $rows = $this->select(
-            "SELECT affectation_vehicule.id_affectation,
-                    (vehicule.statut_vehicule IN ('EN PANNE', 'EN RÉPARATION')
-                     OR br_open.id_affectation_vehicule IS NOT NULL) AS is_immobilise
+            "SELECT affectation_vehicule.id_affectation, $immobSql
              FROM affectation_vehicule
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
-             LEFT JOIN (
-                 SELECT DISTINCT br.id_affectation_vehicule
-                 FROM bons_reparation br
-                 WHERE br.date_fin_reparation IS NULL OR br.date_fin_reparation = '0000-00-00'
-             ) br_open ON br_open.id_affectation_vehicule = affectation_vehicule.id_affectation
+             LEFT JOIN ($subquery) br_period ON br_period.id_affectation_vehicule = affectation_vehicule.id_affectation
              WHERE affectation_vehicule.is_deleted = 0 AND is_ferme = 0 AND $where",
             $params
         );
