@@ -1,24 +1,124 @@
 <?php
 if (!in_array('view', $rights_maintenance)) : echo "<script>location='index.php'</script>";
 endif;
+
+/**
+ * Période d'analyse des statistiques maintenance (POST date-f/date-t de la barre de filtres).
+ * Persistée en session : la période suit la navigation dans toute la section maintenance.
+ * Défaut : mois courant. Bornes validées, normalisées et interverties si besoin.
+ */
+function getMaintenancePeriod(): array
+{
+    $from = $_POST['date-f'] ?? '';
+    $to = $_POST['date-t'] ?? '';
+    $tsFrom = strtotime($from);
+    $tsTo = strtotime($to);
+    if ($tsFrom !== false && $tsTo !== false) {
+        $dateFrom = date('Y-m-d', $tsFrom);
+        $dateTo = date('Y-m-d', $tsTo);
+        if ($dateFrom > $dateTo) [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+        $_SESSION['maint-period'] = [$dateFrom, $dateTo];
+        return [$dateFrom, $dateTo];
+    }
+    if (isset($_SESSION['maint-period']) && is_array($_SESSION['maint-period']) && count($_SESSION['maint-period']) === 2
+        && strtotime($_SESSION['maint-period'][0]) !== false && strtotime($_SESSION['maint-period'][1]) !== false) {
+        return [$_SESSION['maint-period'][0], $_SESSION['maint-period'][1]];
+    }
+    return [date('Y-m-01'), date('Y-m-t')];
+}
+
+/** Vrai si une période personnalisée est active (différente du mois courant). */
+function getMaintenancePeriodIsCustom(): bool
+{
+    [$dateFrom, $dateTo] = getMaintenancePeriod();
+    return $dateFrom !== date('Y-m-01') || $dateTo !== date('Y-m-t');
+}
+
+/** Détail de la période active pour les libellés : '' pour le mois courant, « (du … au …) » sinon. */
+function getMaintenancePeriodDetail(): string
+{
+    if (!getMaintenancePeriodIsCustom()) return '';
+    [$dateFrom, $dateTo] = getMaintenancePeriod();
+    return ' (du ' . date('d/m/Y', strtotime($dateFrom)) . ' au ' . date('d/m/Y', strtotime($dateTo)) . ')';
+}
+
+/**
+ * Barre de filtres période des statistiques maintenance, affichée en haut de la section
+ * (toutes les sous-pages) : la période choisie s'applique aux cartes, aux graphiques
+ * et aux tableaux datés (bons de réparation, relevés KMS).
+ */
+function getMaintenanceFilterBar(): string
+{
+    [$dateFrom, $dateTo] = getMaintenancePeriod();
+
+    $y = (int)date('Y');
+    $mQ = (int)floor((date('n') - 1) / 3) * 3 + 1;
+    $qStart = date('Y-m-d', mktime(0, 0, 0, $mQ, 1, $y));
+    $qEnd = date('Y-m-d', mktime(0, 0, 0, $mQ + 3, 0, $y));
+    $mPrevQ = $mQ - 3;
+    $yPrevQ = $y;
+    if ($mPrevQ < 1) { $mPrevQ += 12; $yPrevQ--; }
+    $qStartPrev = date('Y-m-d', mktime(0, 0, 0, $mPrevQ, 1, $yPrevQ));
+    $qEndPrev = date('Y-m-d', mktime(0, 0, 0, $mPrevQ + 3, 0, $yPrevQ));
+
+    $presets = [
+        'Semaine en cours'   => [date('Y-m-d', strtotime('monday this week')), date('Y-m-d', strtotime('sunday this week'))],
+        'Semaine dernière'   => [date('Y-m-d', strtotime('monday last week')), date('Y-m-d', strtotime('sunday last week'))],
+        'Mois en cours'      => [date('Y-m-01'), date('Y-m-t')],
+        'Mois dernier'       => [date('Y-m-01', strtotime('first day of last month')), date('Y-m-t', strtotime('last day of last month'))],
+        'Trimestre en cours' => [$qStart, $qEnd],
+        'Trimestre dernier'  => [$qStartPrev, $qEndPrev],
+        'Année en cours'     => [date('Y-01-01'), date('Y-12-31')],
+        '30 derniers jours'  => [date('Y-m-d', strtotime('-29 days')), date('Y-m-d')],
+        '12 derniers mois'   => [date('Y-m-01', strtotime('-11 months')), date('Y-m-t')],
+    ];
+
+    $html = '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title"><i class="fa fa-sliders-h me-1"></i>Filtres de maintenance</h2></div>';
+    $html .= '<div class="p-3"><form method="post" action="#" id="form-filtres-maintenance" class="d-flex flex-wrap align-items-end gap-2">';
+    // Token injecté côté serveur : le submit du clic sur un raccourci ne passe pas
+    // par le handler jQuery qui l'ajouterait.
+    $html .= '<input type="hidden" name="csrf_token" value="' . h($_SESSION['csrf_token'] ?? '') . '">';
+    $html .= '<div class="me-2">'
+        . '<label class="fw-bold small text-muted d-block mb-1"><i class="fa fa-calendar-alt me-1"></i>PÉRIODE D\'ANALYSE</label>'
+        . '<div class="d-flex align-items-center gap-2">'
+        . '<div class="form-floating" style="min-width:160px"><input type="date" id="date-f" name="date-f" class="form-control" value="' . h($dateFrom) . '"><label for="date-f">Du</label></div>'
+        . '<span class="text-muted"><i class="fa fa-arrow-right"></i></span>'
+        . '<div class="form-floating" style="min-width:160px"><input type="date" id="date-t" name="date-t" class="form-control" value="' . h($dateTo) . '"><label for="date-t">Au</label></div>'
+        . '<button type="submit" class="btn btn-primary"><i class="fa fa-check me-1"></i>Afficher</button>'
+        . '</div></div>';
+    $html .= '<div class="me-2">'
+        . '<label class="fw-bold small text-muted d-block mb-1">RACCOURCIS</label>'
+        . '<div class="btn-group flex-wrap">';
+    foreach ($presets as $label => [$from, $to]) {
+        $html .= '<button type="button" class="btn btn-outline-primary btn-period-shortcut" data-period-from="' . h($from) . '" data-period-to="' . h($to) . '">' . h($label) . '</button>';
+    }
+    $html .= '</div></div>';
+    $html .= '<div class="ms-auto small text-muted">Période active : <strong>' . date('d/m/Y', strtotime($dateFrom)) . ' → ' . date('d/m/Y', strtotime($dateTo)) . '</strong> — cartes, graphiques et tableaux datés s\'y adaptent.</div>';
+    $html .= '</form></div></div>';
+    $html .= '<script>'
+        . "$('#form-filtres-maintenance .btn-period-shortcut').on('click', function () {"
+        . "$('#date-f').val($(this).data('period-from'));"
+        . "$('#date-t').val($(this).data('period-to'));"
+        . "$('#form-filtres-maintenance').submit();"
+        . '});'
+        . '</script>';
+    return $html;
+}
 function getTableauReleveKMS()
 {
     global $con;
     global $rights_maintenance;
     if (in_array('viewReleveKms', $rights_maintenance)):
         $repo = new MaintenanceRepository($con);
-        if (isset($_POST['date-f'])) {
-            $rows = $repo->findReleveKmsByContext(getContextRegions(), getContextEntities(), $_POST['date-f'], $_POST['date-t']);
-        } else {
-            $rows = $repo->findReleveKmsByContext(getContextRegions(), getContextEntities());
-        }
+        [$dateFrom, $dateTo] = getMaintenancePeriod();
+        $rows = $repo->findReleveKmsByContext(getContextRegions(), getContextEntities(), $dateFrom, $dateTo);
         $table = "<table id='table-releve-kms' class='no-datatable' style='display:none'><thead><tr><th>Véhicule</th><th>Région</th><th>Date Relevé</th><th>Kms</th></tr></thead><tbody>";
         foreach ($rows as $r):
             $table .= "<tr><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . h($r['nom_region']) . "</td><td>" . h($r['periode_releve']) . " (" . ($r['date_debut_periode_releve'] ? date('d M Y', strtotime($r['date_debut_periode_releve'])) : '') . "-" . ($r['date_fin_periode_releve'] ? date('d M Y', strtotime($r['date_fin_periode_releve'])) : '') . ")</td><td>" . h($r['km_releve']) . "</td></tr>";
         endforeach;
         $table .= "</tbody></table><div id='output' style='margin: 30px;'></div>";
         include("modalNewReleveKMS.php");
-        return "<a class='btn btn-primary' href='?page=maintenances&subpage=releveKms&action=new'>Nouveau Relevé</a>&nbsp;<button class='btn btn-primary' data-bs-toggle='modal' data-bs-target='#modal-upd-relevekms'>Modifier Relevé</button>&nbsp;<div style='display:inline-block;padding:15px'><form class='row' style='width:700px' method='post' action='#'><div class='col-5 form-floating' style='padding-left:5px'><input type='month' id='date-f' name='date-f' value='" . (isset($_POST['date-f']) ? h($_POST['date-f']) : date('Y-m')) . "' class='form-control'><label for='date-f'>Date début</label></div><div class='col-5 form-floating' style='padding-left:5px'><input type='month' id='date-t' name='date-t' value='" . (isset($_POST['date-t']) ? h($_POST['date-t']) : date('Y-m')) . "' class='form-control'><label for='date-t'>Date fin</label></div><div class='col-2' style='padding:10px'><button class='btn btn-primary'>Afficher</button></div></form></div><hr>$table";
+        return "<a class='btn btn-primary' href='?page=maintenances&subpage=releveKms&action=new'>Nouveau Relevé</a>&nbsp;<button class='btn btn-primary' data-bs-toggle='modal' data-bs-target='#modal-upd-relevekms'>Modifier Relevé</button>&nbsp;<span class='text-muted'>Relevés de la période sélectionnée" . getMaintenancePeriodDetail() . "</span><hr>$table";
     else :
         return "<div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>";
     endif;
@@ -95,7 +195,8 @@ function getTableauBonsReparation()
     global $rights_maintenance;
     if (in_array("viewBonsReparation", $rights_maintenance)):
         $repo = new MaintenanceRepository($con);
-        $rows = $repo->findAllBonsReparationByContext(getContextRegions(), getContextEntities());
+        [$dateFrom, $dateTo] = getMaintenancePeriod();
+        $rows = $repo->findAllBonsReparationByContext(getContextRegions(), getContextEntities(), $dateFrom, $dateTo);
         $table = "<table id='table-bons-reparation' class='table table-striped responsive'><thead><tr><th>N°</th><th>Véhicule</th><th>Date d'entrée</th><th>Diagnostic</th><th>Type d'exécution</th><th>Prestataire</th><th>Montant</th><th>Montant payé</th><th>Plus/Moins</th><th>Destination</th><th>Durée réelle</th><th>Date de justification</th><th>Date prévue de sortie</th><th>Durée prévue</th><th>Date effective de sortie</th><th>Observations</th><th>Ligne budgétaire</th><th></th></tr></thead><tbody>";
         foreach ($rows as $r):
             $hash = $r['id_bon_reparation'];
@@ -118,7 +219,7 @@ function getTableauBonsReparation()
             $estCloture = ($r['date_fin_reparation'] !== '' && $r['date_fin_reparation'] !== '0000-00-00');
             $table .= "<tr><td>" . h($r['num_bon_reparation']) . "</td><td>" . h($r['immatriculation_vehicule']) . " - " . h($r['nom_chauffeur']) . "</td><td>" . ($r['date_entree'] ? date('d-m-Y', strtotime($r['date_entree'])) : '') . "</td><td>" . h($r['diagnostic']) . "</td><td>" . ($r['type_execution'] == '0' ? "Interne" : "Externe") . "</td><td>" . h($r['nom_prestataire']) . "</td><td>" . h($r['montant_reparation']) . "</td><td>" . ($paye === null ? '—' : h($r['montant_paye'])) . "</td><td>$pmBadge</td><td>" . h($r['destination_bon']) . "</td><td>" . $dureeReelle . "</td><td>" . ($r['date_justification'] == '' ? "" : date('d-m-Y', strtotime($r['date_justification']))) . "</td><td>" . ($r['date_prevue_sortie'] == "" ? "" : date('d-m-Y', strtotime($r['date_prevue_sortie']))) . "</td><td>" . $dureePrevue . "</td><td>" . ($r['date_fin_reparation'] == "" ? "" : date('d-m-Y', strtotime($r['date_fin_reparation']))) . "</td><td>" . h($r['observations']) . "</td><td>" . ($r['lib_ligne_budgetaire'] ? h($r['lib_ligne_budgetaire']) : '—') . "</td><td><div class='btn-group'>" . (in_array("updBonsReparation", $rights_maintenance) ? "<button class='btn btn-light' title='Modifier' data-bs-toggle='modal' data-bs-target='#modal-upd-bonsReparation' data-bs-id-br='$hash'><i class='fa fa-pencil-alt'></i></button>" : "") . (in_array("linkBudget", $rights_maintenance) ? "<button class='btn btn-light btn-sm " . ($r['id_ligne_budgetaire'] ? "text-success" : "") . "' title='" . ($r['id_ligne_budgetaire'] ? "Modifier la ligne budgétaire" : "Lier à une ligne budgétaire") . "' data-bs-toggle='modal' data-bs-target='#modal-link-budget-bonReparation' data-bs-id-br='$hash'><i class='fa fa-link'></i></button>" : "") . (in_array("updBonsReparation", $rights_maintenance) ? "<button class='btn btn-light " . ($estCloture ? "text-success" : "") . "' title='" . ($estCloture ? "Bon clôturé — mettre à jour la clôture" : "Clôturer le bon (montant payé, date de sortie, observations)") . "' data-bs-toggle='modal' data-bs-target='#modal-cloturer-bonsReparation' data-bs-id-br='$hash'><i class='fa fa-flag-checkered'></i></button>" : "") . (in_array("delBonsReparation", $rights_maintenance) ? "<button class='btn btn-danger' title='Supprimer' onclick='delBonsReparation(\"$hash\")'><i class='fa fa-times'></i></button>" : "") . "</div></td></tr>";
         endforeach;
-        return "<a class='btn btn-primary' href='?page=maintenances&subpage=suiviBonsReparation&action=new'>Nouveau Bon de réparation</a><hr>" . $table . "<tfoot></tfoot></tbody></table>";
+        return "<a class='btn btn-primary' href='?page=maintenances&subpage=suiviBonsReparation&action=new'>Nouveau Bon de réparation</a>&nbsp;<span class='text-muted'>Bons entrés sur la période sélectionnée" . getMaintenancePeriodDetail() . "</span><hr>" . $table . "<tfoot></tfoot></tbody></table>";
     else :
         return "<div class='alert alert-warning'>Vous n'avez pas les droits d'afficher cette page!</div>";
     endif;
@@ -169,12 +270,20 @@ function getDashboardCards()
     $regionIds = getContextRegions();
     $entiteIds = getContextEntities();
 
+    [$dateFrom, $dateTo] = getMaintenancePeriod();
+    $isCustom = getMaintenancePeriodIsCustom();
+    $periodWord = $isCustom ? 'de la période' : 'du mois';
+    $periodDetail = getMaintenancePeriodDetail();
+
     $vidangeAlerts = $repo->countVidangeAlerts($regionIds, $entiteIds);
     $activeRepairs = $repo->countActiveRepairs($regionIds, $entiteIds);
-    $monthlyCost = $repo->sumMonthlyCost($regionIds, $entiteIds);
+    $monthlyCost = $repo->sumMonthlyCost($regionIds, $entiteIds, $dateFrom, $dateTo);
     $immobilized = $repo->countImmobilizedVehicles($regionIds, $entiteIds);
 
-    $html = '<div class="row g-3 mb-3">';
+    // Barre de filtres de période en tête de section (suit la navigation),
+    // puis cartes : les indicateurs datés s'adaptent à la période choisie.
+    $html = getMaintenanceFilterBar();
+    $html .= '<div class="row g-3 mb-3">';
 
     $alertClass = $vidangeAlerts['alertes'] > 0 ? 'lt-stat-danger' : 'lt-stat-success';
     $html .= '<div class="col-md-3"><div class="lt-card lt-stat-card ' . $alertClass . '">';
@@ -193,7 +302,7 @@ function getDashboardCards()
     $html .= '<div class="col-md-3"><div class="lt-card lt-stat-card">';
     $html .= '<div class="lt-stat-icon"><i class="fa fa-euro-sign"></i></div>';
     $html .= '<div class="lt-stat-value">' . number_format($monthlyCost, 0, ',', ' ') . ' ' . devise() . '</div>';
-    $html .= '<div class="lt-stat-label">Coût maintenance (mois)</div>';
+    $html .= '<div class="lt-stat-label">Coût maintenance ' . $periodWord . $periodDetail . '</div>';
     $html .= '</div></div>';
 
     $rate = $immobilized['total'] > 0 ? round($immobilized['immobilises'] / $immobilized['total'] * 100) : 0;
@@ -1166,47 +1275,55 @@ function getDashboardCards()
 <?php
 function getDashboardCharts()
 {
+    [$dateFrom, $dateTo] = getMaintenancePeriod();
+    $spanDays = (strtotime($dateTo) - strtotime($dateFrom)) / 86400;
+    $granularite = $spanDays <= 62 ? 'journalière' : 'mensuelle';
+    $periodDetail = getMaintenancePeriodDetail();
     $html = '<div class="row g-3 mb-3">';
-    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Évolution des coûts (12 mois)</h2></div>';
+    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Évolution des coûts (' . $granularite . ')' . $periodDetail . '</h2></div>';
     $html .= '<div id="chart-budget" style="height: 350px;"></div></div></div>';
-    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Coûts par centre</h2></div>';
+    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Coûts par centre' . $periodDetail . '</h2></div>';
     $html .= '<div id="chart-centres" style="height: 350px;"></div></div></div>';
-    $html .= '<div class="col-md-4"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Répartition par type</h2></div>';
+    $html .= '<div class="col-md-4"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Répartition par type' . $periodDetail . '</h2></div>';
     $html .= '<div id="chart-type" style="height: 300px;"></div></div></div>';
-    $html .= '<div class="col-md-8"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Durée moyenne par diagnostic</h2></div>';
+    $html .= '<div class="col-md-8"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Durée moyenne par diagnostic' . $periodDetail . '</h2></div>';
     $html .= '<div id="chart-diagnostic" style="height: 300px;"></div></div></div>';
-    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Comparaison des prestataires</h2></div>';
+    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Comparaison des prestataires' . $periodDetail . '</h2></div>';
     $html .= '<div id="chart-providers" style="height: 350px;"></div></div></div>';
-    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Véhicules à pannes récurrentes (6 mois)</h2></div>';
+    $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Véhicules à pannes récurrentes (≥ 2 pannes)' . $periodDetail . '</h2></div>';
     $html .= '<div id="table-recurrence" style="max-height:350px;overflow-y:auto;"></div></div></div>';
     $html .= '<div class="row g-3 mb-3">';
     $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Alertes documents (30 jours)</h2></div>';
     $html .= '<div id="table-docs-expiration" style="max-height:250px;overflow-y:auto;"></div></div></div>';
     $html .= '</div>';
     $html .= '<div class="row g-3 mb-3">';
-    $html .= '<div class="col-md-7"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Impact chauffeur sur la maintenance</h2></div>';
+    $html .= '<div class="col-md-7"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Impact chauffeur sur la maintenance' . $periodDetail . '</h2></div>';
     $html .= '<div id="chart-chauffeur-impact" style="height: 350px;"></div></div></div>';
     $html .= '<div class="col-md-5"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Conflits réparation / voyages</h2></div>';
     $html .= '<div id="table-repair-conflicts" style="max-height:350px;overflow-y:auto;"></div></div></div>';
     $html .= '</div>';
     $html .= '<div class="row g-3 mb-3">';
-    $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Coût au kilomètre par véhicule</h2></div>';
+    $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Coût au kilomètre par véhicule' . $periodDetail . '</h2></div>';
     $html .= '<div id="chart-costkm"></div></div></div>';
     $html .= '</div>';
     $html .= '<script>
+    var maintPeriodFrom = ' . json_encode($dateFrom) . ';
+    var maintPeriodTo = ' . json_encode($dateTo) . ';
+    var maintBudgetGranularite = ' . json_encode($granularite) . ';
     google.charts.load("current", {packages: ["corechart", "table"]});
     google.charts.setOnLoadCallback(function() {
-        $.ajax({type:"post", data:"load-dashboard-all=1", dataType:"json"})
+        var dashRange = "&date-f=" + encodeURIComponent(maintPeriodFrom) + "&date-t=" + encodeURIComponent(maintPeriodTo);
+        $.ajax({type:"post", data:"load-dashboard-all=1" + dashRange, dataType:"json"})
         .done(function(resp) {
             var d = resp.data;
             // Budget projection — LineChart
             if (d.budget && d.budget.length) {
                 var dt = new google.visualization.DataTable();
-                dt.addColumn("string", "Mois");
+                dt.addColumn("string", maintBudgetGranularite === "journalière" ? "Date" : "Mois");
                 dt.addColumn("number", "Coût (' . devise() . ')");
-                d.budget.forEach(function(r) { dt.addRow([r.mois, parseFloat(r.total)]); });
+                d.budget.forEach(function(r) { dt.addRow([r.periode, parseFloat(r.total)]); });
                 new google.visualization.LineChart(document.getElementById("chart-budget"))
-                    .draw(dt, {title:"Évolution mensuelle des coûts", curveType:"function", legend:"none", colors:["#5D54A4"], chartArea:{width:"85%", height:"75%"}});
+                    .draw(dt, {title:"Évolution " + maintBudgetGranularite + " des coûts", curveType:"function", legend:"none", colors:["#5D54A4"], chartArea:{width:"85%", height:"75%"}});
             }
             // Cost by centre — ColumnChart
             if (d.centres && d.centres.length) {
@@ -1271,7 +1388,7 @@ function getDashboardCharts()
                 new google.visualization.Table(document.getElementById("table-recurrence"))
                     .draw(dtR, {showRowNumber:true, width:"100%", height:"100%", page:"enable", pageSize:10, sortColumn:1, sortAscending:false});
             } else {
-                $("#table-recurrence").html("<div class=\"p-3 text-muted\">Aucun véhicule avec pannes récurrentes sur les 6 derniers mois.</div>");
+                $("#table-recurrence").html("<div class=\"p-3 text-muted\">Aucun véhicule avec au moins 2 pannes sur la période sélectionnée.</div>");
             }
             // Cost per km — Table
             if (d.costPerKm && d.costPerKm.length) {

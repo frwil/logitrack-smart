@@ -19,6 +19,15 @@ class MaintenanceRepository extends BaseRepository
         return (!$d || $d === '0000-00-00') ? '0000-00-00' : $d;
     }
 
+    /** Clause de bornes sur date_entree (ajoute les paramètres à $params) ; bornes nulles = non filtré. */
+    private function boundsDateEntree(?string $dateFrom, ?string $dateTo, array &$params): string
+    {
+        if ($dateFrom === null || $dateTo === null) return '';
+        $params[] = $dateFrom;
+        $params[] = $dateTo;
+        return ' AND date_entree BETWEEN ? AND ?';
+    }
+
     // ---- Relevé KMS ----
 
     public function findReleveKms(?string $dateFrom = null, ?string $dateTo = null): array
@@ -58,15 +67,10 @@ class MaintenanceRepository extends BaseRepository
                 AND $ctxWhere";
         $params = $ctxParams;
 
-        if ($dateFrom !== null) {
-            $sql .= "AND semaine_annee >= WEEKOFYEAR(?) AND semaine_annee <= WEEKOFYEAR(?) AND date_releve >= ?";
-            $params[] = date('Y-m-01', strtotime($dateFrom));
-            $params[] = date('Y-m-t', strtotime($dateTo));
+        if ($dateFrom !== null && $dateTo !== null) {
+            $sql .= " AND date_releve BETWEEN ? AND ?";
             $params[] = date('Y-m-d', strtotime($dateFrom));
-        } else {
-            $sql .= "AND semaine_annee >= WEEKOFYEAR(?) AND date_releve >= ?";
-            $params[] = date('Y-m-01');
-            $params[] = date('Y-m-01');
+            $params[] = date('Y-m-d', strtotime($dateTo));
         }
         $sql .= " ORDER BY vehicule.id_vehicule, date_releve, semaine_annee";
 
@@ -377,9 +381,10 @@ class MaintenanceRepository extends BaseRepository
         );
     }
 
-    public function findAllBonsReparationByContext(array $regionIds, array $entiteIds): array
+    public function findAllBonsReparationByContext(array $regionIds, array $entiteIds, ?string $dateFrom = null, ?string $dateTo = null): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $bounds = $this->boundsDateEntree($dateFrom, $dateTo, $params);
         return $this->select(
             "SELECT bons_reparation.*,
                     affectation_vehicule.id_affectation, affectation_vehicule.is_deleted,
@@ -392,7 +397,7 @@ class MaintenanceRepository extends BaseRepository
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN prestataire_intervention ON prestataire_intervention.id_prestataire = bons_reparation.id_prestataire
              LEFT JOIN ligne_budgetaire ON ligne_budgetaire.id_ligne_budgetaire = bons_reparation.id_ligne_budgetaire
-             WHERE affectation_vehicule.is_deleted = 0 AND $where",
+             WHERE affectation_vehicule.is_deleted = 0 AND $where$bounds",
             $params
         );
     }
@@ -501,14 +506,19 @@ class MaintenanceRepository extends BaseRepository
         ));
     }
 
-    public function sumMonthlyCost(array $regionIds, array $entiteIds): float
+    public function sumMonthlyCost(array $regionIds, array $entiteIds, ?string $dateFrom = null, ?string $dateTo = null): float
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        // Bornes fournies : coût de la période. Sinon : mois courant (comportement historique).
+        $periodClause = $this->boundsDateEntree($dateFrom, $dateTo, $params);
+        if ($periodClause === '') {
+            $periodClause = ' AND MONTH(date_entree) = MONTH(CURDATE()) AND YEAR(date_entree) = YEAR(CURDATE())';
+        }
         $row = $this->selectOne(
             "SELECT SUM(montant_reparation) AS total
              FROM bons_reparation
-             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule             WHERE affectation_vehicule.is_deleted = 0 AND $where
-             AND MONTH(date_entree) = MONTH(CURDATE()) AND YEAR(date_entree) = YEAR(CURDATE())",
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
+             WHERE affectation_vehicule.is_deleted = 0 AND $where$periodClause",
             $params
         );
         return (float)($row['total'] ?? 0);
@@ -554,9 +564,35 @@ class MaintenanceRepository extends BaseRepository
         );
     }
 
-    public function providerComparison(array $regionIds, array $entiteIds): array
+    /**
+     * Historique des coûts sur une période donnée, regroupé par jour (périodes courtes,
+     * ≤ 62 jours) ou par mois, sinon. $byDay = null : granularité automatique.
+     */
+    public function costHistory(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo, ?bool $byDay = null): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        if ($byDay === null) {
+            $byDay = (strtotime($dateTo) - strtotime($dateFrom)) / 86400 <= 62;
+        }
+        $format = $byDay ? '%Y-%m-%d' : '%Y-%m';
+        $params = array_merge($params, [$dateFrom, $dateTo]);
+        return $this->select(
+            "SELECT DATE_FORMAT(date_entree, '$format') AS periode,
+                    SUM(montant_reparation) AS total
+             FROM bons_reparation
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             AND date_entree BETWEEN ? AND ?
+             GROUP BY periode
+             ORDER BY periode ASC",
+            $params
+        );
+    }
+
+    public function providerComparison(array $regionIds, array $entiteIds, ?string $dateFrom = null, ?string $dateTo = null): array
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $bounds = $this->boundsDateEntree($dateFrom, $dateTo, $params);
         return $this->select(
             "SELECT prestataire_intervention.nom_prestataire,
                     COUNT(bons_reparation.id_bon_reparation) AS nb_reparations,
@@ -564,7 +600,7 @@ class MaintenanceRepository extends BaseRepository
                     AVG(montant_reparation) AS cout_moyen
              FROM bons_reparation
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
-             LEFT JOIN prestataire_intervention ON prestataire_intervention.id_prestataire = bons_reparation.id_prestataire             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             LEFT JOIN prestataire_intervention ON prestataire_intervention.id_prestataire = bons_reparation.id_prestataire             WHERE affectation_vehicule.is_deleted = 0 AND $where$bounds
              GROUP BY prestataire_intervention.id_prestataire, prestataire_intervention.nom_prestataire
              ORDER BY nb_reparations DESC",
             $params
@@ -599,9 +635,10 @@ class MaintenanceRepository extends BaseRepository
         );
     }
 
-    public function costByCentreCout(array $regionIds, array $entiteIds): array
+    public function costByCentreCout(array $regionIds, array $entiteIds, ?string $dateFrom = null, ?string $dateTo = null): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $bounds = $this->boundsDateEntree($dateFrom, $dateTo, $params);
         return $this->select(
             "SELECT IFNULL(centre_couts.lib_centre_cout, 'Non affecté') AS lib_centre_cout,
                     COUNT(bons_reparation.id_bon_reparation) AS nb_bons,
@@ -610,16 +647,21 @@ class MaintenanceRepository extends BaseRepository
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
              LEFT JOIN ligne_budgetaire ON ligne_budgetaire.id_ligne_budgetaire = bons_reparation.id_ligne_budgetaire
              LEFT JOIN centre_couts ON centre_couts.id_centre_cout = ligne_budgetaire.id_centre_cout
-             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             WHERE affectation_vehicule.is_deleted = 0 AND $where$bounds
              GROUP BY centre_couts.id_centre_cout, centre_couts.lib_centre_cout
              ORDER BY total_cout DESC",
             $params
         );
     }
 
-    public function recurrenceByVehicle(array $regionIds, array $entiteIds): array
+    public function recurrenceByVehicle(array $regionIds, array $entiteIds, ?string $dateFrom = null, ?string $dateTo = null): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $bounds = $this->boundsDateEntree($dateFrom, $dateTo, $params);
+        // Bornes fournies : pannes de la période. Sinon : fenêtre historique de 6 mois.
+        if ($bounds === '') {
+            $bounds = ' AND date_entree >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)';
+        }
         return $this->select(
             "SELECT vehicule.immatriculation_vehicule,
                     COUNT(bons_reparation.id_bon_reparation) AS nb_pannes,
@@ -628,8 +670,7 @@ class MaintenanceRepository extends BaseRepository
                     MAX(date_entree) AS derniere_panne
              FROM bons_reparation
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
-             LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule             WHERE affectation_vehicule.is_deleted = 0 AND $where
-               AND date_entree >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+             LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule             WHERE affectation_vehicule.is_deleted = 0 AND $where$bounds
              GROUP BY vehicule.id_vehicule, vehicule.immatriculation_vehicule
              HAVING nb_pannes >= 2
              ORDER BY nb_pannes DESC, total_cout DESC",
@@ -637,9 +678,10 @@ class MaintenanceRepository extends BaseRepository
         );
     }
 
-    public function avgDurationByDiagnostic(array $regionIds, array $entiteIds): array
+    public function avgDurationByDiagnostic(array $regionIds, array $entiteIds, ?string $dateFrom = null, ?string $dateTo = null): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $bounds = $this->boundsDateEntree($dateFrom, $dateTo, $params);
         return $this->select(
             "SELECT diagnostic,
                     COUNT(id_bon_reparation) AS nb_bons,
@@ -647,7 +689,7 @@ class MaintenanceRepository extends BaseRepository
                     SUM(duree_reparation) AS duree_totale
              FROM bons_reparation
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
-             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             WHERE affectation_vehicule.is_deleted = 0 AND $where$bounds
                AND duree_reparation > 0
              GROUP BY diagnostic
              ORDER BY duree_totale DESC
@@ -656,15 +698,16 @@ class MaintenanceRepository extends BaseRepository
         );
     }
 
-    public function costByExecutionType(array $regionIds, array $entiteIds): array
+    public function costByExecutionType(array $regionIds, array $entiteIds, ?string $dateFrom = null, ?string $dateTo = null): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $bounds = $this->boundsDateEntree($dateFrom, $dateTo, $params);
         return $this->select(
             "SELECT type_execution,
                     COUNT(id_bon_reparation) AS nb_bons,
                     SUM(montant_reparation) AS total_cout
              FROM bons_reparation
-             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule             WHERE affectation_vehicule.is_deleted = 0 AND $where$bounds
              GROUP BY type_execution
              ORDER BY total_cout DESC",
             $params
@@ -1080,9 +1123,10 @@ class MaintenanceRepository extends BaseRepository
         );
     }
 
-    public function chauffeurMaintenanceImpact(array $regionIds, array $entiteIds): array
+    public function chauffeurMaintenanceImpact(array $regionIds, array $entiteIds, ?string $dateFrom = null, ?string $dateTo = null): array
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $bounds = $this->boundsDateEntree($dateFrom, $dateTo, $params);
         return $this->select(
             "SELECT chauffeur.nom_chauffeur,
                     COUNT(bons_reparation.id_bon_reparation) AS nb_pannes,
@@ -1091,7 +1135,7 @@ class MaintenanceRepository extends BaseRepository
                     MAX(bons_reparation.date_entree) AS derniere_panne
              FROM bons_reparation
              JOIN affectation_vehicule ON affectation_vehicule.id_affectation = bons_reparation.id_affectation_vehicule
-             JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur             WHERE affectation_vehicule.is_deleted = 0 AND $where$bounds
              GROUP BY chauffeur.id_chauffeur, chauffeur.nom_chauffeur
              HAVING nb_pannes > 0
              ORDER BY total_cout DESC",

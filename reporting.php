@@ -137,9 +137,10 @@ $allVoyages6 = $voyageRepo->findAllForReportingByContext($d6, $f6, getContextReg
 $d7 = $_POST['date_debut_s'] ?? date('Y-m-01', strtotime('-3 months'));
 $f7 = $_POST['date_fin_s']   ?? date('Y-m-t');
 $allVoyages7 = $voyageRepo->findAllForReportingByContext($d7, $f7, getContextRegions(), getContextEntities());
-$maintenanceMonthly = $maintenanceRepo->monthlyCostHistory(24, getContextRegions(), getContextEntities());
+// Coût maintenance par mois sur la période du filtre (la colonne suit le filtre de l'onglet).
+$maintenanceMonthly = $maintenanceRepo->costHistory(getContextRegions(), getContextEntities(), $d7, $f7, false);
 $costByIdx = [];
-foreach ($maintenanceMonthly as $m) $costByIdx[$m['mois']] = (float)$m['total'];
+foreach ($maintenanceMonthly as $m) $costByIdx[$m['periode']] = (float)$m['total'];
 
 function dateField(string $name, string $default): string {
     $v = isset($_POST[$name]) ? h($_POST[$name]) : $default;

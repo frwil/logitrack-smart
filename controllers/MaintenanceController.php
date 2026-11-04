@@ -833,22 +833,36 @@ class MaintenanceController extends BaseController
         $this->json(['data' => $rows]);
     }
 
+    /** Période du tableau de bord maintenance (POST date-f/date-t) ; défaut : mois courant. */
+    private function dashboardPeriod(): array
+    {
+        $from = (string)$this->post('date-f', '');
+        $to = (string)$this->post('date-t', '');
+        $tsFrom = strtotime($from);
+        $tsTo = strtotime($to);
+        if ($tsFrom === false || $tsTo === false) return [date('Y-m-01'), date('Y-m-t')];
+        $dateFrom = date('Y-m-d', $tsFrom);
+        $dateTo = date('Y-m-d', $tsTo);
+        if ($dateFrom > $dateTo) [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+        return [$dateFrom, $dateTo];
+    }
+
     /** Single endpoint for all dashboard charts — one connection, no lock contention. */
     public function dashboardAll(): never
     {
         $regionIds = getContextRegions();
         $entiteIds = getContextEntities();
-        $dateTo = date('Y-m-d');
+        [$dateFrom, $dateTo] = $this->dashboardPeriod();
         $this->json(['data' => [
-            'budget'        => $this->maintenanceRepo->monthlyCostHistory(12, $regionIds, $entiteIds),
-            'centres'       => $this->maintenanceRepo->costByCentreCout($regionIds, $entiteIds),
-            'typeExec'      => $this->maintenanceRepo->costByExecutionType($regionIds, $entiteIds),
-            'diagnostics'   => $this->maintenanceRepo->avgDurationByDiagnostic($regionIds, $entiteIds),
-            'providers'     => $this->maintenanceRepo->providerComparison($regionIds, $entiteIds),
-            'recurrence'    => $this->maintenanceRepo->recurrenceByVehicle($regionIds, $entiteIds),
-            'costPerKm'     => $this->maintenanceRepo->costPerKm($regionIds, $entiteIds, '2024-01-01', $dateTo),
+            'budget'        => $this->maintenanceRepo->costHistory($regionIds, $entiteIds, $dateFrom, $dateTo),
+            'centres'       => $this->maintenanceRepo->costByCentreCout($regionIds, $entiteIds, $dateFrom, $dateTo),
+            'typeExec'      => $this->maintenanceRepo->costByExecutionType($regionIds, $entiteIds, $dateFrom, $dateTo),
+            'diagnostics'   => $this->maintenanceRepo->avgDurationByDiagnostic($regionIds, $entiteIds, $dateFrom, $dateTo),
+            'providers'     => $this->maintenanceRepo->providerComparison($regionIds, $entiteIds, $dateFrom, $dateTo),
+            'recurrence'    => $this->maintenanceRepo->recurrenceByVehicle($regionIds, $entiteIds, $dateFrom, $dateTo),
+            'costPerKm'     => $this->maintenanceRepo->costPerKm($regionIds, $entiteIds, $dateFrom, $dateTo),
             'docsExpiration' => $this->maintenanceRepo->documentsExpiration($regionIds, $entiteIds),
-            'chauffeurImpact' => $this->maintenanceRepo->chauffeurMaintenanceImpact($regionIds, $entiteIds),
+            'chauffeurImpact' => $this->maintenanceRepo->chauffeurMaintenanceImpact($regionIds, $entiteIds, $dateFrom, $dateTo),
             'repairConflicts' => $this->maintenanceRepo->repairVoyageConflicts($regionIds, $entiteIds),
         ]]);
     }
