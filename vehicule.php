@@ -216,12 +216,13 @@
         syncCapacitesJsonUpd()
         var valid = true
         $('#form-upd-vehicule *[required]').each((e, el) => {
-            $(el).removeClass('is-invalid')
-            $(el).closest('.ts-wrapper').removeClass('is-invalid')
-            if ($(el).val() == '') {
+            var $el = $(el)
+            $el.removeClass('is-invalid is-valid')
+            if ($el.val() == '') {
                 valid = false
-                $(el).addClass('is-invalid')
-                $(el).closest('.ts-wrapper').addClass('is-invalid')
+                $el.addClass('is-invalid')
+            } else {
+                $el.addClass('is-valid')
             }
         })
         if (!valid) {
