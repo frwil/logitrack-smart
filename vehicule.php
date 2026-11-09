@@ -36,7 +36,7 @@
                             <div class="mb-3">
                                 <label for="marque-vh-upd">Marque</label>
                                 <div class="input-group">
-                                    <select type="text" id="marque-vh-upd" name="marque-vh-upd" required>
+                                    <select id="marque-vh-upd" name="marque-vh-upd" class="form-select" required>
                                         <?php $marqueRepo = new MarqueRepository($con);
                                         foreach ($marqueRepo->findAll() as $r):
                                             echo "<option value='" . $r['id_marque'] . "'>" . h($r['nom_marque']) . "</option>";
@@ -51,7 +51,7 @@
                             <div class="mb-3">
                                 <label for="modele-vh-upd">Modele</label>
                                 <div class="input-group">
-                                    <select type="text" id="modele-vh-upd" name="modele-vh-upd" required>
+                                    <select id="modele-vh-upd" name="modele-vh-upd" class="form-select" required>
                                         <?php $modeleRepo = new ModeleRepository($con);
                                         foreach ($modeleRepo->findAll() as $r):
                                             echo "<option value='" . $r['id_modele_vehicule'] . "'>" . h($r['nom_modele_vehicule']) . "</option>";
@@ -84,7 +84,7 @@
                         </div>
                         <div class="mb-3 col-6">
                             <label for="nbplace-vh-upd">Nb. places</label>
-                            <select id="nbplace-vh-upd" name="nbplace-vh-upd" required>
+                            <select id="nbplace-vh-upd" name="nbplace-vh-upd" class="form-select" required>
                                 <option value="1">1</option>
                                 <option value="2">2</option>
                                 <option value="3">3</option>
@@ -94,7 +94,7 @@
                         </div>
                         <div class="mb-3 col-6">
                             <label for="tcarb-vh-upd">Type de carburant</label>
-                            <select id="tcarb-vh-upd" name="tcarb-vh-upd" required>
+                            <select id="tcarb-vh-upd" name="tcarb-vh-upd" class="form-select" required>
                                 <option value="GASOIL">Gasoil</option>
                                 <option value="SUPER">Super</option>
                             </select>
@@ -107,7 +107,7 @@
                         <hr>
                         <div class="mb-3 col-6">
                             <label for="qualif-permis-upd">Qualification de permis</label>
-                            <select id="qualif-permis-upd" name="qualif-permis-upd" required>
+                            <select id="qualif-permis-upd" name="qualif-permis-upd" class="form-select" required>
                                 <?php $configRepo = new ConfigRepository($con);
                                 foreach ($configRepo->findAllTypePermis() as $r):
                                     echo "<option value='" . $r['id_type_permis'] . "'>" . h($r['lib_type_permis']) . "</option>";
@@ -176,11 +176,39 @@
         $('#capacites-vh-upd').val(JSON.stringify(caps))
     }
 
+    // Définit la valeur d'un <select>, qu'il soit déjà enveloppé par TomSelect
+    // (le .val() jQuery seul ne met pas à jour l'UI du widget) ou non.
+    function setSelectValueUpd(selector, val, label) {
+        val = val == null ? '' : String(val)
+        var el = $(selector)[0]
+        if (!el) return
+        if (el.tomselect) {
+            if (val === '') {
+                el.tomselect.clear(true)
+            } else {
+                if (!el.tomselect.getOption(val)) {
+                    el.tomselect.addOption({ value: val, text: label || val })
+                }
+                el.tomselect.setValue(val)
+            }
+        } else {
+            $(el).val(val)
+            if (val !== '' && $(el).val() === null) {
+                $(el).append(new Option(label || val, val, true, true))
+            }
+        }
+    }
+
     $('#capacite-unite-select-upd').change(function() {
         var v = $(this).val()
         if (v === '__other__') {
             $('#capacite-unite-custom-upd').show().val('')
-            $('#capacite-unite-select-upd').hide()
+            var unitSel = this
+            if (unitSel.tomselect) {
+                $(unitSel.tomselect.wrapper).hide()
+            } else {
+                $(unitSel).hide()
+            }
         }
     })
 
@@ -228,16 +256,17 @@
                 var v = e.data
                 $('#vh-immatr').html(v.immatriculation_vehicule)
                 $('#immat-vh-upd').val(v.immatriculation_vehicule)
-                $('#marque-vh-upd').val(v.id_m)
-                $('#modele-vh-upd').val(v.id_md)
+                setSelectValueUpd('#marque-vh-upd', v.id_marque, v.nom_marque)
+                setSelectValueUpd('#modele-vh-upd', v.id_modele_vehicule, v.nom_modele_vehicule)
                 $('#chassis-vh-upd').val(v.chassis_vehicule)
                 $('#dutil-vh-upd').val(v.premiere_utilisation)
                 $('#dexpir-vh-upd').val(v.expiration_carte_grise)
                 $('#puissance-vh-upd').val(v.puissance_vehicule)
                 $('#capacite-vh-upd').val(v.capacite_consommation_vehicule)
                 $('#capacite-reservoir-vh-upd').val(v.capacite_reservoir || '')
-                $('#nbplace-vh-upd').val(v.nb_place)
-                $('#tcarb-vh-upd').val(v.type_carburant)
+                setSelectValueUpd('#nbplace-vh-upd', v.nb_place, v.nb_place)
+                setSelectValueUpd('#tcarb-vh-upd', v.type_carburant, v.type_carburant)
+                setSelectValueUpd('#qualif-permis-upd', v.id_type_permis, v.lib_type_permis)
                 // Populate capacities
                 if (v.capacites && v.capacites.length) {
                     v.capacites.forEach(function(c) {

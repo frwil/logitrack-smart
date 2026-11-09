@@ -26,7 +26,17 @@ class VehiculeController extends BaseController
 
         $id = (int)$row['id_vehicule'];
         $row['capacites'] = $this->vehiculeRepo->findCapacites($id);
+        $permis = $this->vehiculeRepo->findPermis($id);
+        $row['id_type_permis'] = $permis['id_type_permis'] ?? null;
+        $row['lib_type_permis'] = $permis['lib_type_permis'] ?? null;
         unset($row[0], $row['id_vehicule']);
+        // Les <input type="date"> exigent le format Y-m-d
+        foreach (['premiere_utilisation', 'expiration_carte_grise'] as $f) {
+            if (!empty($row[$f])) {
+                $ts = strtotime($row[$f]);
+                $row[$f] = $ts !== false ? date('Y-m-d', $ts) : '';
+            }
+        }
         $this->json(['data' => $row]);
     }
 

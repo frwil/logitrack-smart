@@ -583,7 +583,11 @@ th .ts-wrapper .ts-control {
 }
 
 /* ── Form validation ── */
-.ts-wrapper.is-invalid .ts-control {
+/* TomSelect insère son wrapper .ts-wrapper en FRÈRE du <select> d'origine
+   (insertAdjacentElement 'afterend'), pas en parent. La classe .is-invalid
+   est posée sur le select caché : on doit donc styler le wrapper qui le suit. */
+.ts-wrapper.is-invalid .ts-control,
+.ts-hidden-accessible.is-invalid + .ts-wrapper .ts-control {
   border-color: var(--lt-danger);
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
 }

@@ -16,13 +16,28 @@ class VehiculeRepository extends BaseRepository
         );
     }
 
-    /** Single vehicle by immatriculation. */
+    /** Single vehicle by immatriculation (with marque/modele names). */
     public function findByImmat(string $immat): ?array
     {
         return $this->selectOne(
-            "SELECT * FROM vehicule
+            "SELECT vehicule.*, marque_vehicule.nom_marque, modele_vehicule.nom_modele_vehicule
+             FROM vehicule
+             LEFT JOIN marque_vehicule ON marque_vehicule.id_marque = vehicule.id_marque
+             LEFT JOIN modele_vehicule ON modele_vehicule.id_modele_vehicule = vehicule.id_modele_vehicule
              WHERE immatriculation_vehicule = ?",
             [$immat]
+        );
+    }
+
+    /** Qualification de permis du véhicule (avec libellé). */
+    public function findPermis(int $idVehicule): ?array
+    {
+        return $this->selectOne(
+            "SELECT qpv.id_type_permis, tpv.lib_type_permis
+             FROM qualification_permis_vehicule qpv
+             LEFT JOIN type_permis_vehicule tpv ON tpv.id_type_permis = qpv.id_type_permis
+             WHERE qpv.id_vehicule = ?",
+            [$idVehicule]
         );
     }
 

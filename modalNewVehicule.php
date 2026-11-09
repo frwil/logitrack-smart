@@ -17,7 +17,7 @@
                             <div class="mb-3">
                                 <label for="marque-vh">Marque</label>
                                 <div class="input-group">
-                                    <select type="text" id="marque-vh" name="marque-vh" required>
+                                    <select id="marque-vh" name="marque-vh" class="form-select" required>
                                         <?php $marqueRepo = new MarqueRepository($con);
                                         foreach ($marqueRepo->findAll() as $r):
                                             echo "<option value='" . h($r['id_marque']) . "'>" . h($r['nom_marque']) . "</option>";
@@ -32,7 +32,7 @@
                             <div class="mb-3">
                                 <label for="modele-vh">Modele</label>
                                 <div class="input-group">
-                                    <select type="text" id="modele-vh" name="modele-vh" required>
+                                    <select id="modele-vh" name="modele-vh" class="form-select" required>
                                         <?php $modeleRepo = new ModeleRepository($con);
                                         foreach ($modeleRepo->findAll() as $r):
                                             echo "<option value='" . h($r['id_modele_vehicule']) . "'>" . h($r['nom_modele_vehicule']) . "</option>";
@@ -65,7 +65,7 @@
                         </div>
                         <div class="mb-3 col-6">
                             <label for="nbplace-vh">Nb. places</label>
-                            <select id="nbplace-vh" name="nbplace-vh" required>
+                            <select id="nbplace-vh" name="nbplace-vh" class="form-select" required>
                                 <option value="1">1</option>
                                 <option value="2">2</option>
                                 <option value="3">3</option>
@@ -75,7 +75,7 @@
                         </div>
                         <div class="mb-3 col-6">
                             <label for="tcarb-vh">Type de carburant</label>
-                            <select id="tcarb-vh" name="tcarb-vh" required>
+                            <select id="tcarb-vh" name="tcarb-vh" class="form-select" required>
                                 <option value="GASOIL">Gasoil</option>
                                 <option value="SUPER">Super</option>
                             </select>
@@ -88,7 +88,7 @@
                         <hr>
                         <div class="mb-3 col-6">
                             <label for="qualif-permis">Qualification de permis</label>
-                            <select id="qualif-permis" name="qualif-permis" required>
+                            <select id="qualif-permis" name="qualif-permis" class="form-select" required>
                                     <?php $configRepo = new ConfigRepository($con);
                                     foreach ($configRepo->findAllTypePermis() as $r):
                                         echo "<option value='" . $r['id_type_permis'] . "'>" . h($r['lib_type_permis']) . "</option>";
@@ -165,7 +165,12 @@
         var v = $(this).val()
         if (v === '__other__') {
             $('#capacite-unite-custom').show().val('')
-            $('#capacite-unite-select').hide()
+            var unitSel = this
+            if (unitSel.tomselect) {
+                $(unitSel.tomselect.wrapper).hide()
+            } else {
+                $(unitSel).hide()
+            }
         }
     })
 
