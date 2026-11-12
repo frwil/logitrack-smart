@@ -7,12 +7,14 @@ class PrestataireTransportController extends BaseController
     private PrestataireTransportRepository $prestataireRepo;
     private VoyagePrestataireRepository $voyagePrestataireRepo;
     private VoyageRepository $voyageRepo;
+    private ObjectifController $objectifCtrl;
 
-    public function __construct(PrestataireTransportRepository $prestataireRepo, VoyagePrestataireRepository $voyagePrestataireRepo, VoyageRepository $voyageRepo)
+    public function __construct(PrestataireTransportRepository $prestataireRepo, VoyagePrestataireRepository $voyagePrestataireRepo, VoyageRepository $voyageRepo, ObjectifController $objectifCtrl)
     {
         $this->prestataireRepo = $prestataireRepo;
         $this->voyagePrestataireRepo = $voyagePrestataireRepo;
         $this->voyageRepo = $voyageRepo;
+        $this->objectifCtrl = $objectifCtrl;
     }
 
     // ---- Droits (objet 'voyages') ----
@@ -164,6 +166,11 @@ class PrestataireTransportController extends BaseController
         // L'entité et la région doivent appartenir au contexte de session
         if (!in_array($entiteId, array_map('intval', getContextEntities()))) $this->jsonError('Entité hors contexte de session');
         if (!in_array($regionId, array_map('intval', getContextRegions()))) $this->jsonError('Région hors contexte de session');
+
+        // Objectif du jour obligatoire (création uniquement) — régions admin exemptées
+        if (!$upd) {
+            $this->objectifCtrl->assertObjectifJour($date, $regionId, $entiteId);
+        }
 
         $trajets = json_decode($this->post('trajets-voyage', '[]'), true);
         if (!is_array($trajets)) $this->jsonError('Ajoutez au moins un trajet au voyage');

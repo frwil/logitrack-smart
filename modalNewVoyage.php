@@ -345,6 +345,8 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
             }
         })
         refreshBtnEditPrestataire()
+        // Le périmètre (véhicule vs sélections région/entité) change avec le mode
+        checkObjectifVoyage()
     }
 
     async function checkReleveKms(id,dvg,fvg){
@@ -422,6 +424,10 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
         }
         //alert($('#date-vg').val());
         //return false;
+        if($('#date-check').val()=='2'){
+            showError("La vérification de l'objectif du jour a échoué. Veuillez re-sélectionner la date du voyage.")
+            return false
+        }
         if($('#date-check').val()=='1'){
             if(confirm("Cette journée n'a pas d'objectif défini.\n Bien vouloir définir l'objectif de la journée avant d'enregistrer des voyages.\n Voulez-vous définir un objectif pour cette journée ?")){
                 var selected = $('#id-vehicule-vg option:selected');
@@ -495,6 +501,21 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
             })
             return false
         }
+        if($('#date-check').val()=='2'){
+            showError("La vérification de l'objectif du jour a échoué. Veuillez re-sélectionner la date du voyage.")
+            return false
+        }
+        if($('#date-check').val()=='1'){
+            if(confirm("Cette journée n'a pas d'objectif défini.\n Bien vouloir définir l'objectif de la journée avant d'enregistrer des voyages.\n Voulez-vous définir un objectif pour cette journée ?")){
+                var region = $('#id-region-vg').val();
+                var entite = $('#id-entite-vg').val();
+                var url = '?page=voyages&subpage=listeObjectifsVoyages&action=new';
+                if (region) url += '&prefill_region=' + region;
+                if (entite) url += '&prefill_entite=' + entite;
+                location = url;
+            }
+            return false
+        }
         $.ajax({
             type: 'post',
             data: 'date-vge=' + $('#date-vg').val()
@@ -522,21 +543,40 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
             showError(jqXHR.responseJSON?.error || "Erreur lors de l'enregistrement")
         })
     }
-    $('#date-vg').change((e)=>{
+    // Vérifie qu'un objectif du jour est défini pour la région/entité du voyage.
+    // regionV/entiteV ciblent le périmètre exact (véhicule flotte ou sélections
+    // du mode externe) ; sans périmètre, le serveur retombe sur le contexte utilisateur.
+    function checkObjectifVoyage() {
+        var date = $('#date-vg').val()
+        if (!date) { $('#date-check').val(0); return }
+        var externe = $('input[name="mode-vg"]:checked').val() === 'externe'
+        var region, entite
+        if (externe) {
+            region = $('#id-region-vg').val()
+            entite = $('#id-entite-vg').val()
+        } else {
+            var selected = $('#id-vehicule-vg option:selected')
+            region = selected.attr('data-id-region')
+            entite = selected.attr('data-id-entite')
+        }
         $.ajax({
             type:'post',
-            data:'dateV='+$(e.currentTarget).val(),
+            data:'dateV=' + encodeURIComponent(date)
+                + (region ? '&regionV=' + encodeURIComponent(region) : '')
+                + (entite ? '&entiteV=' + encodeURIComponent(entite) : ''),
             dataType:'json'
-        }).done((e)=>{
-            if(e.count=='0'){
-                $('#date-check').val(1)
-            } else {
-                $('#date-check').val(0)
-            }
+        }).done((res)=>{
+            $('#date-check').val(res.count == '0' ? 1 : 0)
         }).fail((jqXHR)=>{
-            showError(jqXHR.responseJSON?.error || "Erreur lors de la vérification")
+            // Échec de la vérification : on bloque l'enregistrement plutôt que de laisser passer
+            $('#date-check').val(2)
+            showError(jqXHR.responseJSON?.error || "Impossible de vérifier l'objectif du jour. Veuillez réessayer.")
         })
-    })
+    }
+    $('#date-vg').change(checkObjectifVoyage)
+    $('#id-vehicule-vg').change(checkObjectifVoyage)
+    $('#id-region-vg').change(checkObjectifVoyage)
+    $('#id-entite-vg').change(checkObjectifVoyage)
 
     $('#typechargement-vg').change((e)=>{
         let min=$('#typechargement-vg option[value="'+$('#typechargement-vg').val()+'"]').attr('val-min')

@@ -5,10 +5,12 @@
 class VoyageController extends BaseController
 {
     private VoyageRepository $voyageRepo;
+    private ObjectifController $objectifCtrl;
 
-    public function __construct(VoyageRepository $voyageRepo)
+    public function __construct(VoyageRepository $voyageRepo, ObjectifController $objectifCtrl)
     {
         $this->voyageRepo = $voyageRepo;
+        $this->objectifCtrl = $objectifCtrl;
     }
 
     /** Fetch voyage data for modal edit. */
@@ -75,6 +77,13 @@ class VoyageController extends BaseController
     {
         $trajets = json_decode($this->post('trajets-voyage'), true);
         if (empty($trajets)) $this->jsonError('Aucun trajet ajouté');
+        $date = $this->post('date-vg');
+        if (!$date) $this->jsonError('La date du voyage est obligatoire');
+        // Objectif du jour obligatoire pour la région/entité du véhicule (régions admin exemptées)
+        $affectation = (new AffectationRepository($GLOBALS['con']))->findById((int)$this->post('id-vehicule-vg'));
+        if ($affectation) {
+            $this->objectifCtrl->assertObjectifJour($date, (int)$affectation['id_region'], (int)$affectation['id_entite']);
+        }
         $carburants = json_decode($this->post('carburants-voyage'), true);
         if (!is_array($carburants)) $carburants = [];
         $totalCarb = 0;

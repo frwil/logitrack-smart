@@ -30,21 +30,21 @@ $prestataireTransportRepo = new PrestataireTransportRepository($con);
 $voyagePrestataireRepo = new VoyagePrestataireRepository($con);
 
 $authCtrl = new AuthController($userRepo, $regionRepo, $entiteRepo);
+$objectifCtrl = new ObjectifController($objectifRepo);
 $vehiculeCtrl = new VehiculeController($vehiculeRepo);
 $chauffeurCtrl = new ChauffeurController($chauffeurRepo);
 $convoyeurCtrl = new ConvoyeurController($convoyeurRepo);
 $affectationCtrl = new AffectationController($affectationRepo);
-$voyageCtrl = new VoyageController($voyageRepo);
+$voyageCtrl = new VoyageController($voyageRepo, $objectifCtrl);
 $maintenanceCtrl = new MaintenanceController($maintenanceRepo);
 $configCtrl = new ConfigController($configRepo);
 $marqueCtrl = new MarqueController($marqueRepo);
 $modeleCtrl = new ModeleController($modeleRepo);
 $typeChargementRepo = new TypeChargementRepository($con);
 $trajetCtrl = new TrajetController($trajetRepo);
-$objectifCtrl = new ObjectifController($objectifRepo);
 $typeChargementCtrl = new TypeChargementController();
 $userCtrl = new UserController($userRepo, $regionRepo, $entiteRepo);
-$prestataireTransportCtrl = new PrestataireTransportController($prestataireTransportRepo, $voyagePrestataireRepo, $voyageRepo);
+$prestataireTransportCtrl = new PrestataireTransportController($prestataireTransportRepo, $voyagePrestataireRepo, $voyageRepo, $objectifCtrl);
 
 $routes = [
     // Auth

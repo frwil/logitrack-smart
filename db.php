@@ -63,6 +63,11 @@ function _db_types(array $params): string
 
 function db_in(array $values): array
 {
+    if (empty($values)) {
+        // Liste vide : IN (NULL) ne correspond à aucune ligne — évite l'erreur
+        // de syntaxe SQL « IN () » quand un contexte région/entité est vide.
+        return ['NULL', []];
+    }
     return [
         implode(',', array_fill(0, count($values), '?')),
         array_values($values),

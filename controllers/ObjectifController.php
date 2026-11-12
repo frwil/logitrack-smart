@@ -26,19 +26,56 @@ class ObjectifController extends BaseController
     /** Check if objectives exist for a given date (used by voyage modal). */
     public function checkDateForVoyage(): never
     {
-        $date = $this->post('dateV');
-        if (!$date) $this->jsonError('Date manquante');
-        $regionIds = getContextRegions();
-        $entiteIds = getContextEntities();
-        // Exclude admin regions (e.g. Cameroun)
-        $regionRepo = new RegionRepository($GLOBALS['con']);
-        $regionIds = array_map('intval', array_column($regionRepo->findNonAdminByIds($regionIds), 'id_region'));
         try {
-            $count = count($this->repo->findByDateAndRegions($date, $regionIds, $entiteIds));
+            $date = $this->post('dateV');
+            if (!$date) $this->jsonError('Date manquante');
+            $regionRepo = new RegionRepository($GLOBALS['con']);
+            // Régions opérationnelles du contexte (hors régions admin comme Cameroun)
+            $contextRegions = array_map('intval', array_column($regionRepo->findNonAdminByIds(getContextRegions()), 'id_region'));
+            $contextEntities = array_map('intval', getContextEntities());
+
+            // Périmètre précis : région/entité du véhicule sélectionné (si fournies par le formulaire)
+            $regionV = (int)$this->post('regionV');
+            $entiteV = (int)$this->post('entiteV');
+            if ($regionV > 0) {
+                $region = $regionRepo->findById($regionV);
+                if ($region && (int)$region['is_admin'] >= 1) {
+                    // Région admin (CAMEROUN) : les objectifs ne s'y appliquent pas
+                    $this->json(['count' => 1]);
+                }
+                if (in_array($regionV, $contextRegions, true)) {
+                    $count = $entiteV > 0
+                        ? count($this->repo->findByDateAndRegion($date, $regionV, $entiteV))
+                        : count($this->repo->findByDateAndRegions($date, [$regionV], $contextEntities));
+                    $this->json(['count' => $count]);
+                }
+                // région hors contexte : retombe sur la vérification globale ci-dessous
+            }
+            $count = count($this->repo->findByDateAndRegions($date, $contextRegions, $contextEntities));
             $this->json(['count' => $count]);
         } catch (\Throwable $e) {
             error_log('ObjectifController::checkDateForVoyage error: ' . $e->getMessage());
             $this->jsonError('Erreur lors de la vérification : ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Règle métier : un voyage ne peut être enregistré que si un objectif du jour
+     * est défini pour sa région/entité. Les régions admin (CAMEROUN) en sont exemptées.
+     * Appelée par les créations de voyage (flotte et prestataire externe).
+     */
+    public function assertObjectifJour(string $date, int $regionId, int $entityId): void
+    {
+        if (!$date || $regionId <= 0) return; // périmètre inconnu : on ne bloque pas
+        $regionRepo = new RegionRepository($GLOBALS['con']);
+        $region = $regionRepo->findById($regionId);
+        if (!$region || (int)$region['is_admin'] >= 1) return; // région admin : objectifs non requis
+        $count = $entityId > 0
+            ? count($this->repo->findByDateAndRegion($date, $regionId, $entityId))
+            : count($this->repo->findByDateAndRegions($date, [$regionId], array_map('intval', getContextEntities())));
+        if ($count === 0) {
+            $nomRegion = $region['nom_region'] ?? 'cette région';
+            $this->jsonError("Aucun objectif de voyage n'est défini pour cette journée ($nomRegion). Définissez d'abord l'objectif du jour avant d'enregistrer ce voyage.");
         }
     }
 
