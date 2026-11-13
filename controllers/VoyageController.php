@@ -35,8 +35,11 @@ class VoyageController extends BaseController
     /** Update voyage. */
     public function update(): never
     {
+        $date = $this->post('date-upd-voyage');
+        if (!$date) $this->jsonError('La date du voyage est obligatoire');
+        $this->requireDateVoyageNotFuture($date);
         try {
-            $this->voyageRepo->transactional(function () {
+            $this->voyageRepo->transactional(function () use ($date) {
                 $carburants = json_decode($this->post('carburants-upd-voyage'), true);
                 if (!is_array($carburants)) $carburants = [];
                 $totalCarb = 0;
@@ -46,7 +49,7 @@ class VoyageController extends BaseController
                 $idVoyage = (int)$this->post('id-voyage');
                 $this->voyageRepo->updateById(
                     $idVoyage,
-                    $this->post('date-upd-voyage'),
+                    $date,
                     $totalCarb,
                     $this->post('cv-upd-voyage'),
                     (int)$this->post('tc-upd-voyage'),
@@ -79,6 +82,7 @@ class VoyageController extends BaseController
         if (empty($trajets)) $this->jsonError('Aucun trajet ajouté');
         $date = $this->post('date-vg');
         if (!$date) $this->jsonError('La date du voyage est obligatoire');
+        $this->requireDateVoyageNotFuture($date);
         // Objectif du jour obligatoire pour la région/entité du véhicule (régions admin exemptées)
         $affectation = (new AffectationRepository($GLOBALS['con']))->findById((int)$this->post('id-vehicule-vg'));
         if ($affectation) {

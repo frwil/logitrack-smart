@@ -161,6 +161,7 @@ class PrestataireTransportController extends BaseController
         }
 
         if (!$date) $this->jsonError('La date est obligatoire');
+        $this->requireDateVoyageNotFuture($date);
         if (!$upd && $prestataireId <= 0) $this->jsonError('Prestataire requis pour un voyage externe');
         if ($typeChargementId <= 0) $this->jsonError('Type de chargement obligatoire');
         // L'entité et la région doivent appartenir au contexte de session

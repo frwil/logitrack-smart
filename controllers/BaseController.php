@@ -41,6 +41,21 @@ class BaseController
         return $_POST;
     }
 
+    /**
+     * Règle métier : la date d'un voyage ne peut pas être dans le futur pour
+     * les utilisateurs non superadmin (les administrateurs gardent la main
+     * pour les saisies anticipées). Comparaison « Y-m-d » sur le fuseau de Douala.
+     */
+    protected function requireDateVoyageNotFuture(string $date): void
+    {
+        if ($_SESSION['usr-con']['is-superadmin'] ?? false) {
+            return;
+        }
+        if ($date > todayDouala()) {
+            $this->jsonError("La date du voyage ne peut pas être dans le futur.");
+        }
+    }
+
     /** Get a $_GET value with optional default. */
     protected function get(string $key, $default = null): mixed
     {

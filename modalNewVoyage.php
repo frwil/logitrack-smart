@@ -27,7 +27,7 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
                     <div class="row">
                         <div class="col-6">
                             <div class="form-floating mb-3">
-                                <input type="date" id="date-vg" name="date-vg" required class="form-control">
+                                <input type="date" id="date-vg" name="date-vg" required class="form-control"<?php if (!($_SESSION['usr-con']['is-superadmin'] ?? false)): ?> max="<?php echo todayDouala(); ?>"<?php endif; ?>>
                                 <input type="hidden" id="date-check" name="date-check" value="0">
                                 <label for="date-vg">Date du voyage</label>
                             </div>
@@ -395,11 +395,24 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
     })
     addCarburantVg(0, 0)
 
+    // Date de voyage non future pour les non superadmin : l'attribut max est
+    // injecté côté serveur (aujourd'hui, fuseau de Douala). Le contrôle sert
+    // pour les saisies manuelles (le formulaire part en ajax, sans validation native).
+    function dateVgValide() {
+        var max = $('#date-vg').attr('max')
+        if (max && $('#date-vg').val() > max) {
+            showError("La date du voyage ne peut pas être dans le futur.")
+            return false
+        }
+        return true
+    }
+
    async function saveVoyage() {
         if ($('input[name="mode-vg"]:checked').val() === 'externe') {
             saveVoyagePrestataire()
             return
         }
+        if (!dateVgValide()) return false
         var valid = true
         $('#form-new-voyage *[required]').each((e, el) => {
             $(el).removeClass('is-invalid')
@@ -481,6 +494,7 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
     }
 
     function saveVoyagePrestataire() {
+        if (!dateVgValide()) return false
         var valid = true
         ;['#date-vg', '#id-prestataire-vg', '#id-entite-vg', '#id-region-vg', '#typechargement-vg', '#qtechargement-vg'].forEach((sel) => {
             $(sel).removeClass('is-invalid')

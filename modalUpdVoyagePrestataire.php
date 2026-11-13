@@ -11,7 +11,7 @@
                     <input type="hidden" id="id-voyage-prestataire-upd" name="id-voyage-prestataire-upd">
                     <div class="col-6">
                         <div class="form-floating mb-3">
-                            <input type="date" id="date-upd-vge" name="date-upd-vge" required class="form-control">
+                            <input type="date" id="date-upd-vge" name="date-upd-vge" required class="form-control"<?php if (!($_SESSION['usr-con']['is-superadmin'] ?? false)): ?> max="<?php echo todayDouala(); ?>"<?php endif; ?>>
                             <label for="date-upd-vge">Date du voyage</label>
                         </div>
                     </div>

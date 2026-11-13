@@ -148,6 +148,20 @@ function getContextEntities(): array
     return $_SESSION['usr-con']['users-entite'] ?? [];
 }
 
+/**
+ * Aujourd'hui (fuseau de Douala) au format Y-m-d — référence pour les règles
+ * métier dépendant du « jour » (date de voyage non future pour les non-admin).
+ * Indépendant du fuseau du serveur.
+ */
+function todayDouala(): string
+{
+    static $today = null;
+    if ($today === null) {
+        $today = (new DateTimeImmutable('now', new DateTimeZone('Africa/Douala')))->format('Y-m-d');
+    }
+    return $today;
+}
+
 function devise(): string
 {
     $con = $GLOBALS['con'] ?? null;

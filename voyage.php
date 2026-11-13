@@ -952,7 +952,7 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
                     </div>
                     <div class="col-6">
                         <div class="form-floating mb-3">
-                            <input type="date" id="date-upd-voyage" name="date-upd-voyage" required class="form-control">
+                            <input type="date" id="date-upd-voyage" name="date-upd-voyage" required class="form-control"<?php if (!($_SESSION['usr-con']['is-superadmin'] ?? false)): ?> max="<?php echo todayDouala(); ?>"<?php endif; ?>>
                             <label for="date-upd-voyage">Date du voyage</label>
                         </div>
                     </div>
