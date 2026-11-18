@@ -99,6 +99,7 @@
                 if ($first) $seenCellV[$r1['id_voyage']] = true;
                 $cell .= "<li class='list-group-item'>" . $sep
                     . h($r1['lib_destination']) . $scelle . " - " . h($r1['distance_destination']) . "km"
+                    . ($first ? " - <span title='Chauffeur'>👤 " . h($r1['nom_chauffeur'] ?: '—') . "</span>" : '')
                     . ($first ? " - " . h($r1['qte_carburant']) . "L - " . h($r1['qte_chargement']) : '')
                     . " (" . h($r1['lib_type_chargement']) . ") "
                     . "<div class='btn-group'>$btns</div></li>";
@@ -839,21 +840,37 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
         $('.carb-qte-upd').each(function() { t += parseFloat($(this).val() || 0) })
         return t
     }
-    // Principe du plein : la dernière carburation renseignée fait le plein du réservoir.
-    // La case « plein » est cochée et verrouillée sur cette ligne (forcé côté serveur aussi).
+    // Principe de carburation global (paramètre Configuration → Paramètres) :
+    // 'plein' = chaque carburation fait le plein, 'partiel' = jamais, 'mixte' = choix libre.
+    var PRINCIPE_CARBURATION = <?= j(principeCarburation()) ?>;
     function syncPleinUpd() {
         var boxes = $('#carburant-list-upd .carb-plein-upd')
-        boxes.prop('checked', false).prop('disabled', false).removeAttr('title')
-        var target = null
-        boxes.each(function() {
-            var qte = parseFloat($(this).closest('.carb-row-upd').find('.carb-qte-upd').val() || 0)
-            if (qte > 0) target = $(this)
-        })
-        if (target === null && boxes.length) target = boxes.last()
-        if (target) target.prop('checked', true).prop('disabled', true).attr('title', 'La dernière carburation fait le plein du réservoir')
-        updCarburants.forEach((c) => { c.plein = 0 })
-        var idx = target ? target.closest('.carb-row-upd').index() : -1
-        if (idx >= 0 && updCarburants[idx]) updCarburants[idx].plein = 1
+        boxes.removeAttr('title')
+        if (PRINCIPE_CARBURATION === 'plein') {
+            boxes.prop('checked', true).prop('disabled', true)
+                .attr('title', 'Chaque carburation fait le plein du réservoir (paramètre global)')
+            updCarburants.forEach((c) => { c.plein = 1 })
+            return
+        }
+        if (PRINCIPE_CARBURATION === 'partiel') {
+            boxes.prop('checked', false).prop('disabled', true)
+                .attr('title', 'Carburations partielles (paramètre global)')
+            updCarburants.forEach((c) => { c.plein = 0 })
+            return
+        }
+        // Mixte : choix libre ; la dernière carburation renseignée est cochée par défaut
+        // (uniquement si aucune case n'est déjà cochée).
+        boxes.prop('disabled', false)
+        if (!boxes.filter(':checked').length) {
+            var target = null
+            boxes.each(function() {
+                var qte = parseFloat($(this).closest('.carb-row-upd').find('.carb-qte-upd').val() || 0)
+                if (qte > 0) target = $(this)
+            })
+            if (target === null && boxes.length) target = boxes.last()
+            if (target) target.prop('checked', true)
+        }
+        updCarburants.forEach((c, i) => { c.plein = boxes.eq(i).is(':checked') ? 1 : 0 })
     }
     $('#carburant-list-upd').on('input', '.carb-qte-upd', function() {
         const i = $(this).closest('.carb-row-upd').index()

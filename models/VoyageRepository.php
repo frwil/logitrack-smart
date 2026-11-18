@@ -57,10 +57,12 @@ class VoyageRepository extends BaseRepository
                     vv.id_destination, dv.lib_destination, dv.distance_destination,
                     tcv.lib_type_chargement,
                     affectation_vehicule.id_vehicule,
-                    vehicule.immatriculation_vehicule
+                    vehicule.immatriculation_vehicule,
+                    chauffeur.nom_chauffeur
              FROM voyage v
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
              LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
+             LEFT JOIN chauffeur ON chauffeur.id_chauffeur = affectation_vehicule.id_chauffeur
              LEFT JOIN voyage_vehicule vv ON vv.id_voyage = v.id_voyage
              LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
              LEFT JOIN type_chargement_voyage tcv ON tcv.id_type_chargement = v.id_type_chargement
@@ -1034,22 +1036,31 @@ class VoyageRepository extends BaseRepository
     /**
      * Remplace les carburations d'un voyage et met à jour le total voyage.qte_carburant
      * (somme des carburations). $events : liste de ['qte' => int, 'plein' => int(0|1)].
-     * Principe du plein : la dernière carburation (qte > 0) fait le plein du réservoir
-     * et clôt la mesure plein à plein — forcé côté serveur, quel que soit l'envoi du client.
+     * Le marquage « plein » suit le paramètre global principeCarburation() :
+     *  - 'plein'   : toutes les carburations sont des pleins ;
+     *  - 'partiel' : aucune n'est un plein ;
+     *  - 'mixte'   : le choix du formulaire est respecté.
+     * Les carburations à qte <= 0 (données aberrantes) sont ignorées.
      */
     public function saveFuelEvents(int $idVoyage, array $events): void
     {
         $this->exec("DELETE FROM carburant_voyage WHERE id_voyage = ?", [$idVoyage]);
+        $mode = principeCarburation();
         // Carburations à 0 : données aberrantes, ignorées (jamais marquées « plein »).
         $kept = [];
         foreach ($events as $ev) {
             $qte = max(0, (int)($ev['qte'] ?? 0));
             if ($qte > 0) $kept[] = ['qte' => $qte, 'plein' => !empty($ev['plein']) ? 1 : 0];
         }
-        $lastIdx = count($kept) - 1;
         $total = 0;
-        foreach ($kept as $i => $ev) {
-            $plein = ($i === $lastIdx) ? 1 : $ev['plein'];
+        foreach ($kept as $ev) {
+            if ($mode === 'plein') {
+                $plein = 1;
+            } elseif ($mode === 'partiel') {
+                $plein = 0;
+            } else {
+                $plein = $ev['plein'];
+            }
             $this->exec(
                 "INSERT INTO carburant_voyage (id_voyage, qte_carburant, plein_complet) VALUES (?, ?, ?)",
                 [$idVoyage, $ev['qte'], $plein]
