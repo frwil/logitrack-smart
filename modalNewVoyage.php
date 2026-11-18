@@ -371,6 +371,7 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
             .append('<span class="input-group-text"><input type="checkbox" class="form-check-input mt-0 carb-plein-vg"' + (plein ? ' checked' : '') + '> plein</span>')
             .append('<button type="button" class="btn btn-outline-danger" onclick="rmCarburantVg(' + idx + ')"><i class="fa fa-times"></i></button>')
         $('#carburant-list-vg').append(row)
+        syncPleinVg()
     }
     function rmCarburantVg(idx) {
         carburantsVg.splice(idx, 1)
@@ -385,9 +386,26 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
         $('.carb-qte-vg').each(function() { t += parseFloat($(this).val() || 0) })
         return t
     }
+    // Principe du plein : la dernière carburation renseignée fait le plein du réservoir.
+    // La case « plein » est cochée et verrouillée sur cette ligne (forcé côté serveur aussi).
+    function syncPleinVg() {
+        var boxes = $('#carburant-list-vg .carb-plein-vg')
+        boxes.prop('checked', false).prop('disabled', false).removeAttr('title')
+        var target = null
+        boxes.each(function() {
+            var qte = parseFloat($(this).closest('.carb-row-vg').find('.carb-qte-vg').val() || 0)
+            if (qte > 0) target = $(this)
+        })
+        if (target === null && boxes.length) target = boxes.last()
+        if (target) target.prop('checked', true).prop('disabled', true).attr('title', 'La dernière carburation fait le plein du réservoir')
+        carburantsVg.forEach((c) => { c.plein = 0 })
+        var idx = target ? target.closest('.carb-row-vg').index() : -1
+        if (idx >= 0 && carburantsVg[idx]) carburantsVg[idx].plein = 1
+    }
     $('#carburant-list-vg').on('input', '.carb-qte-vg', function() {
         const i = $(this).closest('.carb-row-vg').index()
         if (carburantsVg[i]) carburantsVg[i].qte = parseFloat($(this).val() || 0)
+        syncPleinVg()
     })
     $('#carburant-list-vg').on('change', '.carb-plein-vg', function() {
         const i = $(this).closest('.carb-row-vg').index()

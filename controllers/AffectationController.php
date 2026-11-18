@@ -2,10 +2,12 @@
 class AffectationController extends BaseController
 {
     private AffectationRepository $repo;
+    private VoyageRepository $voyageRepo;
 
-    public function __construct(AffectationRepository $repo)
+    public function __construct(AffectationRepository $repo, VoyageRepository $voyageRepo)
     {
         $this->repo = $repo;
+        $this->voyageRepo = $voyageRepo;
     }
 
     public function fetchById(): never
@@ -55,7 +57,17 @@ class AffectationController extends BaseController
 
     public function delete(): never
     {
-        $ok = $this->repo->deleteById((int)$this->post('id-affectation-forDel'));
+        $id = (int)$this->post('id-affectation-forDel');
+        // Garde-fou : une affectation portant des voyages ne peut pas être supprimée
+        // (ses voyages disparaîtraient des tableaux de la période). Clôturer reste possible.
+        $nb = $this->voyageRepo->countByAffectation($id);
+        if ($nb > 0) {
+            $this->jsonError(
+                "Impossible de supprimer cette affectation : $nb voyage(s) y sont rattachés. "
+                . "Clôturez-la plutôt pour conserver l'historique des voyages."
+            );
+        }
+        $ok = $this->repo->deleteById($id);
         if ($ok) {
             $this->json();
         }

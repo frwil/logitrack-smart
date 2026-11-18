@@ -42,7 +42,11 @@ class VoyageRepository extends BaseRepository
         );
     }
 
-    /** All voyages in a date range filtered by context — single query for the matrix table. */
+    /**
+     * All voyages in a date range filtered by context — single query for the matrix table.
+     * Les voyages d'une affectation clôturée restent visibles (pas de filtre is_ferme) :
+     * le voyage appartient à la période, pas au statut actuel de l'affectation.
+     */
     public function findBatchByDateRange(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): array
     {
         [$where, $ctxParams] = db_context_filter($regionIds, $entiteIds);
@@ -52,13 +56,15 @@ class VoyageRepository extends BaseRepository
                     v.numero_scelle,
                     vv.id_destination, dv.lib_destination, dv.distance_destination,
                     tcv.lib_type_chargement,
-                    affectation_vehicule.id_vehicule
+                    affectation_vehicule.id_vehicule,
+                    vehicule.immatriculation_vehicule
              FROM voyage v
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = v.id_affectation
+             LEFT JOIN vehicule ON vehicule.id_vehicule = affectation_vehicule.id_vehicule
              LEFT JOIN voyage_vehicule vv ON vv.id_voyage = v.id_voyage
              LEFT JOIN destination_voyage dv ON dv.id_destination = vv.id_destination
              LEFT JOIN type_chargement_voyage tcv ON tcv.id_type_chargement = v.id_type_chargement
-             WHERE affectation_vehicule.is_deleted = 0 AND affectation_vehicule.is_ferme = 0 AND $where
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
              AND v.date_voyage BETWEEN ? AND ?
              ORDER BY affectation_vehicule.id_vehicule, v.date_voyage, v.id_voyage",
             $params
@@ -356,6 +362,16 @@ class VoyageRepository extends BaseRepository
             "DELETE FROM voyage WHERE id_voyage = ?",
             [$id]
         );
+    }
+
+    /** Nombre de voyages rattachés à une affectation — garde-fou avant suppression. */
+    public function countByAffectation(int $idAffectation): int
+    {
+        $row = $this->selectOne(
+            "SELECT COUNT(*) AS nb FROM voyage WHERE id_affectation = ?",
+            [$idAffectation]
+        );
+        return (int)($row['nb'] ?? 0);
     }
 
     public function insertVoyage(
@@ -1018,20 +1034,27 @@ class VoyageRepository extends BaseRepository
     /**
      * Remplace les carburations d'un voyage et met à jour le total voyage.qte_carburant
      * (somme des carburations). $events : liste de ['qte' => int, 'plein' => int(0|1)].
+     * Principe du plein : la dernière carburation (qte > 0) fait le plein du réservoir
+     * et clôt la mesure plein à plein — forcé côté serveur, quel que soit l'envoi du client.
      */
     public function saveFuelEvents(int $idVoyage, array $events): void
     {
         $this->exec("DELETE FROM carburant_voyage WHERE id_voyage = ?", [$idVoyage]);
-        $total = 0;
+        // Carburations à 0 : données aberrantes, ignorées (jamais marquées « plein »).
+        $kept = [];
         foreach ($events as $ev) {
             $qte = max(0, (int)($ev['qte'] ?? 0));
-            $plein = !empty($ev['plein']) ? 1 : 0;
-            if ($qte <= 0) continue;
+            if ($qte > 0) $kept[] = ['qte' => $qte, 'plein' => !empty($ev['plein']) ? 1 : 0];
+        }
+        $lastIdx = count($kept) - 1;
+        $total = 0;
+        foreach ($kept as $i => $ev) {
+            $plein = ($i === $lastIdx) ? 1 : $ev['plein'];
             $this->exec(
                 "INSERT INTO carburant_voyage (id_voyage, qte_carburant, plein_complet) VALUES (?, ?, ?)",
-                [$idVoyage, $qte, $plein]
+                [$idVoyage, $ev['qte'], $plein]
             );
-            $total += $qte;
+            $total += $ev['qte'];
         }
         $this->exec("UPDATE voyage SET qte_carburant = ? WHERE id_voyage = ?", [$total, $idVoyage]);
     }

@@ -38,6 +38,22 @@
     // Single batch query instead of N vehicles × M days queries
     $allVoyages = $voyageRepo->findBatchByDateRange($regionIds, $entiteIds, $dateFrom, $dateTo);
 
+    // Lignes du tableau : véhicules actifs aujourd'hui (même sans voyage) + véhicules
+    // ayant un voyage dans la période (une affectation clôturée n'efface pas l'historique).
+    $rows = [];
+    foreach ($activeVehicles as $r) {
+        $rows[(int)$r['id_vehicule']] = $r['immatriculation_vehicule'];
+    }
+    $extra = [];
+    foreach ($allVoyages as $v) {
+        $vid = (int)$v['id_vehicule'];
+        if ($vid && !isset($rows[$vid]) && !empty($v['immatriculation_vehicule'])) {
+            $extra[$vid] = $v['immatriculation_vehicule'];
+        }
+    }
+    asort($extra);
+    $rows += $extra;
+
     // Index voyages by [vehicle_id][date]
     $byVehicle = [];
     foreach ($allVoyages as $v) {
@@ -54,9 +70,8 @@
     }
     $tableau .= "<th># Voyages</th><th># Kms</th><th>Chargement</th><th>Carburant</th></tr></thead><tbody>";
 
-    foreach ($activeVehicles as $r):
-        $vid = (int)$r['id_vehicule'];
-        $tableau .= "<tr><td class='text-bg-dark'>" . h($r['immatriculation_vehicule']) . "</td>";
+    foreach ($rows as $vid => $immat):
+        $tableau .= "<tr><td class='text-bg-dark'>" . h($immat) . "</td>";
         $total_voyages = 0;
         $total_kms = 0;
         $total_chargement = 0;
@@ -809,6 +824,7 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
             .append('<span class="input-group-text"><input type="checkbox" class="form-check-input mt-0 carb-plein-upd"' + (plein ? ' checked' : '') + '> plein</span>')
             .append('<button type="button" class="btn btn-outline-danger" onclick="rmCarburantUpd(' + idx + ')"><i class="fa fa-times"></i></button>')
         $('#carburant-list-upd').append(row)
+        syncPleinUpd()
     }
     function rmCarburantUpd(idx) {
         updCarburants.splice(idx, 1)
@@ -823,9 +839,26 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
         $('.carb-qte-upd').each(function() { t += parseFloat($(this).val() || 0) })
         return t
     }
+    // Principe du plein : la dernière carburation renseignée fait le plein du réservoir.
+    // La case « plein » est cochée et verrouillée sur cette ligne (forcé côté serveur aussi).
+    function syncPleinUpd() {
+        var boxes = $('#carburant-list-upd .carb-plein-upd')
+        boxes.prop('checked', false).prop('disabled', false).removeAttr('title')
+        var target = null
+        boxes.each(function() {
+            var qte = parseFloat($(this).closest('.carb-row-upd').find('.carb-qte-upd').val() || 0)
+            if (qte > 0) target = $(this)
+        })
+        if (target === null && boxes.length) target = boxes.last()
+        if (target) target.prop('checked', true).prop('disabled', true).attr('title', 'La dernière carburation fait le plein du réservoir')
+        updCarburants.forEach((c) => { c.plein = 0 })
+        var idx = target ? target.closest('.carb-row-upd').index() : -1
+        if (idx >= 0 && updCarburants[idx]) updCarburants[idx].plein = 1
+    }
     $('#carburant-list-upd').on('input', '.carb-qte-upd', function() {
         const i = $(this).closest('.carb-row-upd').index()
         if (updCarburants[i]) updCarburants[i].qte = parseFloat($(this).val() || 0)
+        syncPleinUpd()
     })
     $('#carburant-list-upd').on('change', '.carb-plein-upd', function() {
         const i = $(this).closest('.carb-row-upd').index()
