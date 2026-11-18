@@ -1254,6 +1254,8 @@ function getDashboardCardsVoyages()
     }
     $vehicules = $repo->countActiveVehiclesBetween($regionIds, $entiteIds, $dateFrom, $dateTo);
     $conso = $repo->avgConsumptionBetween($regionIds, $entiteIds, $dateFrom, $dateTo);
+    // Portée « tout » : afficher aussi les km flotte (dénominateur de la conso au 100km).
+    $kmFleet = $scope === 'tout' ? $repo->sumKmBetween($regionIds, $entiteIds, $dateFrom, $dateTo, 'flotte') : null;
 
     $tauxClass = $taux >= 100 ? 'lt-stat-success' : ($taux >= 80 ? 'lt-stat-warning' : 'lt-stat-danger');
     $consoClass = $conso === null ? '' : ($conso <= 15 ? 'lt-stat-success' : ($conso <= 25 ? 'lt-stat-warning' : 'lt-stat-danger'));
@@ -1304,7 +1306,9 @@ function getDashboardCardsVoyages()
 
     $html .= '<div class="col-md"><div class="lt-card lt-stat-card">';
     $html .= '<div class="lt-stat-icon"><i class="fa fa-tachometer-alt"></i></div>';
-    $html .= '<div class="lt-stat-value">' . $kmDisplay . '</div>';
+    $html .= '<div class="lt-stat-value">' . $kmDisplay
+        . ($kmFleet !== null ? ' <span class="fs-6 text-muted">(dont flotte : ' . number_format($kmFleet, 0, ',', ' ') . ' km)</span>' : '')
+        . '</div>';
     $html .= '<div class="lt-stat-label">' . $kmLabel . '</div>';
     $html .= '</div></div>';
 
