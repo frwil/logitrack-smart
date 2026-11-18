@@ -49,6 +49,7 @@ $prestataireTransportCtrl = new PrestataireTransportController($prestataireTrans
 $routes = [
     // Auth
     'login'               => [$authCtrl, 'login'],
+    'login-context'       => [$authCtrl, 'loginContext'],
     'nContext'            => [$authCtrl, 'switchContext'],
 
     // Vehicule
