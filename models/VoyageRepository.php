@@ -386,10 +386,12 @@ class VoyageRepository extends BaseRepository
         float $qteChargement,
         ?string $numeroScelle = null
     ): int|string {
+        // Le principe de carburation est figé à la création : le paramètre global
+        // appliqué ensuite ne modifie pas les voyages déjà effectués.
         return $this->insertGetId(
-            "INSERT INTO voyage (titre_voyage, date_voyage, id_affectation, qte_carburant, convoyeur, id_type_chargement, qte_chargement, numero_scelle)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [$titre, $date, $affectationId, $qteCarburant, $convoyeur, $typeChargementId, $qteChargement, $numeroScelle]
+            "INSERT INTO voyage (titre_voyage, date_voyage, id_affectation, qte_carburant, convoyeur, id_type_chargement, qte_chargement, numero_scelle, principe_carburation)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [$titre, $date, $affectationId, $qteCarburant, $convoyeur, $typeChargementId, $qteChargement, $numeroScelle, principeCarburation()]
         );
     }
 
@@ -785,13 +787,6 @@ class VoyageRepository extends BaseRepository
     public function avgConsumptionBetween(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): ?float
     {
         [$where, $params] = db_context_filter($regionIds, $entiteIds);
-        $carburant = $this->selectOne(
-            "SELECT SUM(qte_carburant) AS total FROM voyage
-             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
-             WHERE affectation_vehicule.is_deleted = 0 AND $where
-             AND date_voyage BETWEEN ? AND ?",
-            array_merge($params, [$dateFrom, $dateTo])
-        );
         $km = $this->selectOne(
             "SELECT SUM(distance_destination) AS total FROM voyage
              LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
@@ -801,10 +796,24 @@ class VoyageRepository extends BaseRepository
              AND date_voyage BETWEEN ? AND ?",
             array_merge($params, [$dateFrom, $dateTo])
         );
-        $carb = (float)($carburant['total'] ?? 0);
+        $carb = $this->carburantFlotteBetween($regionIds, $entiteIds, $dateFrom, $dateTo);
         $dist = (float)($km['total'] ?? 0);
         if ($dist <= 0) return null;
         return round($carb / $dist * 100, 2);
+    }
+
+    /** Carburant total (litres) consommé par la flotte sur une plage de dates (contexte filtré). */
+    public function carburantFlotteBetween(array $regionIds, array $entiteIds, string $dateFrom, string $dateTo): float
+    {
+        [$where, $params] = db_context_filter($regionIds, $entiteIds);
+        $row = $this->selectOne(
+            "SELECT SUM(qte_carburant) AS total FROM voyage
+             LEFT JOIN affectation_vehicule ON affectation_vehicule.id_affectation = voyage.id_affectation
+             WHERE affectation_vehicule.is_deleted = 0 AND $where
+             AND date_voyage BETWEEN ? AND ?",
+            array_merge($params, [$dateFrom, $dateTo])
+        );
+        return (float)($row['total'] ?? 0);
     }
 
     // ---- N2: Dashboard charts ----
@@ -1036,16 +1045,17 @@ class VoyageRepository extends BaseRepository
     /**
      * Remplace les carburations d'un voyage et met à jour le total voyage.qte_carburant
      * (somme des carburations). $events : liste de ['qte' => int, 'plein' => int(0|1)].
-     * Le marquage « plein » suit le paramètre global principeCarburation() :
+     * $mode : principe de carburation à appliquer — celui figé sur le voyage à sa
+     * création pour une modification, null pour le paramètre global courant (création) :
      *  - 'plein'   : toutes les carburations sont des pleins ;
      *  - 'partiel' : aucune n'est un plein ;
      *  - 'mixte'   : le choix du formulaire est respecté.
      * Les carburations à qte <= 0 (données aberrantes) sont ignorées.
      */
-    public function saveFuelEvents(int $idVoyage, array $events): void
+    public function saveFuelEvents(int $idVoyage, array $events, ?string $mode = null): void
     {
         $this->exec("DELETE FROM carburant_voyage WHERE id_voyage = ?", [$idVoyage]);
-        $mode = principeCarburation();
+        if ($mode === null) $mode = principeCarburation();
         // Carburations à 0 : données aberrantes, ignorées (jamais marquées « plein »).
         $kept = [];
         foreach ($events as $ev) {

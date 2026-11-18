@@ -38,15 +38,19 @@ class VoyageController extends BaseController
         $date = $this->post('date-upd-voyage');
         if (!$date) $this->jsonError('La date du voyage est obligatoire');
         $this->requireDateVoyageNotFuture($date);
+        // Le principe de carburation est celui figé à la création du voyage :
+        // un changement de configuration globale n'affecte pas les voyages existants.
+        $idVoyage = (int)$this->post('id-voyage');
+        $stored = $this->voyageRepo->findById($idVoyage);
+        $modePrincipe = $stored['principe_carburation'] ?? null;
         try {
-            $this->voyageRepo->transactional(function () use ($date) {
+            $this->voyageRepo->transactional(function () use ($date, $idVoyage, $modePrincipe) {
                 $carburants = json_decode($this->post('carburants-upd-voyage'), true);
                 if (!is_array($carburants)) $carburants = [];
                 $totalCarb = 0;
                 foreach ($carburants as $c) {
                     $totalCarb += max(0, (int)($c['qte'] ?? 0));
                 }
-                $idVoyage = (int)$this->post('id-voyage');
                 $this->voyageRepo->updateById(
                     $idVoyage,
                     $date,
@@ -56,7 +60,7 @@ class VoyageController extends BaseController
                     (float)$this->post('qtec-upd-voyage'),
                     $this->post('numero-scelle-upd-voyage') ?: null
                 );
-                $this->voyageRepo->saveFuelEvents($idVoyage, $carburants);
+                $this->voyageRepo->saveFuelEvents($idVoyage, $carburants, $modePrincipe);
             });
             $this->json();
         } catch (\Throwable $e) {

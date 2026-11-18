@@ -840,21 +840,26 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
         $('.carb-qte-upd').each(function() { t += parseFloat($(this).val() || 0) })
         return t
     }
-    // Principe de carburation global (paramètre Configuration → Paramètres) :
-    // 'plein' = chaque carburation fait le plein, 'partiel' = jamais, 'mixte' = choix libre.
+    // Principe de carburation :
+    //  - création : paramètre global (PRINCIPE_CARBURATION) ;
+    //  - modification : principe figé sur le voyage à sa création (UPD_PRINCIPE,
+    //    chargé via fetchByHash) — la configuration appliquée après le voyage
+    //    ne modifie pas ses carburations.
     var PRINCIPE_CARBURATION = <?= j(principeCarburation()) ?>;
+    var UPD_PRINCIPE = 'mixte';
     function syncPleinUpd() {
         var boxes = $('#carburant-list-upd .carb-plein-upd')
+        var mode = UPD_PRINCIPE || 'mixte'
         boxes.removeAttr('title')
-        if (PRINCIPE_CARBURATION === 'plein') {
+        if (mode === 'plein') {
             boxes.prop('checked', true).prop('disabled', true)
-                .attr('title', 'Chaque carburation fait le plein du réservoir (paramètre global)')
+                .attr('title', 'Chaque carburation fait le plein du réservoir (principe défini pour ce voyage)')
             updCarburants.forEach((c) => { c.plein = 1 })
             return
         }
-        if (PRINCIPE_CARBURATION === 'partiel') {
+        if (mode === 'partiel') {
             boxes.prop('checked', false).prop('disabled', true)
-                .attr('title', 'Carburations partielles (paramètre global)')
+                .attr('title', 'Carburations partielles (principe défini pour ce voyage)')
             updCarburants.forEach((c) => { c.plein = 0 })
             return
         }
@@ -903,6 +908,8 @@ function getCamembertEvaluationVoyages(array $regions, string $dateFrom, string 
                 })
             $('#cv-upd-voyage').val(v.convoyeur)
             $('#numero-scelle-upd-voyage').val(v.numero_scelle || '')
+            // Principe de carburation figé sur ce voyage à sa création (pas le paramètre global).
+            UPD_PRINCIPE = v.principe_carburation || 'mixte'
             updCarburants = []
             ;(v.carburants || []).forEach((c) => updCarburants.push({ qte: parseFloat(c.qte_carburant) || 0, plein: parseInt(c.plein_complet) || 0 }))
             if (!updCarburants.length) updCarburants.push({ qte: 0, plein: 0 })
@@ -1313,6 +1320,18 @@ function getDashboardCardsVoyages()
     $html .= '<div class="lt-stat-icon"><i class="fa fa-gas-pump"></i></div>';
     $html .= '<div class="lt-stat-value">' . $consoDisplay . '</div>';
     $html .= '<div class="lt-stat-label">' . ($scope === 'comparaison' ? 'Conso moyenne flotte ' . $periodWord : 'Conso moyenne ' . $periodWord) . $periodDetail . '</div>';
+    $html .= '</div></div>';
+
+    // Carburant consommé sur la période — flotte uniquement (les prestataires externes ne renseignent pas ce champ).
+    $carbDisplay = '—';
+    if ($scope !== 'externe') {
+        $carb = $repo->carburantFlotteBetween($regionIds, $entiteIds, $dateFrom, $dateTo);
+        $carbDisplay = number_format($carb, 0, ',', ' ') . ' L';
+    }
+    $html .= '<div class="col-md"><div class="lt-card lt-stat-card">';
+    $html .= '<div class="lt-stat-icon"><i class="fa fa-oil-can"></i></div>';
+    $html .= '<div class="lt-stat-value">' . $carbDisplay . '</div>';
+    $html .= '<div class="lt-stat-label">' . ($scope === 'comparaison' ? 'Carburant flotte ' . $periodWord : 'Carburant flotte ' . $periodWord) . $periodDetail . '</div>';
     $html .= '</div></div>';
 
     $html .= '</div>';
