@@ -175,6 +175,26 @@ function devise(): string
 }
 
 /**
+ * Principe de carburation global (paramètre « principe-carburation ») :
+ *  - 'plein'   : chaque carburation est un complément du plein (toutes marquées plein) ;
+ *  - 'partiel' : carburations uniquement partielles (jamais de plein) ;
+ *  - 'mixte'   : mixte — le choix « plein » est libre à la saisie.
+ * Influence le formulaire des voyages (case « plein ») et saveFuelEvents.
+ */
+function principeCarburation(): string
+{
+    $con = $GLOBALS['con'] ?? null;
+    if (!$con) return 'mixte';
+    static $mode = null;
+    if ($mode === null) {
+        $repo = new ConfigRepository($con);
+        $v = $repo->getParametre('principe-carburation', 'mixte');
+        $mode = in_array($v, ['plein', 'partiel', 'mixte'], true) ? $v : 'mixte';
+    }
+    return $mode;
+}
+
+/**
  * Get the exploded rights array for a given module object from session.
  * Returns empty array if no rights found for that object.
  */

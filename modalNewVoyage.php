@@ -386,21 +386,37 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
         $('.carb-qte-vg').each(function() { t += parseFloat($(this).val() || 0) })
         return t
     }
-    // Principe du plein : la dernière carburation renseignée fait le plein du réservoir.
-    // La case « plein » est cochée et verrouillée sur cette ligne (forcé côté serveur aussi).
+    // Principe de carburation global (paramètre Configuration → Paramètres) :
+    // 'plein' = chaque carburation fait le plein, 'partiel' = jamais, 'mixte' = choix libre.
+    var PRINCIPE_CARBURATION = <?= j(principeCarburation()) ?>;
     function syncPleinVg() {
         var boxes = $('#carburant-list-vg .carb-plein-vg')
-        boxes.prop('checked', false).prop('disabled', false).removeAttr('title')
-        var target = null
-        boxes.each(function() {
-            var qte = parseFloat($(this).closest('.carb-row-vg').find('.carb-qte-vg').val() || 0)
-            if (qte > 0) target = $(this)
-        })
-        if (target === null && boxes.length) target = boxes.last()
-        if (target) target.prop('checked', true).prop('disabled', true).attr('title', 'La dernière carburation fait le plein du réservoir')
-        carburantsVg.forEach((c) => { c.plein = 0 })
-        var idx = target ? target.closest('.carb-row-vg').index() : -1
-        if (idx >= 0 && carburantsVg[idx]) carburantsVg[idx].plein = 1
+        boxes.removeAttr('title')
+        if (PRINCIPE_CARBURATION === 'plein') {
+            boxes.prop('checked', true).prop('disabled', true)
+                .attr('title', 'Chaque carburation fait le plein du réservoir (paramètre global)')
+            carburantsVg.forEach((c) => { c.plein = 1 })
+            return
+        }
+        if (PRINCIPE_CARBURATION === 'partiel') {
+            boxes.prop('checked', false).prop('disabled', true)
+                .attr('title', 'Carburations partielles (paramètre global)')
+            carburantsVg.forEach((c) => { c.plein = 0 })
+            return
+        }
+        // Mixte : choix libre ; la dernière carburation renseignée est cochée par défaut
+        // (uniquement si aucune case n'est déjà cochée).
+        boxes.prop('disabled', false)
+        if (!boxes.filter(':checked').length) {
+            var target = null
+            boxes.each(function() {
+                var qte = parseFloat($(this).closest('.carb-row-vg').find('.carb-qte-vg').val() || 0)
+                if (qte > 0) target = $(this)
+            })
+            if (target === null && boxes.length) target = boxes.last()
+            if (target) target.prop('checked', true)
+        }
+        carburantsVg.forEach((c, i) => { c.plein = boxes.eq(i).is(':checked') ? 1 : 0 })
     }
     $('#carburant-list-vg').on('input', '.carb-qte-vg', function() {
         const i = $(this).closest('.carb-row-vg').index()

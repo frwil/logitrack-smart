@@ -859,6 +859,27 @@ function getTableauFolder()
                         </div>
                     </div>
                 </div>
+                <div class="col-md-6">
+                    <div class="lt-card">
+                        <div class="lt-card-header"><h2 class="lt-card-title">Principe de carburation</h2></div>
+                        <div class="p-3">
+                            <p class="text-muted">Définit globalement comment la case « plein » se comporte dans les formulaires de voyage.</p>
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="radio" name="principe-carburation" id="pc-plein" value="plein" <?= principeCarburation() === 'plein' ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="pc-plein">Chaque carburation fait le plein du réservoir</label>
+                            </div>
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="radio" name="principe-carburation" id="pc-partiel" value="partiel" <?= principeCarburation() === 'partiel' ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="pc-partiel">Carburations uniquement partielles (jamais de plein)</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="principe-carburation" id="pc-mixte" value="mixte" <?= principeCarburation() === 'mixte' ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="pc-mixte">Mixte : choix libre du plein à chaque carburation</label>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="savePrincipeCarburation()">Enregistrer</button>
+                        </div>
+                    </div>
+                </div>
                 <?php if (in_array('backup', $rights_config) || ($_SESSION['usr-con']['is-superadmin'] ?? false)): ?>
                 <div class="col-md-6">
                     <div class="lt-card">
@@ -882,6 +903,16 @@ function getTableauFolder()
                     if (r.success) { alert('Devise enregistrée.'); } else { alert('Erreur.'); }
                 })
                 .fail(function() { alert('Erreur réseau.'); });
+            }
+
+            function savePrincipeCarburation() {
+                var v = $('input[name="principe-carburation"]:checked').val();
+                if (!v) { alert('Choisissez un principe de carburation'); return; }
+                $.ajax({type:'post', contentType:'application/json', data:JSON.stringify({'update-principe-carburation':v, csrf_token:window.CSRF_TOKEN}), dataType:'json'})
+                .done(function(r) {
+                    if (r.success) { showSuccess('Principe de carburation enregistré.'); } else { showError(r.error || 'Erreur.'); }
+                })
+                .fail(function() { showError('Erreur réseau.'); });
             }
 
             function backupDatabase() {

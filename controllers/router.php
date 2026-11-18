@@ -189,6 +189,7 @@ $routes = [
 
     // Config — Paramètres
     'update-devise'       => [$configCtrl, 'updateDevise'],
+    'update-principe-carburation' => [$configCtrl, 'updatePrincipeCarburation'],
     'backup-db'           => [$configCtrl, 'backupDatabase'],
 
     // Trajet

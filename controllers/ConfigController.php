@@ -279,6 +279,17 @@ class ConfigController extends BaseController
         $this->json();
     }
 
+    /** Principe de carburation global : plein | partiel | mixte. */
+    public function updatePrincipeCarburation(): never
+    {
+        $mode = $this->post('update-principe-carburation');
+        if (!in_array($mode, ['plein', 'partiel', 'mixte'], true)) {
+            $this->jsonError('Principe de carburation invalide');
+        }
+        $this->repo->setParametre('principe-carburation', $mode);
+        $this->json();
+    }
+
     public function backupDatabase(): never
     {
         // Only superadmin or users with explicit 'backup' right on config
