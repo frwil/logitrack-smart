@@ -85,10 +85,10 @@ if ($pendingOk) {
                     </div>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:6px">
-                    <button class="login-submit" type="button" id="btn-back-login" style="flex:0 0 auto;background:#e5e7eb;color:#374151">
+                    <button class="login-submit" type="button" id="btn-back-login" style="flex:0 0 auto;width:auto;min-width:44px;padding:0.75rem 1rem;background:#e5e7eb;color:#374151">
                         <i class="icon fas fa-arrow-left"></i>
                     </button>
-                    <button class="login-submit" type="submit" id="btn-context-submit" style="flex:1">
+                    <button class="login-submit" type="submit" id="btn-context-submit" style="flex:1;width:auto;min-width:0">
                         <span id="btn-context-submit-text">Se connecter</span>
                         <i class="icon fas fa-arrow-right"></i>
                     </button>
