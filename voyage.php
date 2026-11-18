@@ -1285,7 +1285,7 @@ function getDashboardCardsVoyages()
         $tauxDisplay = $taux . ' %';
         $tauxLabel = 'Taux réalisation objectifs ' . $periodWord . $periodDetail;
         $kmDisplay = number_format($kmMois, 0, ',', ' ') . ' km';
-        $kmLabel = 'Km parcourus ' . $periodWord . $periodDetail;
+        $kmLabel = 'Km parcourus (flotte + externes) ' . $periodWord . $periodDetail;
     }
 
     $html .= '<div class="row g-3 mb-3">';
@@ -1319,7 +1319,9 @@ function getDashboardCardsVoyages()
     $html .= '<div class="col-md"><div class="lt-card lt-stat-card ' . $consoClass . '">';
     $html .= '<div class="lt-stat-icon"><i class="fa fa-gas-pump"></i></div>';
     $html .= '<div class="lt-stat-value">' . $consoDisplay . '</div>';
-    $html .= '<div class="lt-stat-label">' . ($scope === 'comparaison' ? 'Conso moyenne flotte ' . $periodWord : 'Conso moyenne ' . $periodWord) . $periodDetail . '</div>';
+    // La conso (L/100km) ne peut être calculée que sur la flotte : les prestataires
+    // externes ne renseignent pas de carburant.
+    $html .= '<div class="lt-stat-label">' . ($scope === 'externe' ? 'Conso moyenne ' . $periodWord : 'Conso moyenne flotte ' . $periodWord) . $periodDetail . '</div>';
     $html .= '</div></div>';
 
     // Carburant consommé sur la période — flotte uniquement (les prestataires externes ne renseignent pas ce champ).
