@@ -324,6 +324,9 @@ $ptTransportSpecifics = ['viewPrestataireTransport','savePrestataireTransport','
         $('.vg-ext-only').toggle(externe)
         $('#id-vehicule-vg').prop('disabled', externe)
         $('#carburant-list-vg input, #carburant-list-vg button').prop('disabled', externe)
+        // Ré-applique le principe de carburation (plein/partiel → cases verrouillées),
+        // car la ligne précédente réactive tous les champs du bloc carburant.
+        if (!externe) syncPleinVg()
         $('#chauffeur-vg').prop('disabled', !externe)
         $('#immatriculation-vg').prop('disabled', !externe)
         // Entité / région : figés uniquement si un seul élément dans le contexte
