@@ -1360,10 +1360,15 @@ function getDashboardChartsVoyages()
     $html .= '<div id="chart-voyages-vs-obj" style="height: 350px;"></div></div></div>';
     $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">'
         . ($scope === 'comparaison' ? 'Top destinations (flotte vs externes)' : 'Top destinations') . $periodLabel . '</h2></div>';
-    $html .= '<div id="chart-top-dest" style="height: 350px;"></div></div></div>';
+    $topDestLegend = $scope === 'comparaison'
+        ? '<span class="badge me-1" style="background:#5D54A4">&nbsp;&nbsp;</span> Flotte &nbsp;&nbsp;<span class="badge me-1" style="background:#E67E22">&nbsp;&nbsp;</span> Externes'
+        : '<span class="badge me-1" style="background:#5D54A4">&nbsp;&nbsp;</span> Nb voyages &nbsp;&nbsp;<span class="badge me-1" style="background:#E67E22">&nbsp;&nbsp;</span> Km total';
+    $html .= '<div id="chart-top-dest" style="height: 350px;"></div><div class="px-3 pb-2 small text-muted">' . $topDestLegend . '</div></div></div>';
     if ($scope !== 'externe') {
         $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Consommation par véhicule'
             . ($isCustom ? $periodLabel : ' (mois en cours)') . '</h2></div>';
+        $html .= '<div class="px-3 pt-2"><label class="fw-bold small text-muted d-block mb-1">FILTRER PAR VÉHICULE(S)</label>'
+            . '<select id="conso-vehicule-filter" class="mymsel" multiple placeholder="Tous les véhicules (filtre multi)..."></select></div>';
         $html .= '<div id="chart-conso" style="height: 400px;"></div></div></div>';
         $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Écart au groupe (σ)'
             . ($isCustom ? $periodLabel : ' (mois en cours)') . '</h2></div>';
@@ -1426,12 +1431,12 @@ function getDashboardChartsVoyages()
                 dt.addColumn("number", "Flotte");
                 dt.addColumn("number", "Externes");
                 e.data.forEach(function(r) { dt.addRow([r.lib_destination, parseInt(r.nb_voyages_flotte), parseInt(r.nb_voyages_externe)]); });
-                c.draw(dt, {title:"Top destinations (flotte vs externes)", colors:["#5D54A4","#E67E22"], chartArea:{width:"80%", height:"70%"}});
+                c.draw(dt, {title:"Top destinations (flotte vs externes)", colors:["#5D54A4","#E67E22"], legend:{position:"none"}, chartArea:{width:"80%", height:"70%"}});
             } else {
                 dt.addColumn("number", "Nb voyages");
                 dt.addColumn("number", "Km total");
                 e.data.forEach(function(r) { dt.addRow([r.lib_destination, parseInt(r.nb_voyages), parseFloat(r.total_km)]); });
-                c.draw(dt, {title:"Top destinations", colors:["#5D54A4","#7C78B8"], chartArea:{width:"80%", height:"70%"}});
+                c.draw(dt, {title:"Top destinations", colors:["#5D54A4","#E67E22"], legend:{position:"none"}, chartArea:{width:"80%", height:"70%"}});
             }
         });';
     if ($scope !== 'externe') {
@@ -1466,6 +1471,29 @@ function getDashboardChartsVoyages()
                 document.getElementById("chart-conso-z").innerHTML = "<div class=\"p-4 text-center text-muted\">Aucune donnée sur la période</div>";
                 return;
             }
+            // Options du filtre véhicules (multi) — construites une seule fois
+            var $f = $("#conso-vehicule-filter");
+            if ($f.length && !$f.find("option").length) {
+                rows.forEach(function(r) { $f.append("<option value=\"" + escH(r.immatriculation_vehicule) + "\">" + escH(r.immatriculation_vehicule) + "</option>"); });
+                if (window._tsConsoFilter) { try { window._tsConsoFilter.destroy(); } catch(err) {} }
+                window._tsConsoFilter = new TomSelect("#conso-vehicule-filter", {plugins:["remove_button"], maxItems:null, placeholder:"Tous les véhicules (filtre multi)..."});
+            }
+            window._consoRows = rows;
+            drawConsoCharts();
+        });
+        function drawConsoCharts() {
+            function escH(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function(c) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+            var f1 = function(x) { return x.toFixed(1).replace(".", ","); };
+            var rows = window._consoRows || [];
+            var selected = window._tsConsoFilter ? window._tsConsoFilter.getValue() : [];
+            if (selected.length) {
+                rows = rows.filter(function(r) { return selected.indexOf(String(r.immatriculation_vehicule)) >= 0; });
+            }
+            if (!rows.length) {
+                document.getElementById("chart-conso").innerHTML = "<div class=\"p-4 text-center text-muted\">Aucun véhicule ne correspond au filtre</div>";
+                document.getElementById("chart-conso-z").innerHTML = "<div class=\"p-4 text-center text-muted\">Aucun véhicule ne correspond au filtre</div>";
+                return;
+            }
             // Conso L/100km : barres colorées selon écart au groupe
             var dt = new google.visualization.DataTable();
             dt.addColumn("string", "Véhicule");
@@ -1491,7 +1519,7 @@ function getDashboardChartsVoyages()
                 var tip = "<b>" + escH(r.immatriculation_vehicule) + "</b><br>" + escH(r.group)
                     + "<br>Km : " + Math.round(r.total_km) + " · L : " + escH(r.total_carburant)
                     + "<br>Conso : <b>" + f1(conso) + " L/100km</b>"
-                    + (z === null ? "<br><i>Écart non calculable (km &lt; seuil, carburant non renseigné ou groupe insuffisant)</i>" : "<br>Écart au groupe : <b>" + (z >= 0 ? "+" : "") + f1(z) + "σ</b>");
+                    + (z === null ? "<br><i>Écart non calculable : km &lt; 50 sur la période, carburant non renseigné, ou groupe insuffisant (moins de 2 véhicules comparables)</i>" : "<br>Écart au groupe : <b>" + (z >= 0 ? "+" : "") + f1(z) + "σ</b>");
                 dt.addRow([r.immatriculation_vehicule, conso, "color: " + color, tip, null, null, null, null]);
                 dtZ.addRow([r.immatriculation_vehicule, z, 2, 3, "color: " + color]);
             });
@@ -1501,7 +1529,8 @@ function getDashboardChartsVoyages()
             dtZ.sort([{column:1, desc:true}]);
             var cZ = new google.visualization.ComboChart(document.getElementById("chart-conso-z"));
             cZ.draw(dtZ, {title:"Écart au groupe (σ)' . ($isCustom ? $periodLabel : ' (mois en cours)') . '", legend:{position:"bottom"}, seriesType:"bars", series:{1:{type:"line", color:"#F39C12", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}, 2:{type:"line", color:"#E74C3C", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}}, chartArea:{width:"80%", height:"65%"}, vAxis:{title:"σ"}});
-        });
+        }
+        $("#conso-vehicule-filter").on("change", drawConsoCharts);
         $.ajax({type:"post", data:"load-jauge-virtuelle=1", dataType:"json"})
         .done(function(e) {
             var tbody = $("#table-jauge tbody");
