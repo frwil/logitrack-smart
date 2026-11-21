@@ -1370,8 +1370,23 @@ function getDashboardChartsVoyages()
         $html .= '<div class="px-3 pt-2"><label class="fw-bold small text-muted d-block mb-1">FILTRER PAR VÉHICULE(S)</label>'
             . '<select id="conso-vehicule-filter" class="mymsel" multiple placeholder="Tous les véhicules (filtre multi)..."></select></div>';
         $html .= '<div id="chart-conso" style="height: 400px;"></div></div></div>';
+        $html .= '<style>
+.lt-tip { position: relative; cursor: help; display: inline-flex; align-items: center; }
+.lt-tip-pop { display: none; position: absolute; top: calc(100% + 10px); left: 50%; transform: translateX(-50%); width: 400px; max-width: calc(100vw - 32px); background: var(--lt-surface); color: var(--lt-text); border: 1px solid var(--lt-border); border-radius: 8px; padding: 12px 14px; font-size: 0.8125rem; font-weight: 400; line-height: 1.5; text-align: left; z-index: 1080; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.lt-tip:hover .lt-tip-pop, .lt-tip:focus-within .lt-tip-pop { display: block; }
+.lt-tip-exemple { display: block; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--lt-border); }
+</style>';
         $html .= '<div class="col-md-6"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Écart au groupe (σ)'
-            . ($isCustom ? $periodLabel : ' (mois en cours)') . '</h2></div>';
+            . ($isCustom ? $periodLabel : ' (mois en cours)') . '</h2>'
+            . '<span class="lt-tip ms-2"><i class="fa fa-question-circle text-muted"></i><span class="lt-tip-pop">'
+            . '<strong>Comment lire ce graphique ?</strong><br>'
+            . 'Chaque barre = écart de la conso L/100km du véhicule par rapport à la moyenne de son groupe (même modèle, carburant et puissance).<br>'
+            . '0 = conso égale à la moyenne du groupe. σ = un écart-type.<br>'
+            . 'Lignes pointillées : seuils 2σ (orange) et 3σ (rouge).<br>'
+            . '<span style="color:#2ECC71">■</span> dans la norme · <span style="color:#F39C12">■</span> à partir de 2σ : à surveiller · <span style="color:#E74C3C">■</span> à partir de 3σ : anomalie probable, vérifier les saisies carburant.<br>'
+            . '<span style="color:#BDC3C7">■</span> gris : écart non calculable (km &lt; 50 sur la période, carburant non renseigné, ou groupe insuffisant).'
+            . '<span id="lt-tip-ecart-exemple" class="lt-tip-exemple"></span>'
+            . '</span></span></div>';
         $html .= '<div id="chart-conso-z" style="height: 400px;"></div></div></div>';
         $html .= '<div class="col-12"><div class="lt-card"><div class="lt-card-header"><h2 class="lt-card-title">Analyse par groupe — écart-type et CV</h2></div>';
         $html .= '<div class="table-responsive"><table id="table-conso-groupes" class="table table-striped no-datatable mb-0"><thead><tr>'
@@ -1478,10 +1493,16 @@ function getDashboardChartsVoyages()
             // et les graphiques conso restent vides.
             var $f = $("#conso-vehicule-filter");
             if ($f.length && !$f.find("option").length) {
-                rows.forEach(function(r) { $f.append("<option value=\"" + escH(r.immatriculation_vehicule) + "\">" + escH(r.immatriculation_vehicule) + "</option>"); });
+                // Destruction AVANT de remplir les options : destroy() de TomSelect
+                // restaure le select dans son état au moment où cette instance a été
+                // créée (revertSettings.innerHTML) ; des options ajoutées juste avant
+                // seraient donc effacées.
                 try {
                     if ($f[0] && $f[0].tomselect) { $f[0].tomselect.destroy(); }
                     if (window._tsConsoFilter) { window._tsConsoFilter.destroy(); }
+                } catch (err) {}
+                rows.forEach(function(r) { $f.append("<option value=\"" + escH(r.immatriculation_vehicule) + "\">" + escH(r.immatriculation_vehicule) + "</option>"); });
+                try {
                     window._tsConsoFilter = new TomSelect("#conso-vehicule-filter", {plugins:["remove_button"], maxItems:null, placeholder:"Tous les véhicules (filtre multi)..."});
                 } catch (err) {
                     window._tsConsoFilter = null;
@@ -1490,6 +1511,27 @@ function getDashboardChartsVoyages()
             window._consoRows = rows;
             drawConsoCharts();
         });
+        function updateEcartHelp(rows) {
+            var $ex = $("#lt-tip-ecart-exemple");
+            if (!$ex.length) return;
+            function escH(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function(c) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+            var f1 = function(x) { return x.toFixed(1).replace(".", ","); };
+            // Exemple pris dans le graphique : écart le plus marqué (positif en priorité).
+            var pos = null, neg = null;
+            (rows || []).forEach(function(r) {
+                var z = (r.z === null || r.z === undefined) ? null : parseFloat(r.z);
+                if (z === null) return;
+                if (z >= 0 && (pos === null || z > pos.z)) pos = { im: r.immatriculation_vehicule, z: z };
+                if (z < 0 && (neg === null || z < neg.z)) neg = { im: r.immatriculation_vehicule, z: z };
+            });
+            var best = pos || neg;
+            if (best) {
+                var statut = best.z >= 3 ? " : anomalie probable" : (best.z >= 2 ? " : à surveiller" : "");
+                $ex.html("Exemple sur la période : <strong>" + escH(best.im) + "</strong> est à <strong>" + (best.z >= 0 ? "+" : "") + f1(best.z) + "σ</strong> " + (best.z >= 0 ? "au-dessus" : "en dessous") + " de la moyenne de son groupe" + statut + ".");
+            } else {
+                $ex.html("Aucun écart calculable sur la période : aucun exemple disponible.");
+            }
+        }
         function drawConsoCharts() {
             function escH(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function(c) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
             var f1 = function(x) { return x.toFixed(1).replace(".", ","); };
@@ -1504,6 +1546,7 @@ function getDashboardChartsVoyages()
             if (selected.length) {
                 rows = rows.filter(function(r) { return selected.indexOf(String(r.immatriculation_vehicule)) >= 0; });
             }
+            updateEcartHelp(rows);
             if (!rows.length) {
                 document.getElementById("chart-conso").innerHTML = "<div class=\"p-4 text-center text-muted\">Aucun véhicule ne correspond au filtre</div>";
                 document.getElementById("chart-conso-z").innerHTML = "<div class=\"p-4 text-center text-muted\">Aucun véhicule ne correspond au filtre</div>";

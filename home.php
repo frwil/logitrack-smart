@@ -435,7 +435,10 @@ if (!$renderPartial):
                     select.append('<option value="' + $("<div>" + d + "</div>").text() + '">' + $("<div>" + d + "</div>").text() + '</option>')
                 });
             });
-            initTomSelect('.mymsel', {
+            // Filtres de colonnes DataTable uniquement (selects .mymsel dans les <th>) :
+            // ne pas toucher aux autres .mymsel de la page (ex. filtre multi-véhicules
+            // du dashboard conso, initialisé par son propre script une fois ses options prêtes).
+            initTomSelect('th select.mymsel', {
                 maxItems: null,
                 placeholder: 'Filtrer...',
                 dropdownParent: 'body',
