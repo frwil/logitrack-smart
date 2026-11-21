@@ -1471,12 +1471,21 @@ function getDashboardChartsVoyages()
                 document.getElementById("chart-conso-z").innerHTML = "<div class=\"p-4 text-center text-muted\">Aucune donnée sur la période</div>";
                 return;
             }
-            // Options du filtre véhicules (multi) — construites une seule fois
+            // Options du filtre véhicules (multi) — construites une seule fois.
+            // initDataTable() de home.php initialise TomSelect sur tous les .mymsel
+            // (dont ce select, encore vide a ce stade) : on détruit cette instance
+            // avant de créer la nôtre, sinon TomSelect lève « already initialized »
+            // et les graphiques conso restent vides.
             var $f = $("#conso-vehicule-filter");
             if ($f.length && !$f.find("option").length) {
                 rows.forEach(function(r) { $f.append("<option value=\"" + escH(r.immatriculation_vehicule) + "\">" + escH(r.immatriculation_vehicule) + "</option>"); });
-                if (window._tsConsoFilter) { try { window._tsConsoFilter.destroy(); } catch(err) {} }
-                window._tsConsoFilter = new TomSelect("#conso-vehicule-filter", {plugins:["remove_button"], maxItems:null, placeholder:"Tous les véhicules (filtre multi)..."});
+                try {
+                    if ($f[0] && $f[0].tomselect) { $f[0].tomselect.destroy(); }
+                    if (window._tsConsoFilter) { window._tsConsoFilter.destroy(); }
+                    window._tsConsoFilter = new TomSelect("#conso-vehicule-filter", {plugins:["remove_button"], maxItems:null, placeholder:"Tous les véhicules (filtre multi)..."});
+                } catch (err) {
+                    window._tsConsoFilter = null;
+                }
             }
             window._consoRows = rows;
             drawConsoCharts();
@@ -1485,7 +1494,13 @@ function getDashboardChartsVoyages()
             function escH(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function(c) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
             var f1 = function(x) { return x.toFixed(1).replace(".", ","); };
             var rows = window._consoRows || [];
-            var selected = window._tsConsoFilter ? window._tsConsoFilter.getValue() : [];
+            var selected = [];
+            if (window._tsConsoFilter) {
+                selected = window._tsConsoFilter.getValue();
+            } else {
+                var $fNative = $("#conso-vehicule-filter");
+                selected = ($fNative.length && $fNative.val()) ? $fNative.val() : [];
+            }
             if (selected.length) {
                 rows = rows.filter(function(r) { return selected.indexOf(String(r.immatriculation_vehicule)) >= 0; });
             }
