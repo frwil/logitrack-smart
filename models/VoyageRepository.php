@@ -1226,6 +1226,7 @@ class VoyageRepository extends BaseRepository
                 'dernier_plein'  => $lastFull,
                 'nb_pleins'      => $nbPleins,
                 'troncon_l100'   => $stretches ? round(end($stretches)['l100'], 1) : null,
+                'troncon_km'     => $stretches ? round(end($stretches)['km']) : null,
                 'avg_l100'       => $avgL100 !== null ? round($avgL100, 1) : null,
                 'km_depuis'      => round($kmSinceFull),
                 'ajout_depuis'   => round($addedSinceFull),

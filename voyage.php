@@ -1558,6 +1558,9 @@ function getDashboardChartsVoyages()
                 var conso;
                 if (r.troncon_l100 !== null) {
                     conso = f1(r.troncon_l100) + " L/100km";
+                    if (r.troncon_km != null) {
+                        conso += " <span class=\"text-muted small\">(" + r.troncon_km + " km)</span>";
+                    }
                     if (r.avg_l100 !== null && Math.abs(r.avg_l100 - r.troncon_l100) > 0.05) {
                         conso += " <span class=\"text-muted small\">(moy. " + f1(r.avg_l100) + ")</span>";
                     }
