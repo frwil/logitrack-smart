@@ -1372,7 +1372,7 @@ function getDashboardChartsVoyages()
         $html .= '<div id="chart-conso" style="height: 400px;"></div></div></div>';
         $html .= '<style>
 .lt-tip { position: relative; cursor: help; display: inline-flex; align-items: center; }
-.lt-tip-pop { display: none; position: absolute; top: calc(100% + 10px); left: 50%; transform: translateX(-50%); width: 400px; max-width: calc(100vw - 32px); background: var(--lt-surface); color: var(--lt-text); border: 1px solid var(--lt-border); border-radius: 8px; padding: 12px 14px; font-size: 0.8125rem; font-weight: 400; line-height: 1.5; text-align: left; z-index: 1080; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.lt-tip-pop { display: none; position: absolute; top: calc(100% + 10px); left: 0; width: 400px; max-width: calc(100vw - 32px); background: var(--lt-surface); color: var(--lt-text); border: 1px solid var(--lt-border); border-radius: 8px; padding: 12px 14px; font-size: 0.8125rem; font-weight: 400; line-height: 1.5; text-align: left; z-index: 1080; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
 .lt-tip:hover .lt-tip-pop, .lt-tip:focus-within .lt-tip-pop { display: block; }
 .lt-tip-exemple { display: block; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--lt-border); }
 </style>';
@@ -1588,6 +1588,21 @@ function getDashboardChartsVoyages()
             var cZ = new google.visualization.ComboChart(document.getElementById("chart-conso-z"));
             cZ.draw(dtZ, {title:"Écart au groupe (σ)' . ($isCustom ? $periodLabel : ' (mois en cours)') . '", legend:{position:"bottom"}, seriesType:"bars", series:{1:{type:"line", color:"#F39C12", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}, 2:{type:"line", color:"#E74C3C", lineDashStyle:[4,4], lineWidth:2, pointsVisible:false}}, chartArea:{width:"80%", height:"65%"}, vAxis:{title:"σ"}});
         }
+        // Aide au survol « Écart au groupe » : la popup est centrée sous son icone,
+        // mais bornée à la fenêtre pour ne jamais déborder (notamment à droite).
+        function clampEcartTip() {
+            var $tip = $(".lt-tip");
+            var $pop = $tip.find(".lt-tip-pop");
+            if (!$tip.length || !$pop.length) return;
+            var rect = $tip[0].getBoundingClientRect();
+            var w = Math.min(400, window.innerWidth - 32);
+            var left = rect.left + rect.width / 2 - w / 2;
+            left = Math.max(16, Math.min(left, window.innerWidth - w - 16));
+            $pop.css({ width: w + "px", left: (left - rect.left) + "px" });
+        }
+        clampEcartTip();
+        $(".lt-tip").on("mouseenter", clampEcartTip);
+        $(window).on("resize", clampEcartTip);
         $("#conso-vehicule-filter").on("change", drawConsoCharts);
         $.ajax({type:"post", data:"load-jauge-virtuelle=1", dataType:"json"})
         .done(function(e) {
