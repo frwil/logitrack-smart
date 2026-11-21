@@ -1266,9 +1266,9 @@ class VoyageRepository extends BaseRepository
 
     // ---- N3: Proactive ----
 
-    public function anomaliesObjectifs(int $days, array $regionIds, array $entiteIds): array
+    public function anomaliesObjectifs(int $days, array $regionIds, array $entiteIds, ?string $dateFrom = null, ?string $dateTo = null): array
     {
-        $daily = $this->dailyVoyagesVsObjectives($days, $regionIds, $entiteIds);
+        $daily = $this->dailyVoyagesVsObjectives($days, $regionIds, $entiteIds, 'tout', $dateFrom, $dateTo);
         $anomalies = [];
         foreach ($daily as $d) {
             if ($d['objectif'] > 0 && $d['voyages'] < $d['objectif'] * 0.5) {

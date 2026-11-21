@@ -1611,11 +1611,15 @@ function getAnomaliesVoyages()
     $repo = new VoyageRepository($con);
     $regionIds = getContextRegions();
     $entiteIds = getContextEntities();
-    $rows = $repo->anomaliesObjectifs(30, $regionIds, $entiteIds);
+    // Période de la barre de filtres (POST date-f/date-t), comme les autres sections du dashboard.
+    [$dateFrom, $dateTo] = getVoyagesPeriod();
+    $isCustom = getVoyagesPeriodIsCustom();
+    $periodLabel = $isCustom ? ' (du ' . date('d/m/Y', strtotime($dateFrom)) . ' au ' . date('d/m/Y', strtotime($dateTo)) . ')' : ' (mois en cours)';
+    $rows = $repo->anomaliesObjectifs(30, $regionIds, $entiteIds, $dateFrom, $dateTo);
 
     if (!count($rows)) return '';
 
-    $html = '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title">Jours avec faible activité (taux < 50%)</h2></div>';
+    $html = '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title">Jours avec faible activité (taux < 50%)' . $periodLabel . '</h2></div>';
     $html .= '<table id="table-anomalies-voyages" class="table table-striped no-datatable"><thead><tr>
         <th>Date</th><th>Voyages réalisés</th><th>Objectif</th><th>Taux</th></tr></thead><tbody>';
     foreach ($rows as $r) {
@@ -1638,13 +1642,15 @@ function getScoreActivite()
     $repo = new VoyageRepository($con);
     $regionIds = getContextRegions();
     $entiteIds = getContextEntities();
-    $dateFrom = date('Y-m-d', strtotime('-30 days'));
-    $dateTo = date('Y-m-d');
+    // Période de la barre de filtres (POST date-f/date-t), comme les autres sections du dashboard.
+    [$dateFrom, $dateTo] = getVoyagesPeriod();
+    $isCustom = getVoyagesPeriodIsCustom();
+    $periodLabel = $isCustom ? ' (du ' . date('d/m/Y', strtotime($dateFrom)) . ' au ' . date('d/m/Y', strtotime($dateTo)) . ')' : ' (mois en cours)';
     $rows = $repo->vehicleActivityScores($regionIds, $entiteIds, $dateFrom, $dateTo);
 
-    if (!count($rows)) return '<div class="alert alert-info">Aucun véhicule actif trouvé.</div>';
+    if (!count($rows)) return '<div class="alert alert-info">Aucun véhicule actif sur la période.</div>';
 
-    $html = '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title">Score d\'activité des véhicules (30 jours)</h2></div>';
+    $html = '<div class="lt-card mb-3"><div class="lt-card-header"><h2 class="lt-card-title">Score d\'activité des véhicules' . $periodLabel . '</h2></div>';
     $html .= '<table id="table-score-activite" class="table table-striped no-datatable"><thead><tr>
         <th>Véhicule</th><th>Chauffeur</th><th>Jours actifs</th><th>Km</th><th>Conso L/100km</th>
         <th>Régularité</th><th>Contribution</th><th>Conso</th><th>Score</th><th>État</th></tr></thead><tbody>';
